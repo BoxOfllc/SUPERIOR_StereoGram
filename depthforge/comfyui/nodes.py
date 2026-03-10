@@ -945,3 +945,36 @@ class DF_VideoSequence(_DFNodeBase):
             return (torch.from_numpy(batch), flash_summary)
         except ImportError:
             return (batch, flash_summary)
+
+
+# ===========================================================================
+# ComfyUI registration
+# ===========================================================================
+
+NODE_CLASS_MAPPINGS = {
+    "DF_DepthPrep": DF_DepthPrep,
+    "DF_PatternGen": DF_PatternGen,
+    "DF_PatternLibrary": DF_PatternLibrary,
+    "DF_Stereogram": DF_Stereogram,
+    "DF_AnaglyphOut": DF_AnaglyphOut,
+    "DF_StereoPair": DF_StereoPair,
+    "DF_HiddenImage": DF_HiddenImage,
+    "DF_SafetyLimiter": DF_SafetyLimiter,
+    "DF_QCOverlay": DF_QCOverlay,
+    "DF_VideoSequence": DF_VideoSequence,
+}
+
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "DF_DepthPrep": "DepthForge Depth Prep",
+    "DF_PatternGen": "DepthForge Pattern Gen",
+    "DF_PatternLibrary": "DepthForge Pattern Library",
+    "DF_Stereogram": "DepthForge Stereogram",
+    "DF_AnaglyphOut": "DepthForge Anaglyph Out",
+    "DF_StereoPair": "DepthForge Stereo Pair",
+    "DF_HiddenImage": "DepthForge Hidden Image",
+    "DF_SafetyLimiter": "DepthForge Safety Limiter",
+    "DF_QCOverlay": "DepthForge QC Overlay",
+    "DF_VideoSequence": "DepthForge Video Sequence",
+}
+
+__all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
