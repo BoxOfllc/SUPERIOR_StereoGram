@@ -688,11 +688,16 @@ class DF_SafetyLimiter(_DFNodeBase):
         depth = _depth_to_numpy(depth_map)
         safe_depth, _, violations = limiter.apply(depth)
 
-        report = (
-            "\n".join(f"[{k}] {v}" for k, v in violations.items())
-            if violations
-            else "✓ No violations"
-        )
+        from depthforge.core.flash_safety import EPILEPSY_WARNING_SHORT
+
+        if violations:
+            violation_lines = "\n".join(f"[{k}] {v}" for k, v in violations.items())
+            report = (
+                f"PSE SAFETY WARNING: {EPILEPSY_WARNING_SHORT}\n\n"
+                f"Depth violations corrected:\n{violation_lines}"
+            )
+        else:
+            report = f"✓ No depth violations\n\n" f"PSE REMINDER: {EPILEPSY_WARNING_SHORT}"
         preview = _numpy_depth_to_tensor(safe_depth)
         return (safe_depth, preview, report)
 
@@ -827,11 +832,21 @@ class DF_VideoSequence(_DFNodeBase):
                 "safe_mode": ("BOOLEAN", {"default": True}),
                 "preset_name": (["none", "shallow", "medium", "deep", "cinema", "broadcast"],),
                 "seed": ("INT", {"default": 42, "min": 0, "max": 99999}),
+                "fps": (
+                    "FLOAT",
+                    {
+                        "default": 24.0,
+                        "min": 1.0,
+                        "max": 120.0,
+                        "step": 1.0,
+                        "tooltip": "Playback frame rate — used for flash safety check (limit 3 Hz).",
+                    },
+                ),
             },
         }
 
-    RETURN_TYPES = ("IMAGE",)
-    RETURN_NAMES = ("stereogram_sequence",)
+    RETURN_TYPES = ("IMAGE", "STRING")
+    RETURN_NAMES = ("stereogram_sequence", "flash_safety_report")
     OUTPUT_NODE = True
 
     def execute(
@@ -844,6 +859,7 @@ class DF_VideoSequence(_DFNodeBase):
         safe_mode=True,
         preset_name="none",
         seed=42,
+        fps=24.0,
     ):
         from depthforge.core.depth_prep import DepthPrepParams, prep_depth
         from depthforge.core.synthesizer import StereoParams, synthesize
@@ -904,9 +920,28 @@ class DF_VideoSequence(_DFNodeBase):
 
         # Stack into batch tensor
         batch = np.stack(results, axis=0).astype(np.float32) / 255.0  # (B,H,W,4)
+
+        # --- Flash safety check ---
+        from depthforge.core.flash_safety import EPILEPSY_WARNING_SHORT, check_frame_sequence
+
+        flash_report = check_frame_sequence(results, fps=float(fps))
+        flash_summary = (
+            f"PSE Flash Safety Report\n" f"{flash_report.summary()}\n\n" f"{EPILEPSY_WARNING_SHORT}"
+        )
+        import warnings
+
+        if not flash_report.passed:
+            warnings.warn(
+                f"DepthForge DF_VideoSequence: {flash_report.risk.value} flash risk "
+                f"detected at {fps:.0f} fps.\n"
+                + "\n".join(f"  · {v}" for v in flash_report.violations),
+                UserWarning,
+                stacklevel=2,
+            )
+
         try:
             import torch
 
-            return (torch.from_numpy(batch),)
+            return (torch.from_numpy(batch), flash_summary)
         except ImportError:
-            return (batch,)
+            return (batch, flash_summary)

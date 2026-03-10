@@ -754,6 +754,22 @@ def _synthesize(body: dict, progress_cb=None) -> dict:
     image_b64 = _array_to_b64(result)
     _progress(100, "Done")
 
+    # --- PSE flash safety check ---
+    from depthforge.core.flash_safety import (
+        EPILEPSY_WARNING_SHORT,
+        check_pattern_flash_risk,
+    )
+
+    flash_report = check_pattern_flash_risk(pattern)
+    pse_safe = flash_report.passed
+    pse_risk = flash_report.risk.value
+    pse_warning = None if sp.safe_mode else EPILEPSY_WARNING_SHORT
+    if not flash_report.passed and not sp.safe_mode:
+        pse_warning = (
+            f"PSE RISK [{pse_risk}]: {'; '.join(flash_report.violations[:2])}  "
+            f"Enable safe_mode or use the 'broadcast' preset."
+        )
+
     return {
         "image_b64": image_b64,
         "width": result.shape[1],
@@ -762,6 +778,9 @@ def _synthesize(body: dict, progress_cb=None) -> dict:
         "depth_factor": sp.depth_factor,
         "max_parallax": sp.max_parallax_fraction,
         "preset": preset_name,
+        "pse_safe": pse_safe,
+        "pse_risk": pse_risk,
+        "pse_warning": pse_warning,
     }
 
 

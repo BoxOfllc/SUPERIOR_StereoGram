@@ -360,8 +360,9 @@ class TestComfyUINodes(unittest.TestCase):
         pattern, _ = DF_PatternGen().execute("perlin", "greyscale", 48, 48, 1, 1.0)
         # 3-frame batch: (3, H, W, 3)
         frames = np.stack([_make_depth_tensor(32, 48)[0]] * 3, axis=0)
-        (result,) = node.execute(frames, pattern, temporal_smooth=0.2)
+        result, flash_report = node.execute(frames, pattern, temporal_smooth=0.2)
         self.assertIsNotNone(result)
+        self.assertIsInstance(flash_report, str)
 
     def test_df_video_sequence_single_frame(self):
         from depthforge.comfyui.nodes import DF_PatternGen, DF_VideoSequence
@@ -369,8 +370,9 @@ class TestComfyUINodes(unittest.TestCase):
         node = DF_VideoSequence()
         pattern, _ = DF_PatternGen().execute("perlin", "greyscale", 48, 48, 1, 1.0)
         single = _make_depth_tensor(32, 48)  # (1, H, W, 3)
-        (result,) = node.execute(single, pattern)
+        result, flash_report = node.execute(single, pattern)
         self.assertIsNotNone(result)
+        self.assertIsInstance(flash_report, str)
 
 
 # ===========================================================================

@@ -39,6 +39,38 @@ HTML = r"""<!DOCTYPE html>
     grid-template-areas: "header header" "sidebar main";
   }
 
+  /* ── PSE Banner ─────────────────────────────────────────── */
+  #pse-banner {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 9999;
+    background: #7c2d12;
+    border-top: 2px solid #dc2626;
+    color: #fef2f2;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  #pse-banner-icon { font-size: 18px; flex-shrink: 0; }
+  #pse-banner-text { flex: 1; }
+  #pse-learn { color: #fca5a5; }
+  #pse-dismiss {
+    background: none;
+    border: 1px solid #fca5a5;
+    color: #fef2f2;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 2px 8px;
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  #pse-dismiss:hover { background: #991b1b; }
+
   /* ── Header ─────────────────────────────────────────────── */
   header {
     grid-area: header;
@@ -391,6 +423,20 @@ HTML = r"""<!DOCTYPE html>
 </style>
 </head>
 <body>
+
+<!-- ── PSE Warning Banner ──────────────────────────────────────────── -->
+<div id="pse-banner">
+  <span id="pse-banner-icon">⚠</span>
+  <span id="pse-banner-text">
+    <strong>PHOTOSENSITIVE EPILEPSY WARNING</strong> — DepthForge generates
+    high-contrast patterns that may trigger seizures in people with photosensitive
+    epilepsy.  Enable <strong>Safe Mode</strong> for publicly distributed content.
+    <a id="pse-learn" href="https://www.epilepsy.org.uk/info/photosensitive-epilepsy"
+       target="_blank" rel="noopener">Learn&nbsp;more</a>
+  </span>
+  <button id="pse-dismiss" onclick="document.getElementById('pse-banner').style.display='none'"
+    title="Dismiss warning">✕</button>
+</div>
 
 <!-- ── Header ──────────────────────────────────────────────────────── -->
 <header>

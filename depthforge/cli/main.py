@@ -310,6 +310,7 @@ def sirds(
     from depthforge.core.synthesizer import synthesize
 
     t0 = time.time()
+    _pse_banner(safe_mode, color=color, pattern=pattern)
     _maybe_verbose(verbose, f"Loading depth: {depth}")
 
     # Preset overrides
@@ -395,6 +396,7 @@ def texture(
     from depthforge.core.synthesizer import synthesize
 
     t0 = time.time()
+    _pse_banner(safe_mode, color=color, pattern=pattern)
 
     if preset:
         from depthforge.core.presets import get_preset
@@ -469,6 +471,7 @@ def anaglyph(
     }
 
     t0 = time.time()
+    _pse_banner(safe_mode=False)
     src = _load_source(source)
     raw = _load_depth(depth)
     dep = prep_depth(raw, DepthPrepParams(invert=invert_depth))
@@ -563,6 +566,7 @@ def hidden(
         raise click.UsageError("Provide one of: --shape, --text, or --mask")
 
     t0 = time.time()
+    _pse_banner(safe_mode=False)
 
     if shape:
         msk = shape_to_mask(shape, width, height)
@@ -984,6 +988,59 @@ def estimate_depth(source, output, model, invert, verbose):
 def _maybe_verbose(verbose: bool, msg: str) -> None:
     if verbose:
         click.echo(f"  {msg}")
+
+
+# ---------------------------------------------------------------------------
+# Epilepsy safety helpers
+# ---------------------------------------------------------------------------
+
+# High-risk colour modes and pattern types that warrant a PSE warning.
+_HIGH_RISK_COLORS = {"psychedelic", "color"}
+_HIGH_RISK_PATTERNS = {"plasma", "voronoi", "mandelbrot"}
+
+
+def _pse_banner(safe_mode: bool, color: str = "greyscale", pattern: str = "noise") -> None:
+    """Print a photosensitive epilepsy warning banner to stderr.
+
+    Always emitted for synthesis commands.  The banner is short when
+    safe_mode is on; expanded with additional guidance when it is off
+    and a high-risk colour/pattern combination is detected.
+    """
+
+    if safe_mode:
+        # Brief acknowledgement — user has consciously enabled safe mode.
+        click.echo(
+            "  [PSE] safe_mode ON — contrast and parallax clamped to broadcast limits.",
+            err=True,
+        )
+        return
+
+    c = (color or "greyscale").lower()
+    p = (pattern or "noise").lower()
+    high_risk = c in _HIGH_RISK_COLORS or p in _HIGH_RISK_PATTERNS
+
+    # Always print the short statutory warning.
+    click.echo(
+        "\n"
+        "  ╔══════════════════════════════════════════════════════════════════╗\n"
+        "  ║  PHOTOSENSITIVE EPILEPSY (PSE) WARNING                          ║\n"
+        "  ║  DepthForge generates high-contrast patterns that may trigger   ║\n"
+        "  ║  seizures in people with photosensitive epilepsy.               ║\n"
+        "  ║  Use --safe-mode for publicly distributed content.              ║\n"
+        "  ╚══════════════════════════════════════════════════════════════════╝",
+        err=True,
+    )
+
+    if high_risk:
+        click.echo(
+            f"  [PSE] HIGH-RISK combination detected: color={c!r}  pattern={p!r}\n"
+            "        Michelson contrast may exceed 0.50.  WCAG 2.3.1 / ITU-R BT.1702\n"
+            "        allow at most 3 flash pairs per second at this contrast level.\n"
+            "        Re-run with --safe-mode to clamp contrast automatically.",
+            err=True,
+        )
+
+    click.echo("", err=True)  # blank separator
 
 
 if __name__ == "__main__":

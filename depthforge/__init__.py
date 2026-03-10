@@ -38,6 +38,7 @@ def capability_report() -> str:
     return "DepthForge capabilities:\n" + "\n".join(lines)
 
 
+# Flash / PSE safety
 # Phase 1 core
 from depthforge.core.comfort import (
     ComfortAnalyzer,
@@ -48,6 +49,16 @@ from depthforge.core.comfort import (
     estimate_vergence_strain,
 )
 from depthforge.core.depth_prep import DepthPrepParams, FalloffCurve, RegionMask, prep_depth
+from depthforge.core.flash_safety import (
+    EPILEPSY_WARNING,
+    EPILEPSY_WARNING_SHORT,
+    EpilepticRisk,
+    FlashSafetyConfig,
+    FlashSafetyReport,
+    check_frame_sequence,
+    check_pattern_flash_risk,
+    warn_if_unsafe,
+)
 from depthforge.core.pattern_gen import ColorMode, PatternParams, PatternType, generate_pattern
 
 # Phase 2
