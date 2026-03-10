@@ -1,0 +1,1 @@
+# DepthForge — presets (stub)

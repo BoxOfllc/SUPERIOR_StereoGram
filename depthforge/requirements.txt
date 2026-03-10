@@ -1,0 +1,28 @@
+# DepthForge — Python dependencies
+# ============================================================
+# CORE (required) — engine runs on these alone
+numpy>=1.24
+Pillow>=10.0
+
+# TIER 1 (recommended) — better bilateral filter, faster ops
+# pip install opencv-python
+# opencv-python>=4.8
+
+# TIER 2 (optional) — advanced morphology + signal processing
+# pip install scipy
+# scipy>=1.10
+
+# TIER 3 (optional) — AI depth estimation (MiDaS, ZoeDepth)
+# pip install torch torchvision timm
+# torch>=2.0
+# torchvision>=0.15
+# timm>=0.9
+
+# WEB PREVIEW (optional) — local browser UI
+# pip install fastapi uvicorn python-multipart
+# fastapi>=0.104
+# uvicorn>=0.24
+# python-multipart>=0.0.6
+
+# FULL INSTALL: pip install depthforge[full]
+# DEV INSTALL:  pip install depthforge[dev]

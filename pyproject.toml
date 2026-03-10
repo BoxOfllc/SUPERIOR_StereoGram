@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "depthforge"
+version = "0.5.0"
+description = "Professional stereogram synthesis engine for VFX and creative pipelines"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.9"
+keywords = ["stereogram", "3D", "depth", "vfx", "magic-eye", "SIRDS", "anaglyph"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: End Users/Desktop",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Scientific/Engineering :: Image Processing",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+]
+
+dependencies = [
+    "numpy>=1.22",
+    "Pillow>=9.0",
+]
+
+[project.optional-dependencies]
+cv = [
+    "opencv-python>=4.7",
+]
+scipy = [
+    "scipy>=1.9",
+]
+ai = [
+    "torch>=2.0",
+    "torchvision>=0.15",
+    "timm>=0.9",
+]
+full = [
+    "opencv-python>=4.7",
+    "scipy>=1.9",
+    "torch>=2.0",
+    "torchvision>=0.15",
+    "timm>=0.9",
+    "fastapi>=0.100",
+    "uvicorn>=0.22",
+]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "black>=23.0",
+    "ruff>=0.1",
+    "mypy>=1.0",
+]
+
+[project.scripts]
+depthforge = "depthforge.cli.main:cli"
+
+[project.urls]
+Homepage = "https://github.com/your-org/depthforge"
+Documentation = "https://depthforge.readthedocs.io"
+Repository = "https://github.com/your-org/depthforge"
+Issues = "https://github.com/your-org/depthforge/issues"
+Changelog = "https://github.com/your-org/depthforge/blob/main/docs/CHANGELOG.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["depthforge*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.black]
+line-length = 100
+target-version = ["py39"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"

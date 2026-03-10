@@ -1,0 +1,1 @@
+# DepthForge — patterns (stub)
