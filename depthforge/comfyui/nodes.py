@@ -143,26 +143,119 @@ class _DFNodeBase:
 class DF_DepthPrep(_DFNodeBase):
     """Condition a raw depth map through the 7-stage DepthForge pipeline."""
 
+    DESCRIPTION = (
+        "Condition a raw depth map: smooth, dilate, apply a tone curve, and clamp "
+        "near/far planes before feeding into any stereogram node."
+    )
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "depth_image": ("IMAGE",),
+                "depth_image": (
+                    "IMAGE",
+                    {
+                        "tooltip": (
+                            "Input depth map — white = near (close to camera), "
+                            "black = far (background). Connect an AI depth estimator "
+                            "or load a grayscale depth image."
+                        )
+                    },
+                ),
             },
             "optional": {
-                "invert": ("BOOLEAN", {"default": False}),
+                "invert": (
+                    "BOOLEAN",
+                    {
+                        "default": False,
+                        "tooltip": (
+                            "Flip near/far — enable when your depth map uses the "
+                            "black = near convention (e.g. some MiDaS outputs)."
+                        ),
+                    },
+                ),
                 "bilateral_space": (
                     "FLOAT",
-                    {"default": 5.0, "min": 0.0, "max": 30.0, "step": 0.5},
+                    {
+                        "default": 5.0,
+                        "min": 0.0,
+                        "max": 30.0,
+                        "step": 0.5,
+                        "tooltip": (
+                            "Spatial smoothing radius in pixels for the bilateral filter. "
+                            "Safe range: 3–15. Higher = smoother depth but slower. "
+                            "0 = disabled."
+                        ),
+                    },
                 ),
                 "bilateral_color": (
                     "FLOAT",
-                    {"default": 0.1, "min": 0.01, "max": 1.0, "step": 0.01},
+                    {
+                        "default": 0.1,
+                        "min": 0.01,
+                        "max": 1.0,
+                        "step": 0.01,
+                        "tooltip": (
+                            "Edge-preserving strength of the bilateral filter. "
+                            "Safe range: 0.05–0.3. Lower = sharper edge preservation. "
+                            "Higher = more uniform smoothing across edges."
+                        ),
+                    },
                 ),
-                "dilation_px": ("INT", {"default": 3, "min": 0, "max": 20}),
-                "falloff_curve": (["linear", "gamma", "s_curve", "logarithmic", "exponential"],),
-                "near_plane": ("FLOAT", {"default": 0.0, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "far_plane": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "dilation_px": (
+                    "INT",
+                    {
+                        "default": 3,
+                        "min": 0,
+                        "max": 20,
+                        "tooltip": (
+                            "Expand foreground objects by this many pixels to reduce "
+                            "stereo artifacts at depth edges. Safe range: 1–8. "
+                            "0 = disabled."
+                        ),
+                    },
+                ),
+                "falloff_curve": (
+                    ["linear", "gamma", "s_curve", "logarithmic", "exponential"],
+                    {
+                        "tooltip": (
+                            "Tone curve applied to the depth values. "
+                            "'linear' = neutral passthrough; "
+                            "'gamma' = boost mid-depths; "
+                            "'s_curve' = adds contrast in mid-tones; "
+                            "'logarithmic' = compress highlights; "
+                            "'exponential' = compress shadows."
+                        )
+                    },
+                ),
+                "near_plane": (
+                    "FLOAT",
+                    {
+                        "default": 0.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                        "tooltip": (
+                            "Clip depth values below this threshold — useful to remove "
+                            "noisy near-black background regions. "
+                            "Typical: 0.0–0.1. Must be less than far_plane."
+                        ),
+                    },
+                ),
+                "far_plane": (
+                    "FLOAT",
+                    {
+                        "default": 1.0,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                        "tooltip": (
+                            "Clip depth values above this threshold — useful to remove "
+                            "blown-out near-white foreground noise. "
+                            "Typical: 0.9–1.0. Must be greater than near_plane."
+                        ),
+                    },
+                ),
             },
         }
 
@@ -206,6 +299,11 @@ class DF_DepthPrep(_DFNodeBase):
 class DF_PatternGen(_DFNodeBase):
     """Generate a procedural pattern tile for SIRDS/texture stereograms."""
 
+    DESCRIPTION = (
+        "Generate a tileable procedural pattern tile using one of 7 built-in "
+        "algorithms, ready to feed directly into DF_Stereogram or DF_HiddenImage."
+    )
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
@@ -220,12 +318,81 @@ class DF_PatternGen(_DFNodeBase):
                         "mandelbrot",
                         "dot_matrix",
                     ],
+                    {
+                        "tooltip": (
+                            "Algorithm used to generate the tile. "
+                            "'random_noise' = fastest, classic SIRDS look; "
+                            "'perlin'/'plasma' = organic, smooth textures; "
+                            "'voronoi' = cellular/crystalline; "
+                            "'mandelbrot' = fractal detail; "
+                            "'dot_matrix' = halftone-style dots."
+                        )
+                    },
                 ),
-                "color_mode": (["greyscale", "monochrome", "psychedelic"],),
-                "tile_width": ("INT", {"default": 128, "min": 32, "max": 512}),
-                "tile_height": ("INT", {"default": 128, "min": 32, "max": 512}),
-                "seed": ("INT", {"default": 42, "min": 0, "max": 99999}),
-                "scale": ("FLOAT", {"default": 1.0, "min": 0.1, "max": 8.0, "step": 0.1}),
+                "color_mode": (
+                    ["greyscale", "monochrome", "psychedelic"],
+                    {
+                        "tooltip": (
+                            "Colour palette applied to the generated pattern. "
+                            "'greyscale' = neutral luminance only (recommended for most use); "
+                            "'monochrome' = single saturated hue; "
+                            "'psychedelic' = full multi-hue spectrum."
+                        )
+                    },
+                ),
+                "tile_width": (
+                    "INT",
+                    {
+                        "default": 128,
+                        "min": 32,
+                        "max": 512,
+                        "tooltip": (
+                            "Width of the generated tile in pixels. "
+                            "Must be smaller than the output stereogram width. "
+                            "Larger tiles reduce visible repetition. Typical: 64–256."
+                        ),
+                    },
+                ),
+                "tile_height": (
+                    "INT",
+                    {
+                        "default": 128,
+                        "min": 32,
+                        "max": 512,
+                        "tooltip": (
+                            "Height of the generated tile in pixels. "
+                            "Must be smaller than the output stereogram height. "
+                            "Larger tiles reduce visible repetition. Typical: 64–256."
+                        ),
+                    },
+                ),
+                "seed": (
+                    "INT",
+                    {
+                        "default": 42,
+                        "min": 0,
+                        "max": 99999,
+                        "tooltip": (
+                            "Random seed for reproducible pattern generation. "
+                            "Same seed always produces the same tile. "
+                            "Change to explore different pattern variations."
+                        ),
+                    },
+                ),
+                "scale": (
+                    "FLOAT",
+                    {
+                        "default": 1.0,
+                        "min": 0.1,
+                        "max": 8.0,
+                        "step": 0.1,
+                        "tooltip": (
+                            "Feature size multiplier. "
+                            "1.0 = default scale; <1.0 = finer detail; >1.0 = coarser/larger features. "
+                            "Safe range: 0.5–4.0."
+                        ),
+                    },
+                ),
             },
         }
 
@@ -276,6 +443,11 @@ class DF_PatternGen(_DFNodeBase):
 class DF_PatternLibrary(_DFNodeBase):
     """Access the DepthForge named pattern library (28+ patterns)."""
 
+    DESCRIPTION = (
+        "Select and generate a pattern tile from the DepthForge curated library "
+        "of 28+ named production patterns, each tuned for stereogram use."
+    )
+
     # Build name list at class definition time — safe to do since pattern_library
     # has no heavy imports
     _NAMES: list = []
@@ -296,11 +468,66 @@ class DF_PatternLibrary(_DFNodeBase):
         names = cls._get_names()
         return {
             "required": {
-                "pattern_name": (names,),
-                "width": ("INT", {"default": 128, "min": 32, "max": 512}),
-                "height": ("INT", {"default": 128, "min": 32, "max": 512}),
-                "seed": ("INT", {"default": 42, "min": 0, "max": 99999}),
-                "scale": ("FLOAT", {"default": 1.0, "min": 0.1, "max": 8.0, "step": 0.1}),
+                "pattern_name": (
+                    names,
+                    {
+                        "tooltip": (
+                            "Select from the 28+ pre-designed production patterns. "
+                            "Each pattern is tuned for stereogram use with appropriate "
+                            "frequency, contrast, and tileability."
+                        )
+                    },
+                ),
+                "width": (
+                    "INT",
+                    {
+                        "default": 128,
+                        "min": 32,
+                        "max": 512,
+                        "tooltip": (
+                            "Tile width in pixels. Larger tiles reduce visible repetition "
+                            "in the final stereogram. Typical: 64–256."
+                        ),
+                    },
+                ),
+                "height": (
+                    "INT",
+                    {
+                        "default": 128,
+                        "min": 32,
+                        "max": 512,
+                        "tooltip": (
+                            "Tile height in pixels. Larger tiles reduce visible repetition "
+                            "in the final stereogram. Typical: 64–256."
+                        ),
+                    },
+                ),
+                "seed": (
+                    "INT",
+                    {
+                        "default": 42,
+                        "min": 0,
+                        "max": 99999,
+                        "tooltip": (
+                            "Random seed for reproducible tile generation. "
+                            "Same seed always produces the same pattern. Range: 0–99999."
+                        ),
+                    },
+                ),
+                "scale": (
+                    "FLOAT",
+                    {
+                        "default": 1.0,
+                        "min": 0.1,
+                        "max": 8.0,
+                        "step": 0.1,
+                        "tooltip": (
+                            "Feature size multiplier. "
+                            "1.0 = designed default; 0.5 = finer detail; 2.0 = coarser. "
+                            "Safe range: 0.5–3.0."
+                        ),
+                    },
+                ),
             },
         }
 
@@ -325,25 +552,125 @@ class DF_PatternLibrary(_DFNodeBase):
 class DF_Stereogram(_DFNodeBase):
     """Synthesize a stereogram from a depth map and pattern tile."""
 
+    DESCRIPTION = (
+        "Core stereogram synthesis node — converts a depth map and pattern tile "
+        "into a SIRDS or texture stereogram using the DepthForge engine."
+    )
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "depth_map": ("DEPTH_MAP",),
-                "pattern": ("PATTERN",),
+                "depth_map": (
+                    "DEPTH_MAP",
+                    {
+                        "tooltip": (
+                            "Conditioned depth map (connect DF_DepthPrep output here "
+                            "for best results). White = near, black = far."
+                        )
+                    },
+                ),
+                "pattern": (
+                    "PATTERN",
+                    {
+                        "tooltip": (
+                            "Pattern tile to repeat across the stereogram. "
+                            "Connect DF_PatternGen or DF_PatternLibrary output here."
+                        )
+                    },
+                ),
             },
             "optional": {
-                "depth_factor": ("FLOAT", {"default": 0.35, "min": -1.0, "max": 1.0, "step": 0.01}),
+                "depth_factor": (
+                    "FLOAT",
+                    {
+                        "default": 0.35,
+                        "min": -1.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                        "tooltip": (
+                            "Controls depth strength (stereo pop intensity). "
+                            "0.35 = comfortable pop for most viewers; "
+                            "0.5 = dramatic; above 0.6 risks eye strain. "
+                            "Negative values invert depth. Safe range: 0.1–0.5."
+                        ),
+                    },
+                ),
                 "max_parallax": (
                     "FLOAT",
-                    {"default": 0.033, "min": 0.005, "max": 0.1, "step": 0.001},
+                    {
+                        "default": 0.033,
+                        "min": 0.005,
+                        "max": 0.1,
+                        "step": 0.001,
+                        "tooltip": (
+                            "Maximum pixel shift as a fraction of image width. "
+                            "0.033 = comfortable (≈1/30 of width); "
+                            "0.05 = strong; above 0.07 causes eye strain. "
+                            "Safe range: 0.01–0.05."
+                        ),
+                    },
                 ),
-                "oversample": ("INT", {"default": 1, "min": 1, "max": 4}),
-                "safe_mode": ("BOOLEAN", {"default": False}),
-                "seed": ("INT", {"default": 42, "min": 0, "max": 99999}),
-                "invert_depth": ("BOOLEAN", {"default": False}),
+                "oversample": (
+                    "INT",
+                    {
+                        "default": 1,
+                        "min": 1,
+                        "max": 4,
+                        "tooltip": (
+                            "Anti-aliasing quality multiplier. "
+                            "1 = fastest (no oversampling); "
+                            "2 = smoother edges; "
+                            "4 = maximum quality (4× slower). "
+                            "Use 2 for print output, 1 for screen."
+                        ),
+                    },
+                ),
+                "safe_mode": (
+                    "BOOLEAN",
+                    {
+                        "default": False,
+                        "tooltip": (
+                            "Auto-clamp depth to prevent eye strain violations. "
+                            "Recommended for broadcast, public display, or print. "
+                            "Overrides depth_factor if it exceeds safe limits."
+                        ),
+                    },
+                ),
+                "seed": (
+                    "INT",
+                    {
+                        "default": 42,
+                        "min": 0,
+                        "max": 99999,
+                        "tooltip": (
+                            "Random seed for SIRDS dot pattern generation. "
+                            "Change to explore different dot arrangements "
+                            "with the same depth and pattern inputs."
+                        ),
+                    },
+                ),
+                "invert_depth": (
+                    "BOOLEAN",
+                    {
+                        "default": False,
+                        "tooltip": (
+                            "Swap near/far depth interpretation. "
+                            "Enable if the stereogram appears to pop inward "
+                            "(hollow instead of raised) when cross-fusing."
+                        ),
+                    },
+                ),
                 "preset_name": (
                     ["none", "shallow", "medium", "deep", "cinema", "print", "broadcast"],
+                    {
+                        "tooltip": (
+                            "Apply a named production preset. When set (not 'none'), "
+                            "overrides depth_factor and max_parallax with tuned values: "
+                            "'shallow' = subtle; 'cinema' = max comfortable; "
+                            "'broadcast' = ITU-R safe limits."
+                        )
+                    },
                 ),
             },
         }
@@ -394,19 +721,103 @@ class DF_Stereogram(_DFNodeBase):
 class DF_AnaglyphOut(_DFNodeBase):
     """Generate a red/cyan anaglyph for 3D glasses viewing."""
 
+    DESCRIPTION = (
+        "Convert a source image and depth map into a red/cyan anaglyph "
+        "for viewing with standard 3D glasses, with 5 algorithm modes."
+    )
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "source_image": ("IMAGE",),
-                "depth_map": ("DEPTH_MAP",),
+                "source_image": (
+                    "IMAGE",
+                    {
+                        "tooltip": (
+                            "Source colour image to convert to anaglyph. "
+                            "Connect any RGB image output here."
+                        )
+                    },
+                ),
+                "depth_map": (
+                    "DEPTH_MAP",
+                    {
+                        "tooltip": (
+                            "Depth map controlling per-pixel stereo shift. "
+                            "White = near (maximum shift), black = far (no shift)."
+                        )
+                    },
+                ),
             },
             "optional": {
-                "mode": (["true", "grey", "colour", "half_colour", "optimised"],),
-                "depth_factor": ("FLOAT", {"default": 0.35, "min": 0.0, "max": 1.0, "step": 0.01}),
-                "parallax_px": ("INT", {"default": 30, "min": 1, "max": 200}),
-                "swap_eyes": ("BOOLEAN", {"default": False}),
-                "gamma": ("FLOAT", {"default": 1.0, "min": 0.5, "max": 3.0, "step": 0.1}),
+                "mode": (
+                    ["true", "grey", "colour", "half_colour", "optimised"],
+                    {
+                        "tooltip": (
+                            "Anaglyph algorithm. "
+                            "'optimised' = best colour retention for red/cyan glasses (recommended); "
+                            "'grey' = no colour ghosting, works with all glasses; "
+                            "'true' = simple channel split; "
+                            "'half_colour' = compromise between colour and ghosting."
+                        )
+                    },
+                ),
+                "depth_factor": (
+                    "FLOAT",
+                    {
+                        "default": 0.35,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                        "tooltip": (
+                            "Stereo strength multiplier. "
+                            "0.35 = comfortable; 0.5 = strong. "
+                            "Above 0.5 may cause ghosting with cheap glasses. "
+                            "Safe range: 0.1–0.5."
+                        ),
+                    },
+                ),
+                "parallax_px": (
+                    "INT",
+                    {
+                        "default": 30,
+                        "min": 1,
+                        "max": 200,
+                        "tooltip": (
+                            "Base eye separation in pixels at full depth. "
+                            "30 px = natural for 1080p viewing distance; "
+                            "60 px = strong for 4K. "
+                            "Scale proportionally with resolution."
+                        ),
+                    },
+                ),
+                "swap_eyes": (
+                    "BOOLEAN",
+                    {
+                        "default": False,
+                        "tooltip": (
+                            "Reverse left/right eye assignment. "
+                            "Enable when glasses produce inverted depth "
+                            "(objects appear to recede instead of pop forward)."
+                        ),
+                    },
+                ),
+                "gamma": (
+                    "FLOAT",
+                    {
+                        "default": 1.0,
+                        "min": 0.5,
+                        "max": 3.0,
+                        "step": 0.1,
+                        "tooltip": (
+                            "Gamma correction for display compensation. "
+                            "1.0 = neutral (default); "
+                            "2.2 = standard sRGB monitor; "
+                            "1.8 = legacy Mac display. "
+                            "Safe range: 0.8–2.2."
+                        ),
+                    },
+                ),
             },
         }
 
@@ -456,23 +867,112 @@ class DF_AnaglyphOut(_DFNodeBase):
 class DF_StereoPair(_DFNodeBase):
     """Generate left/right stereo views with occlusion mask."""
 
+    DESCRIPTION = (
+        "Warp a source image into a left/right stereo pair using a depth map, "
+        "outputting separate views, an occlusion mask, and an optional composed layout."
+    )
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "source_image": ("IMAGE",),
-                "depth_map": ("DEPTH_MAP",),
+                "source_image": (
+                    "IMAGE",
+                    {
+                        "tooltip": (
+                            "Source colour image to split into a left/right stereo pair. "
+                            "Connect any RGB image output here."
+                        )
+                    },
+                ),
+                "depth_map": (
+                    "DEPTH_MAP",
+                    {
+                        "tooltip": (
+                            "Depth map controlling per-pixel left/right shift. "
+                            "White = near (maximum disparity), black = far (no shift)."
+                        )
+                    },
+                ),
             },
             "optional": {
                 "max_parallax_fraction": (
                     "FLOAT",
-                    {"default": 0.033, "min": 0.005, "max": 0.1, "step": 0.001},
+                    {
+                        "default": 0.033,
+                        "min": 0.005,
+                        "max": 0.1,
+                        "step": 0.001,
+                        "tooltip": (
+                            "Maximum stereo shift as a fraction of image width. "
+                            "0.033 = comfortable (1/30); 0.05 = strong; "
+                            "above 0.06 causes eye strain. Safe range: 0.01–0.05."
+                        ),
+                    },
                 ),
-                "eye_balance": ("FLOAT", {"default": 0.5, "min": 0.0, "max": 1.0, "step": 0.1}),
-                "background_fill": (["edge", "mirror", "black"],),
-                "feather_px": ("INT", {"default": 3, "min": 0, "max": 20}),
-                "layout": (["separate", "side_by_side", "top_bottom"],),
-                "gap_px": ("INT", {"default": 0, "min": 0, "max": 64}),
+                "eye_balance": (
+                    "FLOAT",
+                    {
+                        "default": 0.5,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.1,
+                        "tooltip": (
+                            "Distributes the total parallax shift between eyes. "
+                            "0.5 = symmetric (recommended); "
+                            "0.0 = shift right eye only; "
+                            "1.0 = shift left eye only."
+                        ),
+                    },
+                ),
+                "background_fill": (
+                    ["edge", "mirror", "black"],
+                    {
+                        "tooltip": (
+                            "How to fill occlusion gaps at image edges after warping. "
+                            "'edge' = repeat edge pixels (most natural); "
+                            "'mirror' = mirror image content; "
+                            "'black' = solid black fill."
+                        )
+                    },
+                ),
+                "feather_px": (
+                    "INT",
+                    {
+                        "default": 3,
+                        "min": 0,
+                        "max": 20,
+                        "tooltip": (
+                            "Soft blend width at occlusion edges in pixels. "
+                            "3–8 recommended for smooth transitions. "
+                            "0 = hard edges (may show artifacts)."
+                        ),
+                    },
+                ),
+                "layout": (
+                    ["separate", "side_by_side", "top_bottom"],
+                    {
+                        "tooltip": (
+                            "Output arrangement for the composed output pin. "
+                            "'separate' = just returns left view as composed; "
+                            "'side_by_side' = SBS format for 3D TVs; "
+                            "'top_bottom' = TB format for VR headsets."
+                        )
+                    },
+                ),
+                "gap_px": (
+                    "INT",
+                    {
+                        "default": 0,
+                        "min": 0,
+                        "max": 64,
+                        "tooltip": (
+                            "Gap in pixels between left and right views in "
+                            "side_by_side or top_bottom layouts. "
+                            "0–4 typical; 0 for most delivery formats."
+                        ),
+                    },
+                ),
             },
         }
 
@@ -547,28 +1047,136 @@ class DF_StereoPair(_DFNodeBase):
 class DF_HiddenImage(_DFNodeBase):
     """Encode a hidden shape or text inside a random dot stereogram."""
 
+    DESCRIPTION = (
+        "Encode a hidden 3D shape, text, or custom mask into a random dot stereogram "
+        "— the hidden object is invisible until cross-fused by the viewer."
+    )
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "pattern": ("PATTERN",),
-                "width": ("INT", {"default": 1920, "min": 256, "max": 4096}),
-                "height": ("INT", {"default": 1080, "min": 128, "max": 2160}),
+                "pattern": (
+                    "PATTERN",
+                    {
+                        "tooltip": (
+                            "Background dot pattern tile. "
+                            "Connect DF_PatternGen or DF_PatternLibrary. "
+                            "Random noise and fine-grain patterns work best."
+                        )
+                    },
+                ),
+                "width": (
+                    "INT",
+                    {
+                        "default": 1920,
+                        "min": 256,
+                        "max": 4096,
+                        "tooltip": (
+                            "Output stereogram width in pixels. "
+                            "Must be at least 4× the pattern tile width."
+                        ),
+                    },
+                ),
+                "height": (
+                    "INT",
+                    {
+                        "default": 1080,
+                        "min": 128,
+                        "max": 2160,
+                        "tooltip": (
+                            "Output stereogram height in pixels. "
+                            "Must be at least 4× the pattern tile height."
+                        ),
+                    },
+                ),
             },
             "optional": {
-                "shape": (["none", "circle", "square", "triangle", "star", "diamond", "arrow"],),
-                "text": ("STRING", {"default": ""}),
-                "font_size": ("INT", {"default": 180, "min": 20, "max": 600}),
+                "shape": (
+                    ["none", "circle", "square", "triangle", "star", "diamond", "arrow"],
+                    {
+                        "tooltip": (
+                            "Built-in geometric shape to encode as the hidden 3D object. "
+                            "Set to 'none' to use text or mask_image input instead. "
+                            "Shape is centred in the frame."
+                        )
+                    },
+                ),
+                "text": (
+                    "STRING",
+                    {
+                        "default": "",
+                        "tooltip": (
+                            "Text string to encode as the hidden object. "
+                            "Leave blank to use shape or mask_image. "
+                            "Short words (3–8 chars) work best. Font is bold sans-serif."
+                        ),
+                    },
+                ),
+                "font_size": (
+                    "INT",
+                    {
+                        "default": 180,
+                        "min": 20,
+                        "max": 600,
+                        "tooltip": (
+                            "Rendered text size in pixels. "
+                            "120–240 recommended for clear legibility in the final stereogram. "
+                            "Too small = hard to fuse; too large = depth artifacts at edges."
+                        ),
+                    },
+                ),
                 "foreground_depth": (
                     "FLOAT",
-                    {"default": 0.75, "min": 0.1, "max": 1.0, "step": 0.05},
+                    {
+                        "default": 0.75,
+                        "min": 0.1,
+                        "max": 1.0,
+                        "step": 0.05,
+                        "tooltip": (
+                            "Depth value for the hidden object — higher values pop further forward. "
+                            "0.75 = strong comfortable pop. Safe range: 0.5–0.9. "
+                            "Must be greater than background_depth."
+                        ),
+                    },
                 ),
                 "background_depth": (
                     "FLOAT",
-                    {"default": 0.10, "min": 0.0, "max": 0.9, "step": 0.05},
+                    {
+                        "default": 0.10,
+                        "min": 0.0,
+                        "max": 0.9,
+                        "step": 0.05,
+                        "tooltip": (
+                            "Depth value for the background plane — lower values recede further. "
+                            "0.10 = naturally receding background. Safe range: 0.0–0.3. "
+                            "Must be less than foreground_depth."
+                        ),
+                    },
                 ),
-                "edge_soften_px": ("INT", {"default": 4, "min": 0, "max": 20}),
-                "mask_image": ("IMAGE",),
+                "edge_soften_px": (
+                    "INT",
+                    {
+                        "default": 4,
+                        "min": 0,
+                        "max": 20,
+                        "tooltip": (
+                            "Gaussian blur radius at the shape boundary in pixels. "
+                            "4–8 recommended for smooth depth transitions at edges. "
+                            "0 = hard edge (may show depth artifacts)."
+                        ),
+                    },
+                ),
+                "mask_image": (
+                    "IMAGE",
+                    {
+                        "tooltip": (
+                            "Optional custom greyscale mask — white areas become the hidden "
+                            "foreground object, black areas become background. "
+                            "Overrides shape and text inputs when connected."
+                        )
+                    },
+                ),
             },
         }
 
@@ -635,22 +1243,105 @@ class DF_HiddenImage(_DFNodeBase):
 class DF_SafetyLimiter(_DFNodeBase):
     """Apply comfort safety limits to a depth map and stereo parameters."""
 
+    DESCRIPTION = (
+        "Clamp a depth map to comfort and PSE safety limits using one of four "
+        "vergence profiles, outputting a corrected depth map and a violation report."
+    )
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "depth_map": ("DEPTH_MAP",),
+                "depth_map": (
+                    "DEPTH_MAP",
+                    {
+                        "tooltip": (
+                            "Raw or conditioned depth map to be safety-checked. "
+                            "Connect directly after DF_DepthPrep or before DF_Stereogram."
+                        )
+                    },
+                ),
             },
             "optional": {
-                "profile": (["conservative", "standard", "relaxed", "cinema"],),
+                "profile": (
+                    ["conservative", "standard", "relaxed", "cinema"],
+                    {
+                        "tooltip": (
+                            "Pre-configured safety profile. "
+                            "'conservative' = minimal depth, safest for all audiences; "
+                            "'standard' = comfortable for healthy adults; "
+                            "'relaxed' = stronger depth, not for extended viewing; "
+                            "'cinema' = maximum comfortable theatrical depth."
+                        )
+                    },
+                ),
                 "max_depth_factor": (
                     "FLOAT",
-                    {"default": 0.6, "min": 0.1, "max": 1.0, "step": 0.05},
+                    {
+                        "default": 0.6,
+                        "min": 0.1,
+                        "max": 1.0,
+                        "step": 0.05,
+                        "tooltip": (
+                            "Hard cap on depth_factor regardless of input. "
+                            "0.6 = safe for most viewers; 0.4 = conservative broadcast limit. "
+                            "Safe range: 0.2–0.7."
+                        ),
+                    },
                 ),
-                "max_gradient": ("FLOAT", {"default": 0.15, "min": 0.01, "max": 0.5, "step": 0.01}),
-                "near_clip": ("FLOAT", {"default": 0.02, "min": 0.0, "max": 0.2, "step": 0.01}),
-                "far_clip": ("FLOAT", {"default": 0.98, "min": 0.8, "max": 1.0, "step": 0.01}),
-                "warn_on_violation": ("BOOLEAN", {"default": True}),
+                "max_gradient": (
+                    "FLOAT",
+                    {
+                        "default": 0.15,
+                        "min": 0.01,
+                        "max": 0.5,
+                        "step": 0.01,
+                        "tooltip": (
+                            "Maximum allowed depth rate-of-change per pixel. "
+                            "0.15 prevents sudden depth jumps that cause eye discomfort. "
+                            "Safe range: 0.05–0.25."
+                        ),
+                    },
+                ),
+                "near_clip": (
+                    "FLOAT",
+                    {
+                        "default": 0.02,
+                        "min": 0.0,
+                        "max": 0.2,
+                        "step": 0.01,
+                        "tooltip": (
+                            "Clip depth values below this threshold — removes extreme "
+                            "near content that causes convergence stress. "
+                            "Safe range: 0.02–0.05."
+                        ),
+                    },
+                ),
+                "far_clip": (
+                    "FLOAT",
+                    {
+                        "default": 0.98,
+                        "min": 0.8,
+                        "max": 1.0,
+                        "step": 0.01,
+                        "tooltip": (
+                            "Clip depth values above this threshold — removes extreme "
+                            "far content that causes divergence stress. "
+                            "Safe range: 0.95–0.99."
+                        ),
+                    },
+                ),
+                "warn_on_violation": (
+                    "BOOLEAN",
+                    {
+                        "default": True,
+                        "tooltip": (
+                            "Print a PSE safety warning to the ComfyUI console when "
+                            "violations are detected and corrected. "
+                            "Recommended to keep enabled for all production work."
+                        ),
+                    },
+                ),
             },
         }
 
@@ -710,11 +1401,24 @@ class DF_SafetyLimiter(_DFNodeBase):
 class DF_QCOverlay(_DFNodeBase):
     """Generate QC visualisation overlays for depth maps."""
 
+    DESCRIPTION = (
+        "Generate quality-control visualisation overlays for a depth map — "
+        "parallax heatmaps, depth band previews, violation highlights, and histograms."
+    )
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "depth_map": ("DEPTH_MAP",),
+                "depth_map": (
+                    "DEPTH_MAP",
+                    {
+                        "tooltip": (
+                            "Depth map to analyse and visualise. "
+                            "Connect DF_DepthPrep or DF_SafetyLimiter output here."
+                        )
+                    },
+                ),
             },
             "optional": {
                 "overlay_type": (
@@ -725,16 +1429,92 @@ class DF_QCOverlay(_DFNodeBase):
                         "safe_zone",
                         "histogram",
                     ],
+                    {
+                        "tooltip": (
+                            "Visualisation mode. "
+                            "'parallax_heatmap' = colour-coded pixel-shift map; "
+                            "'depth_bands' = quantised depth zones; "
+                            "'violation_overlay' = red highlights on problem areas; "
+                            "'safe_zone' = green/red comfort zone indicator; "
+                            "'histogram' = depth value distribution chart."
+                        )
+                    },
                 ),
-                "frame_width": ("INT", {"default": 1920, "min": 128, "max": 7680}),
-                "depth_factor": ("FLOAT", {"default": 0.35, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "frame_width": (
+                    "INT",
+                    {
+                        "default": 1920,
+                        "min": 128,
+                        "max": 7680,
+                        "tooltip": (
+                            "Output frame width used to calculate absolute pixel parallax "
+                            "from depth fractions. Match to your actual output resolution."
+                        ),
+                    },
+                ),
+                "depth_factor": (
+                    "FLOAT",
+                    {
+                        "default": 0.35,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                        "tooltip": (
+                            "Depth strength assumed for the parallax calculation. "
+                            "Should match the depth_factor you will use in DF_Stereogram. "
+                            "Safe range: 0.1–0.6."
+                        ),
+                    },
+                ),
                 "max_parallax": (
                     "FLOAT",
-                    {"default": 0.033, "min": 0.005, "max": 0.1, "step": 0.001},
+                    {
+                        "default": 0.033,
+                        "min": 0.005,
+                        "max": 0.1,
+                        "step": 0.001,
+                        "tooltip": (
+                            "Maximum parallax fraction assumed for violation detection. "
+                            "Should match the max_parallax in DF_Stereogram. "
+                            "Safe range: 0.01–0.05."
+                        ),
+                    },
                 ),
-                "n_bands": ("INT", {"default": 8, "min": 2, "max": 16}),
-                "colormap": (["inferno", "jet", "viridis", "plasma", "turbo"],),
-                "annotate": ("BOOLEAN", {"default": True}),
+                "n_bands": (
+                    "INT",
+                    {
+                        "default": 8,
+                        "min": 2,
+                        "max": 16,
+                        "tooltip": (
+                            "Number of depth quantisation bands for the 'depth_bands' overlay. "
+                            "8 bands recommended for clear zone identification. "
+                            "More bands = finer depth resolution display."
+                        ),
+                    },
+                ),
+                "colormap": (
+                    ["inferno", "jet", "viridis", "plasma", "turbo"],
+                    {
+                        "tooltip": (
+                            "Colour palette for the heatmap overlay. "
+                            "'inferno' = dark-to-yellow (perceptually uniform, recommended); "
+                            "'viridis' = blue-to-yellow; "
+                            "'jet' = classic rainbow; "
+                            "'turbo' = improved rainbow with better contrast."
+                        )
+                    },
+                ),
+                "annotate": (
+                    "BOOLEAN",
+                    {
+                        "default": True,
+                        "tooltip": (
+                            "Add text labels, pixel-count annotations, and scale bars "
+                            "to the overlay image. Disable for clean compositing."
+                        ),
+                    },
+                ),
             },
         }
 
@@ -812,26 +1592,114 @@ class DF_VideoSequence(_DFNodeBase):
     Output: batch of stereogram frames (B, H, W, 4).
     """
 
+    DESCRIPTION = (
+        "Process a batch of depth frames into a temporally-coherent stereogram "
+        "video sequence with flash safety checking and per-frame PSE reporting."
+    )
+
     @classmethod
     def INPUT_TYPES(cls):
         return {
             "required": {
-                "depth_sequence": ("IMAGE",),  # batch of depth frames
-                "pattern": ("PATTERN",),
+                "depth_sequence": (
+                    "IMAGE",
+                    {
+                        "tooltip": (
+                            "Batch of depth frames as a ComfyUI IMAGE tensor (B, H, W, C). "
+                            "Connect a video loader or batch depth estimator output here."
+                        )
+                    },
+                ),
+                "pattern": (
+                    "PATTERN",
+                    {
+                        "tooltip": (
+                            "Pattern tile to use for all frames in the sequence. "
+                            "Keep the same pattern across the sequence for visual coherence."
+                        )
+                    },
+                ),
             },
             "optional": {
-                "depth_factor": ("FLOAT", {"default": 0.35, "min": 0.0, "max": 1.0, "step": 0.01}),
+                "depth_factor": (
+                    "FLOAT",
+                    {
+                        "default": 0.35,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.01,
+                        "tooltip": (
+                            "Stereo depth strength applied to every frame. "
+                            "0.35 = comfortable; 0.5 = strong. "
+                            "Above 0.5 may cause fatigue during extended viewing. "
+                            "Safe range: 0.1–0.5."
+                        ),
+                    },
+                ),
                 "max_parallax": (
                     "FLOAT",
-                    {"default": 0.033, "min": 0.005, "max": 0.1, "step": 0.001},
+                    {
+                        "default": 0.033,
+                        "min": 0.005,
+                        "max": 0.1,
+                        "step": 0.001,
+                        "tooltip": (
+                            "Maximum parallax as a fraction of image width per frame. "
+                            "0.033 = comfortable for video; above 0.05 not recommended "
+                            "for sustained video viewing. Safe range: 0.01–0.04."
+                        ),
+                    },
                 ),
                 "temporal_smooth": (
                     "FLOAT",
-                    {"default": 0.3, "min": 0.0, "max": 1.0, "step": 0.05},
+                    {
+                        "default": 0.3,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.05,
+                        "tooltip": (
+                            "Blend factor with the previous frame's depth to reduce flicker. "
+                            "0.0 = no smoothing (sharp frame cuts); "
+                            "0.3 = subtle (recommended); "
+                            "0.8 = heavy temporal blur. "
+                            "Higher values reduce depth pop during motion."
+                        ),
+                    },
                 ),
-                "safe_mode": ("BOOLEAN", {"default": True}),
-                "preset_name": (["none", "shallow", "medium", "deep", "cinema", "broadcast"],),
-                "seed": ("INT", {"default": 42, "min": 0, "max": 99999}),
+                "safe_mode": (
+                    "BOOLEAN",
+                    {
+                        "default": True,
+                        "tooltip": (
+                            "Auto-clamp depth per frame to prevent sudden depth spikes. "
+                            "Highly recommended for video to avoid jarring depth changes "
+                            "between frames. Leave enabled for all production work."
+                        ),
+                    },
+                ),
+                "preset_name": (
+                    ["none", "shallow", "medium", "deep", "cinema", "broadcast"],
+                    {
+                        "tooltip": (
+                            "Apply a named production preset to all frames. "
+                            "When set (not 'none'), overrides depth_factor and max_parallax. "
+                            "'broadcast' = ITU-R safe limits for television delivery."
+                        )
+                    },
+                ),
+                "seed": (
+                    "INT",
+                    {
+                        "default": 42,
+                        "min": 0,
+                        "max": 99999,
+                        "tooltip": (
+                            "Base random seed — each frame uses seed + frame_index "
+                            "for stable but varied dot patterns across the sequence. "
+                            "Change to get a completely different sequence look."
+                        ),
+                    },
+                ),
                 "fps": (
                     "FLOAT",
                     {
@@ -839,7 +1707,11 @@ class DF_VideoSequence(_DFNodeBase):
                         "min": 1.0,
                         "max": 120.0,
                         "step": 1.0,
-                        "tooltip": "Playback frame rate — used for flash safety check (limit 3 Hz).",
+                        "tooltip": (
+                            "Playback frame rate — used for flash safety check (PSE limit: 3 Hz). "
+                            "Match to your actual output frame rate: 24 = cinema; "
+                            "25 = PAL; 29.97/30 = NTSC; 60 = high frame rate."
+                        ),
                     },
                 ),
             },
