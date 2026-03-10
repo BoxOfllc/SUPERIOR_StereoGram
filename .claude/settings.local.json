@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cd \"E:\\\\SupStudiosWeb3\\\\ProductionTools\\\\SUPERIOR_StereoGram_v0.5\" && .venv/Scripts/python -m ruff check depthforge/ --fix 2>&1)",
+      "Bash(cd \"E:\\\\SupStudiosWeb3\\\\ProductionTools\\\\SUPERIOR_StereoGram_v0.5\" && .venv/Scripts/python -m ruff check depthforge/ --select E501 --no-fix 2>&1 | grep \"^  -->\" | sort -u)",
+      "Bash(cd \"E:\\\\SupStudiosWeb3\\\\ProductionTools\\\\SUPERIOR_StereoGram_v0.5\" && .venv/Scripts/python -m ruff check depthforge/ --no-fix 2>&1 | head -60)",
+      "Bash(cd \"E:\\\\SupStudiosWeb3\\\\ProductionTools\\\\SUPERIOR_StereoGram_v0.5\" && .venv/Scripts/python -m ruff check depthforge/ --no-fix 2>&1 | grep \"^[A-Z][0-9]\\\\{3\\\\}\" | sort | uniq -c | sort -rn)",
+      "Bash(.venv/Scripts/python -m ruff check depthforge/ --no-fix)"
+    ]
+  }
+}

@@ -38,12 +38,12 @@ from typing import Optional
 
 import numpy as np
 
-from depthforge.core.synthesizer import synthesize, StereoParams
-
+from depthforge.core.synthesizer import StereoParams, synthesize
 
 # ---------------------------------------------------------------------------
 # Auto-tune helpers
 # ---------------------------------------------------------------------------
+
 
 def _cpu_count() -> int:
     """Return usable CPU count, capped at 16 to avoid over-subscription."""
@@ -69,11 +69,12 @@ def _optimal_strip_count(height: int, n_threads: int) -> int:
 # Core worker
 # ---------------------------------------------------------------------------
 
+
 def _render_strip(
-    depth_strip: np.ndarray,      # (strip_h, W) float32
-    pattern: np.ndarray,          # (tile_h, tile_w, 4) uint8
+    depth_strip: np.ndarray,  # (strip_h, W) float32
+    pattern: np.ndarray,  # (tile_h, tile_w, 4) uint8
     params: StereoParams,
-    y_offset: int,                # for seeded RNG reproducibility
+    y_offset: int,  # for seeded RNG reproducibility
 ) -> np.ndarray:
     """Render one horizontal strip. Returns RGBA uint8 (strip_h, W, 4)."""
     # Adjust seed so each strip gets a deterministic but distinct RNG state
@@ -84,6 +85,7 @@ def _render_strip(
 # ---------------------------------------------------------------------------
 # TiledRenderer
 # ---------------------------------------------------------------------------
+
 
 class TiledRenderer:
     """
@@ -113,7 +115,7 @@ class TiledRenderer:
     # ------------------------------------------------------------------
     def render(
         self,
-        depth: np.ndarray,    # (H, W) float32
+        depth: np.ndarray,  # (H, W) float32
         pattern: np.ndarray,  # (tile_h, tile_w, 4) uint8
     ) -> np.ndarray:
         """
@@ -190,7 +192,8 @@ class TiledRenderer:
             single_ms, tiled_ms, speedup
         """
         import time
-        from depthforge.core.pattern_gen import generate_pattern, PatternParams, PatternType
+
+        from depthforge.core.pattern_gen import PatternParams, PatternType, generate_pattern
 
         rng = np.random.default_rng(42)
         depth = rng.random((height, width), dtype=np.float32)
@@ -227,6 +230,7 @@ class TiledRenderer:
 # ---------------------------------------------------------------------------
 # Convenience wrapper
 # ---------------------------------------------------------------------------
+
 
 def tile_synthesize(
     depth: np.ndarray,

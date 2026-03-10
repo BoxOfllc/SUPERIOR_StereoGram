@@ -37,7 +37,7 @@ import json
 import os
 import subprocess
 import tempfile
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Optional
 
@@ -46,12 +46,13 @@ from PIL import Image
 
 # OFX bundle/plugin paths
 _PLUGIN_DIR = Path(__file__).parent
-_CMAKE_DIR  = _PLUGIN_DIR
+_CMAKE_DIR = _PLUGIN_DIR
 
 
 # ---------------------------------------------------------------------------
 # OFXParams — Python mirror of the OFX parameter set
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class OFXParams:
@@ -92,31 +93,31 @@ class OFXParams:
     export_profile : str
     """
 
-    mode:            str   = "sirds"
-    preset:          str   = ""
-    depth_factor:    float = 0.35
-    max_parallax:    float = 0.033
-    safe_mode:       bool  = False
-    oversample:      int   = 1
-    seed:            int   = 42
-    invert_depth:    bool  = False
+    mode: str = "sirds"
+    preset: str = ""
+    depth_factor: float = 0.35
+    max_parallax: float = 0.033
+    safe_mode: bool = False
+    oversample: int = 1
+    seed: int = 42
+    invert_depth: bool = False
     bilateral_space: float = 5.0
     bilateral_color: float = 0.1
-    dilation_px:     int   = 3
-    near_plane:      float = 0.0
-    far_plane:       float = 1.0
-    pattern_type:    str   = "random_noise"
-    pattern_name:    str   = ""
-    color_mode:      str   = "rgb"
-    tile_width:      int   = 128
-    tile_height:     int   = 128
-    pattern_scale:   float = 1.0
-    anaglyph_mode:   str   = "color"
-    swap_eyes:       bool  = False
-    gamma:           float = 1.0
-    safety_profile:  str   = "default"
-    auto_safe:       bool  = True
-    export_profile:  str   = "web_srgb"
+    dilation_px: int = 3
+    near_plane: float = 0.0
+    far_plane: float = 1.0
+    pattern_type: str = "random_noise"
+    pattern_name: str = ""
+    color_mode: str = "rgb"
+    tile_width: int = 128
+    tile_height: int = 128
+    pattern_scale: float = 1.0
+    anaglyph_mode: str = "color"
+    swap_eyes: bool = False
+    gamma: float = 1.0
+    safety_profile: str = "default"
+    auto_safe: bool = True
+    export_profile: str = "web_srgb"
 
     def to_cli_args(self) -> list:
         """Convert to a list of CLI argument strings for depthforge.cli.bridge."""
@@ -124,39 +125,41 @@ class OFXParams:
 
         def flag(name, val):
             if isinstance(val, bool):
-                if val: args.append(f"--{name}")
+                if val:
+                    args.append(f"--{name}")
             elif isinstance(val, float):
                 args.extend([f"--{name}", f"{val:.6f}"])
             else:
-                if str(val): args.extend([f"--{name}", str(val)])
+                if str(val):
+                    args.extend([f"--{name}", str(val)])
 
         if self.preset:
             flag("preset", self.preset)
         else:
-            flag("mode",            self.mode)
-            flag("depth-factor",    self.depth_factor)
-            flag("max-parallax",    self.max_parallax)
-            flag("safe-mode",       self.safe_mode)
-            flag("oversample",      self.oversample)
-            flag("seed",            self.seed)
-            flag("invert-depth",    self.invert_depth)
+            flag("mode", self.mode)
+            flag("depth-factor", self.depth_factor)
+            flag("max-parallax", self.max_parallax)
+            flag("safe-mode", self.safe_mode)
+            flag("oversample", self.oversample)
+            flag("seed", self.seed)
+            flag("invert-depth", self.invert_depth)
             flag("bilateral-space", self.bilateral_space)
             flag("bilateral-color", self.bilateral_color)
-            flag("dilation-px",     self.dilation_px)
-            flag("near-plane",      self.near_plane)
-            flag("far-plane",       self.far_plane)
-            flag("pattern-type",    self.pattern_type)
+            flag("dilation-px", self.dilation_px)
+            flag("near-plane", self.near_plane)
+            flag("far-plane", self.far_plane)
+            flag("pattern-type", self.pattern_type)
             if self.pattern_name:
                 flag("pattern-name", self.pattern_name)
-            flag("color-mode",      self.color_mode)
-            flag("tile-width",      self.tile_width)
-            flag("tile-height",     self.tile_height)
-            flag("pattern-scale",   self.pattern_scale)
-            flag("anaglyph-mode",   self.anaglyph_mode)
-            flag("swap-eyes",       self.swap_eyes)
-            flag("gamma",           self.gamma)
-            flag("safety-profile",  self.safety_profile)
-            flag("auto-safe",       self.auto_safe)
+            flag("color-mode", self.color_mode)
+            flag("tile-width", self.tile_width)
+            flag("tile-height", self.tile_height)
+            flag("pattern-scale", self.pattern_scale)
+            flag("anaglyph-mode", self.anaglyph_mode)
+            flag("swap-eyes", self.swap_eyes)
+            flag("gamma", self.gamma)
+            flag("safety-profile", self.safety_profile)
+            flag("auto-safe", self.auto_safe)
 
         flag("export-profile", self.export_profile)
         return args
@@ -176,6 +179,7 @@ class OFXParams:
 # ---------------------------------------------------------------------------
 # OFXBridge — Python bridge to the DepthForge synthesis core
 # ---------------------------------------------------------------------------
+
 
 class OFXBridge:
     """Python bridge that mimics what the C++ OFX plugin does at render time.
@@ -201,10 +205,12 @@ class OFXBridge:
     def __init__(
         self,
         python_exe: str = "",
-        timeout:    int = 60,
-        tmp_dir:    str = "",
+        timeout: int = 60,
+        tmp_dir: str = "",
     ):
-        import sys, shutil
+        import shutil
+        import sys
+
         exe = python_exe or sys.executable
         # Security: validate the executable is a real file, not a shell command
         resolved = shutil.which(exe)
@@ -215,14 +221,14 @@ class OFXBridge:
             )
         self.python_exe = resolved
         # Clamp timeout to a sane range
-        self.timeout    = max(5, min(int(timeout), 600))
-        self.tmp_dir    = tmp_dir or tempfile.gettempdir()
+        self.timeout = max(5, min(int(timeout), 600))
+        self.tmp_dir = tmp_dir or tempfile.gettempdir()
 
     def synthesize(
         self,
-        depth:   np.ndarray,
-        source:  Optional[np.ndarray] = None,
-        params:  Optional[OFXParams]  = None,
+        depth: np.ndarray,
+        source: Optional[np.ndarray] = None,
+        params: Optional[OFXParams] = None,
     ) -> np.ndarray:
         """Synthesize a stereogram from a depth map.
 
@@ -243,7 +249,7 @@ class OFXBridge:
             params = OFXParams()
 
         # ── Write inputs to temp files ──────────────────────────────────
-        td   = Path(self.tmp_dir)
+        td = Path(self.tmp_dir)
         d_path = str(td / "df_bridge_depth.png")
         o_path = str(td / "df_bridge_out.png")
         s_path = str(td / "df_bridge_source.png") if source is not None else ""
@@ -254,8 +260,7 @@ class OFXBridge:
 
         # ── Build and run command ───────────────────────────────────────
         cmd = (
-            [self.python_exe, "-m", "depthforge.cli.bridge",
-             "--depth", d_path, "--out", o_path]
+            [self.python_exe, "-m", "depthforge.cli.bridge", "--depth", d_path, "--out", o_path]
             + params.to_cli_args()
             + (["--source", s_path] if s_path else [])
         )
@@ -279,9 +284,9 @@ class OFXBridge:
 
     def synthesize_direct(
         self,
-        depth:  np.ndarray,
+        depth: np.ndarray,
         source: Optional[np.ndarray] = None,
-        params: Optional[OFXParams]  = None,
+        params: Optional[OFXParams] = None,
     ) -> np.ndarray:
         """Synthesize in-process without subprocess overhead.
 
@@ -297,10 +302,15 @@ class OFXBridge:
         -------
         np.ndarray  uint8 (H, W, 4)
         """
-        from depthforge.core.synthesizer import synthesize, StereoParams
-        from depthforge.core.depth_prep  import prep_depth, DepthPrepParams
-        from depthforge.core.pattern_gen import generate_pattern, PatternParams, PatternType, ColorMode
-        from depthforge.core.presets     import get_preset
+        from depthforge.core.depth_prep import DepthPrepParams, prep_depth
+        from depthforge.core.pattern_gen import (
+            ColorMode,
+            PatternParams,
+            PatternType,
+            generate_pattern,
+        )
+        from depthforge.core.presets import get_preset
+        from depthforge.core.synthesizer import StereoParams, synthesize
 
         if params is None:
             params = OFXParams()
@@ -326,7 +336,7 @@ class OFXBridge:
         except KeyError:
             cm = ColorMode.MONOCHROME
 
-        pat_p   = PatternParams(
+        pat_p = PatternParams(
             pattern_type=pt,
             color_mode=cm,
             tile_width=params.tile_width,
@@ -338,8 +348,8 @@ class OFXBridge:
 
         # Stereo params
         if params.preset:
-            preset   = get_preset(params.preset)
-            sp       = preset.stereo_params
+            preset = get_preset(params.preset)
+            sp = preset.stereo_params
             stereo_p = StereoParams(
                 depth_factor=sp.depth_factor,
                 max_parallax_fraction=sp.max_parallax_fraction,
@@ -363,6 +373,7 @@ class OFXBridge:
 # Build utilities
 # ---------------------------------------------------------------------------
 
+
 def check_build() -> dict:
     """Check whether the compiled OFX plugin exists.
 
@@ -379,7 +390,7 @@ def check_build() -> dict:
 
 def build_bundle(
     cmake_build_type: str = "Release",
-    n_jobs:           int = 0,
+    n_jobs: int = 0,
     extra_cmake_args: list = None,
 ) -> bool:
     """Build the OFX plugin bundle using CMake.
@@ -428,6 +439,7 @@ def plugin_count() -> int:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _save_depth_png(depth: np.ndarray, path: str) -> None:
     """Save a float32 depth map as 16-bit greyscale PNG."""

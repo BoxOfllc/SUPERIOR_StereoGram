@@ -44,9 +44,9 @@ STEREOGRAM_KNOBS        Full knob specification list
 from __future__ import annotations
 
 from depthforge.nuke.gizmo import (
-    DepthForgeGizmo,
-    STEREOGRAM_KNOBS,
     _NUKE_AVAILABLE,
+    STEREOGRAM_KNOBS,
+    DepthForgeGizmo,
 )
 
 __all__ = [
@@ -58,7 +58,7 @@ __all__ = [
 ]
 
 _MENU_INSTALLED = False
-_MENU_REF       = None   # nuke.Menu reference kept alive
+_MENU_REF = None  # nuke.Menu reference kept alive
 
 
 def install(menu_name: str = "DepthForge") -> None:
@@ -81,6 +81,7 @@ def install(menu_name: str = "DepthForge") -> None:
         return
 
     from depthforge.nuke.toolbar import register_menu
+
     _MENU_REF = register_menu(menu_name)
     _MENU_INSTALLED = True
 
@@ -94,13 +95,14 @@ def uninstall() -> None:
 
     try:
         import nuke
+
         menu_bar = nuke.menu("Nuke")
         menu_bar.removeItem("DepthForge")
     except Exception:
         pass
 
     _MENU_INSTALLED = False
-    _MENU_REF       = None
+    _MENU_REF = None
 
 
 def create_node(

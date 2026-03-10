@@ -18,30 +18,32 @@ EXR support requires OpenEXR + Imath. Falls back to TIFF/PNG gracefully.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 import numpy as np
-
 
 # ---------------------------------------------------------------------------
 # Optional imports
 # ---------------------------------------------------------------------------
 
 try:
-    import OpenEXR as _exr
     import Imath as _imath
+    import OpenEXR as _exr
+
     HAS_EXR = True
 except ImportError:
     HAS_EXR = False
 
 try:
     from PIL import Image as _PILImage
+
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
 
 try:
     import cv2 as _cv2
+
     HAS_CV2 = True
 except ImportError:
     HAS_CV2 = False
@@ -50,6 +52,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Read / write depth maps
 # ---------------------------------------------------------------------------
+
 
 def read_depth(path: str) -> np.ndarray:
     """Load a depth map as float32 (H, W) in [0, 1].
@@ -119,6 +122,7 @@ def write_depth(
 # Read / write RGBA
 # ---------------------------------------------------------------------------
 
+
 def read_rgba(path: str) -> np.ndarray:
     """Load any image as RGBA uint8 (H, W, 4).
 
@@ -137,8 +141,8 @@ def read_rgba(path: str) -> np.ndarray:
             bgra = np.stack([bgra, bgra, bgra, np.full_like(bgra, 255)], axis=-1)
         elif bgra.shape[2] == 3:
             alpha = np.full((*bgra.shape[:2], 1), 255, dtype=np.uint8)
-            bgra  = np.concatenate([bgra, alpha], axis=-1)
-        bgra[..., :3] = bgra[..., 2::-1]   # BGR → RGB
+            bgra = np.concatenate([bgra, alpha], axis=-1)
+        bgra[..., :3] = bgra[..., 2::-1]  # BGR → RGB
         return bgra
     raise RuntimeError("Pillow or OpenCV required to read images.")
 
@@ -169,7 +173,7 @@ def write_rgba(rgba: np.ndarray, path: str, dpi: int = 72) -> None:
         else:
             img.save(path, **kwargs)
     elif HAS_CV2:
-        rgb  = rgba[..., :3][..., ::-1]   # RGB → BGR
+        rgb = rgba[..., :3][..., ::-1]  # RGB → BGR
         _cv2.imwrite(str(path), rgb)
     else:
         raise RuntimeError("Pillow or OpenCV required to write images.")
@@ -178,6 +182,7 @@ def write_rgba(rgba: np.ndarray, path: str, dpi: int = 72) -> None:
 # ---------------------------------------------------------------------------
 # Multi-layer EXR
 # ---------------------------------------------------------------------------
+
 
 def write_multilayer(
     layers: dict[str, np.ndarray],
@@ -202,26 +207,18 @@ def write_multilayer(
         If OpenEXR is not available.
     """
     if not HAS_EXR:
-        raise RuntimeError(
-            "Multi-layer EXR requires OpenEXR.\n"
-            "Install: pip install openexr"
-        )
-    import struct
+        raise RuntimeError("Multi-layer EXR requires OpenEXR.\n" "Install: pip install openexr")
     H, W = next(iter(layers.values())).shape[:2]
 
     header = _exr.Header(W, H)
     header["channels"] = {
-        name: _imath.Channel(_imath.PixelType(_imath.PixelType.FLOAT))
-        for name in layers
+        name: _imath.Channel(_imath.PixelType(_imath.PixelType.FLOAT)) for name in layers
     }
     if compress:
         header["compression"] = _imath.Compression(_imath.Compression.ZIP_COMPRESSION)
 
     out = _exr.OutputFile(str(path), header)
-    channel_data = {
-        name: arr.astype(np.float32).tobytes()
-        for name, arr in layers.items()
-    }
+    channel_data = {name: arr.astype(np.float32).tobytes() for name, arr in layers.items()}
     out.writePixels(channel_data)
     out.close()
 
@@ -240,10 +237,7 @@ def read_multilayer(path: str) -> dict[str, np.ndarray]:
         If OpenEXR is not available.
     """
     if not HAS_EXR:
-        raise RuntimeError(
-            "Reading EXR requires OpenEXR.\n"
-            "Install: pip install openexr"
-        )
+        raise RuntimeError("Reading EXR requires OpenEXR.\n" "Install: pip install openexr")
 
     exr_file = _exr.InputFile(str(path))
     header = exr_file.header()
@@ -268,6 +262,7 @@ def read_multilayer(path: str) -> dict[str, np.ndarray]:
 # ---------------------------------------------------------------------------
 # OCIO color transform (stub with graceful fallback)
 # ---------------------------------------------------------------------------
+
 
 def apply_color_transform(
     image: np.ndarray,
@@ -302,7 +297,7 @@ def apply_color_transform(
             cfg = ocio.GetCurrentConfig()
 
         proc = cfg.getProcessor(src_colorspace, dst_colorspace)
-        cpu  = proc.getDefaultCPUProcessor()
+        cpu = proc.getDefaultCPUProcessor()
 
         img = image.astype(np.float32)
         if img.shape[2] == 4:
@@ -317,15 +312,19 @@ def apply_color_transform(
     except ImportError:
         # Fallback: approximate sRGB ↔ Linear
         img = image.astype(np.float32)
-        if src_colorspace.lower() in ("srgb", "srgb - texture") and "linear" in dst_colorspace.lower():
+        if (
+            src_colorspace.lower() in ("srgb", "srgb - texture")
+            and "linear" in dst_colorspace.lower()
+        ):
             # sRGB → Linear
             return np.where(img <= 0.04045, img / 12.92, ((img + 0.055) / 1.055) ** 2.4)
         elif "linear" in src_colorspace.lower() and "srgb" in dst_colorspace.lower():
             # Linear → sRGB
-            return np.where(img <= 0.0031308, img * 12.92, 1.055 * img ** (1/2.4) - 0.055)
+            return np.where(img <= 0.0031308, img * 12.92, 1.055 * img ** (1 / 2.4) - 0.055)
         else:
             # Unknown transform — return unchanged with warning
             import warnings
+
             warnings.warn(
                 f"PyOpenColorIO not available. Color transform {src_colorspace!r} → "
                 f"{dst_colorspace!r} was not applied. Install PyOpenColorIO for full support.",
@@ -339,23 +338,23 @@ def apply_color_transform(
 # Internal EXR helpers
 # ---------------------------------------------------------------------------
 
+
 def _read_exr_depth(path: str) -> np.ndarray:
     if not HAS_EXR:
         raise RuntimeError(
-            f"Cannot read EXR {path}: OpenEXR not installed.\n"
-            "Install: pip install openexr"
+            f"Cannot read EXR {path}: OpenEXR not installed.\n" "Install: pip install openexr"
         )
-    exr  = _exr.InputFile(str(path))
-    hdr  = exr.header()
-    dw   = hdr["dataWindow"]
+    exr = _exr.InputFile(str(path))
+    hdr = exr.header()
+    dw = hdr["dataWindow"]
     W, H = dw.max.x - dw.min.x + 1, dw.max.y - dw.min.y + 1
-    ft   = _imath.PixelType(_imath.PixelType.FLOAT)
+    ft = _imath.PixelType(_imath.PixelType.FLOAT)
 
     # Try Z channel first, then Y, then R
     for ch in ("Z", "Y", "R", "G", "B"):
         if ch in hdr.get("channels", {}):
-            raw  = exr.channel(ch, ft)
-            arr  = np.frombuffer(raw, dtype=np.float32).reshape(H, W)
+            raw = exr.channel(ch, ft)
+            arr = np.frombuffer(raw, dtype=np.float32).reshape(H, W)
             exr.close()
             lo, hi = arr.min(), arr.max()
             if hi > lo:
@@ -403,9 +402,7 @@ def _write_exr_depth(depth: np.ndarray, path: str, channel: str = "Y") -> None:
         raise RuntimeError("OpenEXR required for EXR output.")
     H, W = depth.shape
     header = _exr.Header(W, H)
-    header["channels"] = {
-        channel: _imath.Channel(_imath.PixelType(_imath.PixelType.FLOAT))
-    }
+    header["channels"] = {channel: _imath.Channel(_imath.PixelType(_imath.PixelType.FLOAT))}
     out = _exr.OutputFile(str(path), header)
     out.writePixels({channel: depth.astype(np.float32).tobytes()})
     out.close()
@@ -426,9 +423,9 @@ def _read_exr_rgba(path: str) -> np.ndarray:
         raise RuntimeError("OpenEXR required to read EXR as RGBA.")
     exr = _exr.InputFile(str(path))
     hdr = exr.header()
-    dw  = hdr["dataWindow"]
+    dw = hdr["dataWindow"]
     W, H = dw.max.x - dw.min.x + 1, dw.max.y - dw.min.y + 1
-    ft  = _imath.PixelType(_imath.PixelType.FLOAT)
+    ft = _imath.PixelType(_imath.PixelType.FLOAT)
     channels = hdr.get("channels", {})
 
     def _ch(name):
@@ -447,15 +444,16 @@ def _write_exr_rgba(rgba: np.ndarray, path: str) -> None:
     H, W = rgba.shape[:2]
     header = _exr.Header(W, H)
     header["channels"] = {
-        ch: _imath.Channel(_imath.PixelType(_imath.PixelType.FLOAT))
-        for ch in ("R", "G", "B", "A")
+        ch: _imath.Channel(_imath.PixelType(_imath.PixelType.FLOAT)) for ch in ("R", "G", "B", "A")
     }
     out = _exr.OutputFile(str(path), header)
     img_f = rgba.astype(np.float32) / 255.0
-    out.writePixels({
-        "R": img_f[..., 0].tobytes(),
-        "G": img_f[..., 1].tobytes(),
-        "B": img_f[..., 2].tobytes(),
-        "A": img_f[..., 3].tobytes(),
-    })
+    out.writePixels(
+        {
+            "R": img_f[..., 0].tobytes(),
+            "G": img_f[..., 1].tobytes(),
+            "B": img_f[..., 2].tobytes(),
+            "A": img_f[..., 3].tobytes(),
+        }
+    )
     out.close()

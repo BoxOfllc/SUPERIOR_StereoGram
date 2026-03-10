@@ -43,21 +43,22 @@ from pathlib import Path
 
 try:
     from depthforge.comfyui.nodes import (
+        DF_AnaglyphOut,
         DF_DepthPrep,
+        DF_HiddenImage,
         DF_PatternGen,
         DF_PatternLibrary,
-        DF_Stereogram,
-        DF_AnaglyphOut,
-        DF_StereoPair,
-        DF_HiddenImage,
-        DF_SafetyLimiter,
         DF_QCOverlay,
+        DF_SafetyLimiter,
+        DF_Stereogram,
+        DF_StereoPair,
         DF_VideoSequence,
     )
+
     _NODES_LOADED = True
 except ImportError as e:
     _NODES_LOADED = False
-    _NODES_ERROR  = str(e)
+    _NODES_ERROR = str(e)
 
 
 # ---------------------------------------------------------------------------
@@ -66,34 +67,35 @@ except ImportError as e:
 
 if _NODES_LOADED:
     NODE_CLASS_MAPPINGS = {
-        "DF_DepthPrep":      DF_DepthPrep,
-        "DF_PatternGen":     DF_PatternGen,
+        "DF_DepthPrep": DF_DepthPrep,
+        "DF_PatternGen": DF_PatternGen,
         "DF_PatternLibrary": DF_PatternLibrary,
-        "DF_Stereogram":     DF_Stereogram,
-        "DF_AnaglyphOut":    DF_AnaglyphOut,
-        "DF_StereoPair":     DF_StereoPair,
-        "DF_HiddenImage":    DF_HiddenImage,
-        "DF_SafetyLimiter":  DF_SafetyLimiter,
-        "DF_QCOverlay":      DF_QCOverlay,
-        "DF_VideoSequence":  DF_VideoSequence,
+        "DF_Stereogram": DF_Stereogram,
+        "DF_AnaglyphOut": DF_AnaglyphOut,
+        "DF_StereoPair": DF_StereoPair,
+        "DF_HiddenImage": DF_HiddenImage,
+        "DF_SafetyLimiter": DF_SafetyLimiter,
+        "DF_QCOverlay": DF_QCOverlay,
+        "DF_VideoSequence": DF_VideoSequence,
     }
 
     NODE_DISPLAY_NAME_MAPPINGS = {
-        "DF_DepthPrep":      "DF Depth Prep",
-        "DF_PatternGen":     "DF Pattern Gen",
+        "DF_DepthPrep": "DF Depth Prep",
+        "DF_PatternGen": "DF Pattern Gen",
         "DF_PatternLibrary": "DF Pattern Library",
-        "DF_Stereogram":     "DF Stereogram",
-        "DF_AnaglyphOut":    "DF Anaglyph Out",
-        "DF_StereoPair":     "DF Stereo Pair",
-        "DF_HiddenImage":    "DF Hidden Image",
-        "DF_SafetyLimiter":  "DF Safety Limiter",
-        "DF_QCOverlay":      "DF QC Overlay",
-        "DF_VideoSequence":  "DF Video Sequence",
+        "DF_Stereogram": "DF Stereogram",
+        "DF_AnaglyphOut": "DF Anaglyph Out",
+        "DF_StereoPair": "DF Stereo Pair",
+        "DF_HiddenImage": "DF Hidden Image",
+        "DF_SafetyLimiter": "DF Safety Limiter",
+        "DF_QCOverlay": "DF QC Overlay",
+        "DF_VideoSequence": "DF Video Sequence",
     }
 else:
-    NODE_CLASS_MAPPINGS      = {}
+    NODE_CLASS_MAPPINGS = {}
     NODE_DISPLAY_NAME_MAPPINGS = {}
     import warnings
+
     warnings.warn(
         f"DepthForge ComfyUI nodes failed to load: {_NODES_ERROR}",
         ImportWarning,
@@ -104,6 +106,7 @@ else:
 # ---------------------------------------------------------------------------
 # Install helper
 # ---------------------------------------------------------------------------
+
 
 def install(comfyui_path: str) -> None:
     """Install the DepthForge ComfyUI extension into a ComfyUI installation.
@@ -131,7 +134,7 @@ def install(comfyui_path: str) -> None:
     custom_nodes.mkdir(exist_ok=True)
 
     # Source: the depthforge package directory
-    src = Path(__file__).parent.parent    # depthforge/
+    src = Path(__file__).parent.parent  # depthforge/
     dst = custom_nodes / "depthforge"
 
     if dst.exists() or dst.is_symlink():

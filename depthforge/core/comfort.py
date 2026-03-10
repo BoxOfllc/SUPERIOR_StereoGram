@@ -20,24 +20,25 @@ References
 from __future__ import annotations
 
 import warnings
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Optional
 
 import numpy as np
-
 
 # ---------------------------------------------------------------------------
 # Optional imports
 # ---------------------------------------------------------------------------
 try:
     import cv2 as _cv2
+
     HAS_CV2 = True
 except ImportError:
     HAS_CV2 = False
 
 try:
     from scipy.ndimage import gaussian_filter as _scipy_gauss
+
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
@@ -47,21 +48,24 @@ except ImportError:
 # Vergence profiles
 # ---------------------------------------------------------------------------
 
+
 class VergenceProfile(Enum):
     """Named parallax limit profiles.
 
     Values represent ``max_parallax_fraction`` (fraction of frame width).
     """
-    CONSERVATIVE = 0.020   # EBU R95 / broadcast — 2% of width
-    STANDARD     = 0.033   # 1/30 — classic comfort recommendation
-    RELAXED      = 0.050   # 5% — gallery/art contexts, experienced viewers
-    CINEMA       = 0.022   # SMPTE ST 2098-1
-    CUSTOM       = None    # user-defined
+
+    CONSERVATIVE = 0.020  # EBU R95 / broadcast — 2% of width
+    STANDARD = 0.033  # 1/30 — classic comfort recommendation
+    RELAXED = 0.050  # 5% — gallery/art contexts, experienced viewers
+    CINEMA = 0.022  # SMPTE ST 2098-1
+    CUSTOM = None  # user-defined
 
 
 # ---------------------------------------------------------------------------
 # Safety limiter
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class SafetyLimiterParams:
@@ -91,14 +95,15 @@ class SafetyLimiterParams:
     warn_on_violation : bool
         Issue a Python warning when limits are exceeded. Default True.
     """
+
     max_parallax_fraction: float = 1 / 30
-    max_depth_factor:      float = 0.60
-    max_gradient:          float = 0.15
-    gradient_blur_sigma:   float = 1.5
-    clamp_depth:           bool  = True
-    near_clip:             float = 0.02
-    far_clip:              float = 0.98
-    warn_on_violation:     bool  = True
+    max_depth_factor: float = 0.60
+    max_gradient: float = 0.15
+    gradient_blur_sigma: float = 1.5
+    clamp_depth: bool = True
+    near_clip: float = 0.02
+    far_clip: float = 0.98
+    warn_on_violation: bool = True
 
     @classmethod
     def from_profile(cls, profile: VergenceProfile, **overrides) -> "SafetyLimiterParams":
@@ -128,7 +133,7 @@ class SafetyLimiter:
     def apply(
         self,
         depth: np.ndarray,
-        stereo_params=None,   # StereoParams — avoid circular import
+        stereo_params=None,  # StereoParams — avoid circular import
     ):
         """Apply safety limits to depth and stereo params.
 
@@ -174,6 +179,7 @@ class SafetyLimiter:
         safe_stereo = None
         if stereo_params is not None:
             import copy
+
             safe_stereo = copy.copy(stereo_params)
 
             if safe_stereo.max_parallax_fraction > p.max_parallax_fraction:
@@ -187,8 +193,7 @@ class SafetyLimiter:
                 if abs(safe_stereo.depth_factor) > p.max_depth_factor:
                     new_df = p.max_depth_factor * np.sign(safe_stereo.depth_factor)
                     violations["depth_factor"] = (
-                        f"depth_factor {safe_stereo.depth_factor:.3f} "
-                        f"clamped to {new_df:.3f}."
+                        f"depth_factor {safe_stereo.depth_factor:.3f} " f"clamped to {new_df:.3f}."
                     )
                     safe_stereo.depth_factor = new_df
 
@@ -204,6 +209,7 @@ class SafetyLimiter:
 # ---------------------------------------------------------------------------
 # Comfort report
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ComfortReport:
@@ -236,18 +242,19 @@ class ComfortReport:
     passed : bool
         True if no comfort thresholds were exceeded.
     """
-    overall_score:        float
-    parallax_map:         np.ndarray
-    vergence_map:         np.ndarray
-    gradient_map:         np.ndarray
-    violation_mask:       np.ndarray
+
+    overall_score: float
+    parallax_map: np.ndarray
+    vergence_map: np.ndarray
+    gradient_map: np.ndarray
+    violation_mask: np.ndarray
     window_violation_mask: np.ndarray
-    max_parallax_px:      float
-    max_vergence_deg:     float
-    pct_uncomfortable:    float
-    violations:           list
-    advice:               list
-    passed:               bool
+    max_parallax_px: float
+    max_vergence_deg: float
+    pct_uncomfortable: float
+    violations: list
+    advice: list
+    passed: bool
 
     def summary(self) -> str:
         """Human-readable summary string."""
@@ -277,6 +284,7 @@ class ComfortReport:
 # Comfort analyzer
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class ComfortAnalyzerParams:
     """Configuration for the comfort analyzer.
@@ -300,14 +308,15 @@ class ComfortAnalyzerParams:
     depth_factor : float
         depth_factor being used in synthesis. Needed to convert depth → px.
     """
-    frame_width:          int   = 1920
-    frame_height:         int   = 1080
+
+    frame_width: int = 1920
+    frame_height: int = 1080
     max_parallax_fraction: float = 1 / 30
-    max_vergence_deg:     float = 1.5
-    max_gradient:         float = 0.12
-    screen_distance_mm:   float = 600.0
-    eye_separation_mm:    float = 65.0
-    depth_factor:         float = 0.35
+    max_vergence_deg: float = 1.5
+    max_gradient: float = 0.12
+    screen_distance_mm: float = 600.0
+    eye_separation_mm: float = 65.0
+    depth_factor: float = 0.35
 
 
 class ComfortAnalyzer:
@@ -365,9 +374,9 @@ class ComfortAnalyzer:
         # --- Violation masks ---
         parallax_limit_px = p.frame_width * p.max_parallax_fraction
         violation_mask = (
-            (parallax_map > parallax_limit_px) |
-            (vergence_map > p.max_vergence_deg) |
-            (gradient_map > p.max_gradient)
+            (parallax_map > parallax_limit_px)
+            | (vergence_map > p.max_vergence_deg)
+            | (gradient_map > p.max_gradient)
         ).astype(bool)
 
         window_violation_mask = _detect_window_violations(depth, threshold=0.05)
@@ -378,17 +387,18 @@ class ComfortAnalyzer:
         pct_uncomfortable = float(violation_mask.mean() * 100.0)
 
         # --- Score (0–1): penalise each violation type proportionally ---
-        parallax_score  = 1.0 - min(max_parallax_px / (parallax_limit_px * 1.5 + 1e-6), 1.0)
-        vergence_score  = 1.0 - min(max_vergence_deg / (p.max_vergence_deg * 1.5 + 1e-6), 1.0)
-        gradient_score  = 1.0 - min(gradient_map.max() / (p.max_gradient * 1.5 + 1e-6), 1.0)
-        pct_score       = 1.0 - min(pct_uncomfortable / 10.0, 1.0)   # 10% = 0
+        parallax_score = 1.0 - min(max_parallax_px / (parallax_limit_px * 1.5 + 1e-6), 1.0)
+        vergence_score = 1.0 - min(max_vergence_deg / (p.max_vergence_deg * 1.5 + 1e-6), 1.0)
+        gradient_score = 1.0 - min(gradient_map.max() / (p.max_gradient * 1.5 + 1e-6), 1.0)
+        pct_score = 1.0 - min(pct_uncomfortable / 10.0, 1.0)  # 10% = 0
 
         overall_score = np.clip(
-            0.35 * parallax_score +
-            0.25 * vergence_score +
-            0.20 * gradient_score +
-            0.20 * pct_score,
-            0.0, 1.0
+            0.35 * parallax_score
+            + 0.25 * vergence_score
+            + 0.20 * gradient_score
+            + 0.20 * pct_score,
+            0.0,
+            1.0,
         )
 
         # --- Violations + advice ---
@@ -434,9 +444,7 @@ class ComfortAnalyzer:
             )
 
         if pct_uncomfortable > 5.0:
-            violations.append(
-                f"{pct_uncomfortable:.1f}% of pixels exceed comfort thresholds."
-            )
+            violations.append(f"{pct_uncomfortable:.1f}% of pixels exceed comfort thresholds.")
             advice.append(
                 "Consider switching to the 'shallow' or 'broadcast' preset for this content."
             )
@@ -492,8 +500,7 @@ class ComfortAnalyzer:
             m = mask.astype(np.float32)[:, :, None]
             colour = np.array([r, g, b, 255], dtype=np.float32)
             out[..., :3] = (
-                out[..., :3].astype(np.float32) * (1 - m * alpha) +
-                colour[:3] * m * alpha
+                out[..., :3].astype(np.float32) * (1 - m * alpha) + colour[:3] * m * alpha
             ).astype(np.uint8)
 
         # Parallax violation → red
@@ -515,6 +522,7 @@ class ComfortAnalyzer:
 # ---------------------------------------------------------------------------
 # Vergence strain estimator
 # ---------------------------------------------------------------------------
+
 
 def estimate_vergence_strain(
     depth: np.ndarray,
@@ -539,9 +547,9 @@ def estimate_vergence_strain(
     vmap = vmap * depth_factor
 
     mean_v = float(vmap.mean())
-    max_v  = float(vmap.max())
-    min_v  = float(vmap.min())
-    rng_v  = max_v - min_v
+    max_v = float(vmap.max())
+    min_v = float(vmap.min())
+    rng_v = max_v - min_v
 
     # Rapid spatial vergence change (≥0.5°/px)
     gy, gx = np.gradient(vmap)
@@ -559,17 +567,18 @@ def estimate_vergence_strain(
         rating = "Severe"
 
     return {
-        "mean_vergence_deg":    mean_v,
-        "max_vergence_deg":     max_v,
-        "vergence_range_deg":   rng_v,
+        "mean_vergence_deg": mean_v,
+        "max_vergence_deg": max_v,
+        "vergence_range_deg": rng_v,
         "rapid_change_fraction": rapid_fraction,
-        "strain_rating":        rating,
+        "strain_rating": rating,
     }
 
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _compute_vergence_map(
     depth: np.ndarray,
@@ -601,7 +610,7 @@ def _smooth(depth: np.ndarray, sigma: float) -> np.ndarray:
     if sigma <= 0:
         return depth
     if HAS_CV2:
-        ksize = max(3, int(sigma * 3) | 1)   # odd kernel
+        ksize = max(3, int(sigma * 3) | 1)  # odd kernel
         return _cv2.GaussianBlur(depth, (ksize, ksize), sigma)
     if HAS_SCIPY:
         return _scipy_gauss(depth, sigma=sigma).astype(np.float32)
@@ -609,6 +618,7 @@ def _smooth(depth: np.ndarray, sigma: float) -> np.ndarray:
     k = max(1, int(sigma * 2))
     kernel = np.ones((k * 2 + 1, k * 2 + 1), np.float32) / ((k * 2 + 1) ** 2)
     from numpy.lib.stride_tricks import sliding_window_view
+
     pad = k
     padded = np.pad(depth, pad, mode="edge")
     windows = sliding_window_view(padded, (k * 2 + 1, k * 2 + 1))
@@ -623,17 +633,17 @@ def _detect_window_violations(depth: np.ndarray, threshold: float = 0.05) -> np.
     near_t = 1.0 - threshold
 
     edges = [
-        depth[:border,  :],
+        depth[:border, :],
         depth[-border:, :],
-        depth[:,  :border],
+        depth[:, :border],
         depth[:, -border:],
     ]
     if any(e.max() > near_t for e in edges):
         # Mark frame border region
         mask = np.zeros((H, W), dtype=bool)
-        mask[:border,  :] = True
+        mask[:border, :] = True
         mask[-border:, :] = True
-        mask[:,  :border] = True
+        mask[:, :border] = True
         mask[:, -border:] = True
         violation = mask
 

@@ -32,18 +32,17 @@ code thin and entirely re-uses the core engine.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional, Union
+from typing import Optional
 
 import numpy as np
-from PIL import Image, ImageFilter, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFilter, ImageFont
 
-from depthforge.core.synthesizer import synthesize, StereoParams
-from depthforge.core.pattern_gen import generate_pattern, PatternParams
-
+from depthforge.core.synthesizer import StereoParams, synthesize
 
 # ---------------------------------------------------------------------------
 # Parameters
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class HiddenImageParams:
@@ -70,12 +69,12 @@ class HiddenImageParams:
         Forwarded to the core synthesizer.
     """
 
-    foreground_depth: float       = 0.8
-    background_depth: float       = 0.0
-    edge_soften_px:   int         = 4
-    depth_scale:      float       = 1.0
-    invert_mask:      bool        = False
-    stereo_params:    StereoParams = None   # type: ignore
+    foreground_depth: float = 0.8
+    background_depth: float = 0.0
+    edge_soften_px: int = 4
+    depth_scale: float = 1.0
+    invert_mask: bool = False
+    stereo_params: StereoParams = None  # type: ignore
 
     def __post_init__(self) -> None:
         if self.stereo_params is None:
@@ -90,10 +89,11 @@ class HiddenImageParams:
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def encode_hidden_image(
     pattern: np.ndarray,
-    mask:    np.ndarray,
-    params:  HiddenImageParams = HiddenImageParams(),
+    mask: np.ndarray,
+    params: HiddenImageParams = HiddenImageParams(),
 ) -> np.ndarray:
     """Synthesise a stereogram with a hidden shape encoded in the dot field.
 
@@ -116,7 +116,7 @@ def encode_hidden_image(
 
 
 def mask_to_depth(
-    mask:   np.ndarray,
+    mask: np.ndarray,
     params: HiddenImageParams,
 ) -> np.ndarray:
     """Convert a binary/greyscale mask to a depth map for hidden-image encoding.
@@ -172,13 +172,13 @@ def load_hidden_mask(path: str, target_size: Optional[tuple] = None) -> np.ndarr
 
 
 def text_to_mask(
-    text:       str,
-    width:      int,
-    height:     int,
-    font_size:  int  = 0,
-    font_path:  Optional[str] = None,
-    padding:    int  = 20,
-    center:     bool = True,
+    text: str,
+    width: int,
+    height: int,
+    font_size: int = 0,
+    font_path: Optional[str] = None,
+    padding: int = 20,
+    center: bool = True,
 ) -> np.ndarray:
     """Generate a hidden-image mask from a text string.
 
@@ -200,11 +200,15 @@ def text_to_mask(
     np.ndarray  float32 (height, width) in [0, 1].  Text = white (1.0).
     """
     canvas = Image.new("L", (width, height), 0)
-    draw   = ImageDraw.Draw(canvas)
+    draw = ImageDraw.Draw(canvas)
 
     if font_path:
         try:
-            fs   = font_size if font_size > 0 else _auto_font_size(text, width, height, font_path, padding)
+            fs = (
+                font_size
+                if font_size > 0
+                else _auto_font_size(text, width, height, font_path, padding)
+            )
             font = ImageFont.truetype(font_path, fs)
         except Exception:
             font = ImageFont.load_default()
@@ -212,11 +216,11 @@ def text_to_mask(
         font = ImageFont.load_default()
 
     bbox = draw.textbbox((0, 0), text, font=font)
-    tw   = bbox[2] - bbox[0]
-    th   = bbox[3] - bbox[1]
+    tw = bbox[2] - bbox[0]
+    th = bbox[3] - bbox[1]
 
     if center:
-        x = max(padding, (width  - tw) // 2)
+        x = max(padding, (width - tw) // 2)
         y = max(padding, (height - th) // 2)
     else:
         x, y = padding, padding
@@ -226,9 +230,9 @@ def text_to_mask(
 
 
 def shape_to_mask(
-    shape:   str,
-    width:   int,
-    height:  int,
+    shape: str,
+    width: int,
+    height: int,
     padding: int = 20,
 ) -> np.ndarray:
     """Generate a mask from a named primitive shape.
@@ -245,11 +249,11 @@ def shape_to_mask(
     np.ndarray  float32 (height, width) in [0, 1].
     """
     canvas = Image.new("L", (width, height), 0)
-    draw   = ImageDraw.Draw(canvas)
-    p      = padding
+    draw = ImageDraw.Draw(canvas)
+    p = padding
     cx, cy = width // 2, height // 2
-    rx     = width  // 2 - p
-    ry     = height // 2 - p
+    rx = width // 2 - p
+    ry = height // 2 - p
 
     shape = shape.lower()
 
@@ -271,9 +275,12 @@ def shape_to_mask(
         # Rightward arrow
         hw = rx // 3
         pts = [
-            (cx - rx, cy - hw), (cx, cy - hw),
-            (cx,      cy - ry), (cx + rx, cy),
-            (cx,      cy + ry), (cx, cy + hw),
+            (cx - rx, cy - hw),
+            (cx, cy - hw),
+            (cx, cy - ry),
+            (cx + rx, cy),
+            (cx, cy + ry),
+            (cx, cy + hw),
             (cx - rx, cy + hw),
         ]
         draw.polygon(pts, fill=255)
@@ -283,8 +290,9 @@ def shape_to_mask(
         draw.polygon(pts, fill=255)
 
     else:
-        raise ValueError(f"Unknown shape '{shape}'. "
-                         "Use: circle, square, triangle, star, diamond, arrow")
+        raise ValueError(
+            f"Unknown shape '{shape}'. " "Use: circle, square, triangle, star, diamond, arrow"
+        )
 
     return np.asarray(canvas, dtype=np.float32) / 255.0
 
@@ -293,6 +301,7 @@ def shape_to_mask(
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _soften(mask: np.ndarray, radius: int) -> np.ndarray:
     """Gaussian blur via PIL for edge softening."""
     img = Image.fromarray((mask * 255).astype(np.uint8), mode="L")
@@ -300,41 +309,41 @@ def _soften(mask: np.ndarray, radius: int) -> np.ndarray:
     return np.asarray(img, dtype=np.float32) / 255.0
 
 
-def _auto_font_size(
-    text: str, width: int, height: int, font_path: str, padding: int
-) -> int:
+def _auto_font_size(text: str, width: int, height: int, font_path: str, padding: int) -> int:
     """Binary search for the largest font that fits within the canvas."""
     from PIL import ImageDraw, ImageFont
+
     lo, hi = 8, min(width, height) - padding * 2
-    best   = lo
-    tmp    = Image.new("L", (width, height))
-    draw   = ImageDraw.Draw(tmp)
+    best = lo
+    tmp = Image.new("L", (width, height))
+    draw = ImageDraw.Draw(tmp)
     for _ in range(20):
-        mid  = (lo + hi) // 2
+        mid = (lo + hi) // 2
         font = ImageFont.truetype(font_path, mid)
         bbox = draw.textbbox((0, 0), text, font=font)
         tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
         if tw < width - padding * 2 and th < height - padding * 2:
             best = mid
-            lo   = mid + 1
+            lo = mid + 1
         else:
-            hi   = mid - 1
+            hi = mid - 1
     return best
 
 
-def _star_points(
-    cx: int, cy: int, rx: int, ry: int, n: int
-) -> list:
+def _star_points(cx: int, cy: int, rx: int, ry: int, n: int) -> list:
     """Compute polygon points for an n-pointed star."""
     import math
-    pts    = []
-    outer  = (rx, ry)
-    inner  = (rx // 2, ry // 2)
+
+    pts = []
+    outer = (rx, ry)
+    inner = (rx // 2, ry // 2)
     for i in range(n * 2):
         angle = math.pi / n * i - math.pi / 2
-        r     = outer if i % 2 == 0 else inner
-        pts.append((
-            cx + int(r[0] * math.cos(angle)),
-            cy + int(r[1] * math.sin(angle)),
-        ))
+        r = outer if i % 2 == 0 else inner
+        pts.append(
+            (
+                cx + int(r[0] * math.cos(angle)),
+                cy + int(r[1] * math.sin(angle)),
+            )
+        )
     return pts

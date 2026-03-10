@@ -1,0 +1,223 @@
+{
+  "last_node_id": 11,
+  "last_link_id": 5,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [30, 20],
+      "size": {"0": 780, "1": 70},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "Texture Pattern Workflow — DepthForge v0.5\nUses DF_PatternLibrary to select from 28+ named patterns, producing richly-textured stereograms.\nSwap pattern_name to explore the full library. depth_preview output from DF_PatternLibrary shows the actual tile."},
+      "widgets_values": ["Texture Pattern Workflow — DepthForge v0.5\nUses DF_PatternLibrary to select from 28+ named patterns, producing richly-textured stereograms.\nSwap pattern_name to explore the full library. depth_preview output from DF_PatternLibrary shows the actual tile."]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [30, 130],
+      "size": {"0": 220, "1": 314},
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [1], "slot_index": 0},
+        {"name": "MASK",  "type": "MASK",  "links": [],  "slot_index": 1}
+      ],
+      "title": "Load Depth Map",
+      "properties": {"Node name for S&R": "LoadImage"},
+      "widgets_values": ["depth_test.png", "image"]
+    },
+    {
+      "id": 3,
+      "type": "DF_DepthPrep",
+      "pos": [310, 130],
+      "size": {"0": 245, "1": 272},
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "depth_image", "type": "IMAGE", "link": 1}
+      ],
+      "outputs": [
+        {"name": "depth_map",     "type": "DEPTH_MAP", "links": [2], "slot_index": 0},
+        {"name": "depth_preview", "type": "IMAGE",     "links": [],  "slot_index": 1}
+      ],
+      "title": "DF Depth Prep",
+      "properties": {"Node name for S&R": "DF_DepthPrep"},
+      "widgets_values": [false, 5.0, 0.1, 3, "s_curve", 0.0, 1.0]
+    },
+    {
+      "id": 4,
+      "type": "DF_PatternLibrary",
+      "pos": [310, 450],
+      "size": {"0": 245, "1": 226},
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "pattern",         "type": "PATTERN", "links": [3],  "slot_index": 0},
+        {"name": "pattern_preview", "type": "IMAGE",   "links": [4],  "slot_index": 1},
+        {"name": "pattern_info",    "type": "STRING",  "links": [],   "slot_index": 2}
+      ],
+      "title": "DF Pattern Library",
+      "properties": {"Node name for S&R": "DF_PatternLibrary"},
+      "widgets_values": ["perlin_noise", 128, 128, 42, 1.0]
+    },
+    {
+      "id": 5,
+      "type": "Note",
+      "pos": [310, 710],
+      "size": {"0": 245, "1": 90},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "Try: crystalline, plasma_wave, fine_grain,\ndot_matrix, voronoi_cells, celtic_knot.\nChange seed to vary the texture appearance."},
+      "widgets_values": ["Try: crystalline, plasma_wave, fine_grain,\ndot_matrix, voronoi_cells, celtic_knot.\nChange seed to vary the texture appearance."]
+    },
+    {
+      "id": 6,
+      "type": "DF_Stereogram",
+      "pos": [620, 260],
+      "size": {"0": 245, "1": 272},
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "depth_map", "type": "DEPTH_MAP", "link": 2},
+        {"name": "pattern",   "type": "PATTERN",   "link": 3}
+      ],
+      "outputs": [
+        {"name": "stereogram", "type": "IMAGE", "links": [5], "slot_index": 0}
+      ],
+      "title": "DF Stereogram — Texture Mode",
+      "properties": {"Node name for S&R": "DF_Stereogram"},
+      "widgets_values": [0.3, 0.033, 1, false, 42, false, "none"]
+    },
+    {
+      "id": 7,
+      "type": "Note",
+      "pos": [620, 570],
+      "size": {"0": 245, "1": 90},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "depth_factor 0.3 (slightly lower than SIRDS default)\nbecause textured patterns carry more visual noise.\nS_curve falloff gives smoother depth transitions."},
+      "widgets_values": ["depth_factor 0.3 (slightly lower than SIRDS default)\nbecause textured patterns carry more visual noise.\nS_curve falloff gives smoother depth transitions."]
+    },
+    {
+      "id": 8,
+      "type": "PreviewImage",
+      "pos": [930, 230],
+      "size": {"0": 210, "1": 246},
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 5}
+      ],
+      "outputs": [],
+      "title": "Texture Stereogram Output",
+      "properties": {"Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "PreviewImage",
+      "pos": [930, 510],
+      "size": {"0": 210, "1": 246},
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 4}
+      ],
+      "outputs": [],
+      "title": "Pattern Tile Preview",
+      "properties": {"Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    },
+    {
+      "id": 10,
+      "type": "Note",
+      "pos": [930, 790],
+      "size": {"0": 210, "1": 80},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "Pattern tile preview shows the\nactual texture used as the stereogram\nbase layer before depth encoding."},
+      "widgets_values": ["Pattern tile preview shows the\nactual texture used as the stereogram\nbase layer before depth encoding."]
+    },
+    {
+      "id": 11,
+      "type": "Note",
+      "pos": [30, 480],
+      "size": {"0": 220, "1": 70},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "Depth map: WHITE = near, BLACK = far.\nWorks best with smooth, high-contrast\ngradient depth maps."},
+      "widgets_values": ["Depth map: WHITE = near, BLACK = far.\nWorks best with smooth, high-contrast\ngradient depth maps."]
+    }
+  ],
+  "links": [
+    [1, 2, 0, 3, 0, "IMAGE"],
+    [2, 3, 0, 6, 0, "DEPTH_MAP"],
+    [3, 4, 0, 6, 1, "PATTERN"],
+    [4, 4, 1, 9, 0, "IMAGE"],
+    [5, 6, 0, 8, 0, "IMAGE"]
+  ],
+  "groups": [
+    {
+      "title": "1 \u2014 Load Depth Map",
+      "bounding": [10, 110, 260, 460],
+      "color": "#3f789e",
+      "font_size": 24
+    },
+    {
+      "title": "2 \u2014 Depth Processing",
+      "bounding": [290, 110, 285, 410],
+      "color": "#6f5a32",
+      "font_size": 24
+    },
+    {
+      "title": "3 \u2014 Pattern Library",
+      "bounding": [290, 430, 285, 310],
+      "color": "#4a5a2a",
+      "font_size": 24
+    },
+    {
+      "title": "4 \u2014 Texture Synthesis",
+      "bounding": [600, 240, 285, 440],
+      "color": "#4a6a4a",
+      "font_size": 24
+    },
+    {
+      "title": "5 \u2014 Preview",
+      "bounding": [910, 210, 250, 680],
+      "color": "#6a3a3a",
+      "font_size": 24
+    }
+  ],
+  "config": {},
+  "extra": {"ds": {"scale": 0.85, "offset": [0, 0]}},
+  "version": 0.4
+}

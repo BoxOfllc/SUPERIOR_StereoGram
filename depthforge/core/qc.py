@@ -32,19 +32,22 @@ from typing import Optional, Sequence, Tuple
 
 import numpy as np
 
-
 # ---------------------------------------------------------------------------
 # Optional imports
 # ---------------------------------------------------------------------------
 
 try:
-    from PIL import Image as _PILImage, ImageDraw as _Draw, ImageFont as _Font
+    from PIL import Image as _PILImage
+    from PIL import ImageDraw as _Draw
+    from PIL import ImageFont as _Font
+
     HAS_PIL = True
 except ImportError:
     HAS_PIL = False
 
 try:
     import cv2 as _cv2
+
     HAS_CV2 = True
 except ImportError:
     HAS_CV2 = False
@@ -53,6 +56,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Params
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class QCParams:
@@ -72,16 +76,18 @@ class QCParams:
     label_font_size : int
         Font size for overlay labels. Default 18.
     """
-    frame_width:          int   = 1920
-    depth_factor:         float = 0.35
+
+    frame_width: int = 1920
+    depth_factor: float = 0.35
     max_parallax_fraction: float = 1 / 30
-    colormap:             str   = "inferno"
-    label_font_size:      int   = 18
+    colormap: str = "inferno"
+    label_font_size: int = 18
 
 
 # ---------------------------------------------------------------------------
 # Parallax heatmap
 # ---------------------------------------------------------------------------
+
 
 def parallax_heatmap(
     depth: np.ndarray,
@@ -110,7 +116,7 @@ def parallax_heatmap(
 
     # Parallax in pixels
     limit_px = p.frame_width * p.max_parallax_fraction * p.depth_factor
-    parallax = depth * limit_px * 2   # 0 to ~2× limit for visualisation range
+    parallax = depth * limit_px * 2  # 0 to ~2× limit for visualisation range
 
     # Normalise to [0, 1] for colormap
     norm = np.clip(parallax / (limit_px * 1.5 + 1e-6), 0.0, 1.0)
@@ -130,6 +136,7 @@ def parallax_heatmap(
 # ---------------------------------------------------------------------------
 # Depth band preview
 # ---------------------------------------------------------------------------
+
 
 def depth_band_preview(
     depth: np.ndarray,
@@ -170,8 +177,8 @@ def depth_band_preview(
     band_idx = np.floor(np.clip(depth, 0, 1 - 1e-6) * n_bands).astype(np.int32)
 
     # Map bands to colours
-    lut = np.array(palette, dtype=np.uint8)   # (n_bands, 3)
-    rgb = lut[band_idx]                        # (H, W, 3)
+    lut = np.array(palette, dtype=np.uint8)  # (n_bands, 3)
+    rgb = lut[band_idx]  # (H, W, 3)
     alpha = np.full((H, W, 1), 255, dtype=np.uint8)
     out = np.concatenate([rgb, alpha], axis=-1)
 
@@ -185,6 +192,7 @@ def depth_band_preview(
 # ---------------------------------------------------------------------------
 # Window violation overlay
 # ---------------------------------------------------------------------------
+
 
 def window_violation_overlay(
     depth: np.ndarray,
@@ -226,9 +234,7 @@ def window_violation_overlay(
         m = violation.astype(np.float32)[:, :, None]
         colour = np.array([r, g, b], dtype=np.float32)
         out[..., :3] = np.clip(
-            out[..., :3].astype(np.float32) * (1 - m * alpha) +
-            colour * m * alpha,
-            0, 255
+            out[..., :3].astype(np.float32) * (1 - m * alpha) + colour * m * alpha, 0, 255
         ).astype(np.uint8)
 
     return out
@@ -237,6 +243,7 @@ def window_violation_overlay(
 # ---------------------------------------------------------------------------
 # Safe-zone indicator (side panel)
 # ---------------------------------------------------------------------------
+
 
 def safe_zone_indicator(
     depth: np.ndarray,
@@ -276,23 +283,23 @@ def safe_zone_indicator(
     panel[..., 3] = 255
 
     # Traffic light zones
-    green_top  = 0
-    green_bot  = int(H * 0.6)
+    green_top = 0
+    green_bot = int(H * 0.6)
     yellow_top = green_bot
     yellow_bot = H
-    red_top    = int(H * 0.9)
-    red_bot    = H
+    red_top = int(H * 0.9)
+    red_bot = H
 
-    panel[green_top:green_bot,  :, :3] = [50,  180,  50]
-    panel[yellow_top:yellow_bot, :, :3] = [200, 180,  30]
-    panel[red_top:red_bot,       :, :3] = [200,  40,  40]
+    panel[green_top:green_bot, :, :3] = [50, 180, 50]
+    panel[yellow_top:yellow_bot, :, :3] = [200, 180, 30]
+    panel[red_top:red_bot, :, :3] = [200, 40, 40]
 
     # Pointer line showing current max parallax fraction
     limit_px = p.frame_width * p.max_parallax_fraction
     actual_max = float((depth * limit_px * p.depth_factor).max())
     pointer_frac = min(actual_max / (limit_px * 1.5 + 1e-6), 1.0)
     pointer_y = int(pointer_frac * H)
-    panel[max(0, pointer_y - 2): pointer_y + 3, :, :3] = [255, 255, 255]
+    panel[max(0, pointer_y - 2) : pointer_y + 3, :, :3] = [255, 255, 255]
 
     out = np.concatenate([depth_img, panel], axis=1)
     return out
@@ -301,6 +308,7 @@ def safe_zone_indicator(
 # ---------------------------------------------------------------------------
 # Depth histogram
 # ---------------------------------------------------------------------------
+
 
 def depth_histogram(
     depth: np.ndarray,
@@ -353,6 +361,7 @@ def depth_histogram(
 # ---------------------------------------------------------------------------
 # Comparison grid
 # ---------------------------------------------------------------------------
+
 
 def comparison_grid(
     images: Sequence[np.ndarray],
@@ -415,11 +424,11 @@ def comparison_grid(
         elif img.shape[2] == 3:
             img = np.concatenate([img, np.full((*img.shape[:2], 1), 255, np.uint8)], axis=-1)
 
-        out[y0:y0 + H, x0:x0 + W] = img
+        out[y0 : y0 + H, x0 : x0 + W] = img
 
         # Label
         if labels and idx < len(labels) and HAS_PIL:
-            lbl_arr = out[y0 + H: y0 + H + label_h, x0: x0 + W]
+            lbl_arr = out[y0 + H : y0 + H + label_h, x0 : x0 + W]
             if lbl_arr.size > 0:
                 lbl_img = _PILImage.fromarray(lbl_arr)
                 draw = _Draw.Draw(lbl_img)
@@ -428,7 +437,7 @@ def comparison_grid(
                 except Exception:
                     font = _Font.load_default()
                 draw.text((4, 4), labels[idx], fill=(*label_colour, 255), font=font)
-                out[y0 + H: y0 + H + label_h, x0: x0 + W] = np.array(lbl_img)
+                out[y0 + H : y0 + H + label_h, x0 : x0 + W] = np.array(lbl_img)
 
     return out
 
@@ -437,6 +446,7 @@ def comparison_grid(
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _apply_colormap(norm: np.ndarray, name: str) -> np.ndarray:
     """Map normalised [0,1] float array to RGB uint8 using named colormap."""
     t = np.clip(norm, 0.0, 1.0)
@@ -444,24 +454,24 @@ def _apply_colormap(norm: np.ndarray, name: str) -> np.ndarray:
     if name == "inferno":
         # Perceptually uniform dark-to-bright
         r = np.clip(3.0 * t - 0.5, 0, 1)
-        g = np.clip(2.0 * t * t,    0, 1)
-        b = np.clip(1.0 - 2.0 * t,  0, 1)
+        g = np.clip(2.0 * t * t, 0, 1)
+        b = np.clip(1.0 - 2.0 * t, 0, 1)
     elif name == "jet":
         r = np.clip(1.5 - np.abs(4 * t - 3), 0, 1)
         g = np.clip(1.5 - np.abs(4 * t - 2), 0, 1)
         b = np.clip(1.5 - np.abs(4 * t - 1), 0, 1)
     elif name == "viridis":
-        r = np.clip(0.3 + 0.7 * t,         0, 1)
-        g = np.clip(0.5 * t + 0.1,          0, 1)
-        b = np.clip(0.8 - 0.8 * t,          0, 1)
+        r = np.clip(0.3 + 0.7 * t, 0, 1)
+        g = np.clip(0.5 * t + 0.1, 0, 1)
+        b = np.clip(0.8 - 0.8 * t, 0, 1)
     elif name == "plasma":
-        r = np.clip(0.5 + 1.0 * t,          0, 1)
-        g = np.clip(0.1 + 0.5 * t * t,      0, 1)
-        b = np.clip(0.8 - 1.2 * t,          0, 1)
+        r = np.clip(0.5 + 1.0 * t, 0, 1)
+        g = np.clip(0.1 + 0.5 * t * t, 0, 1)
+        b = np.clip(0.8 - 1.2 * t, 0, 1)
     elif name == "turbo":
         r = np.clip(np.sin(np.pi * t * 0.9 + 0.1), 0, 1)
-        g = np.clip(np.sin(np.pi * t),               0, 1)
-        b = np.clip(np.cos(np.pi * t * 0.8),         0, 1)
+        g = np.clip(np.sin(np.pi * t), 0, 1)
+        b = np.clip(np.cos(np.pi * t * 0.8), 0, 1)
     else:
         # greyscale fallback
         r = g = b = t
@@ -478,12 +488,10 @@ def _generate_band_palette(n: int) -> list:
         # HSV → RGB (simple, no imports needed)
         h6 = h * 6
         hi = int(h6) % 6
-        f  = h6 - int(h6)
+        f = h6 - int(h6)
         p, q, t = 0.2, 0.2 + 0.8 * (1 - f), 0.2 + 0.8 * f
         v = 0.9
-        cols = [
-            (v, t, p), (q, v, p), (p, v, t), (p, q, v), (t, p, v), (v, p, q)
-        ]
+        cols = [(v, t, p), (q, v, p), (p, v, t), (p, q, v), (t, p, v), (v, p, q)]
         r, g, b = cols[hi]
         palette.append((int(r * 255), int(g * 255), int(b * 255)))
     return palette
@@ -498,13 +506,13 @@ def _add_colourbar(img: np.ndarray, limit_px: float, params: QCParams) -> np.nda
         t = row / H
         rgb = _apply_colormap(np.array([[t]]), params.colormap)[0, 0]
         bar[row, :10, :3] = rgb
-        bar[row, :10, 3]  = 255
+        bar[row, :10, 3] = 255
 
     # Draw limit line
     limit_frac = min(limit_px / (limit_px * 1.5 + 1e-6), 1.0)
     ly = int(limit_frac * H)
-    bar[max(0, ly-1):ly+2, :, :3] = [255, 255, 255]
-    bar[max(0, ly-1):ly+2, :, 3]  = 255
+    bar[max(0, ly - 1) : ly + 2, :, :3] = [255, 255, 255]
+    bar[max(0, ly - 1) : ly + 2, :, 3] = 255
 
     return np.concatenate([img, bar], axis=1)
 

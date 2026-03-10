@@ -28,22 +28,24 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import List, Optional, Tuple
+from typing import List, Optional
 
 import numpy as np
 
 try:
     import cv2
+
     _CV2 = True
 except ImportError:
     _CV2 = False
 
 try:
     from scipy.ndimage import (
-        gaussian_filter,
         binary_dilation,
+        gaussian_filter,
         grey_dilation,
     )
+
     _SCIPY = True
 except ImportError:
     _SCIPY = False
@@ -53,18 +55,21 @@ except ImportError:
 # Curve types
 # ---------------------------------------------------------------------------
 
+
 class FalloffCurve(Enum):
     """Built-in depth remapping curves."""
-    LINEAR      = auto()   # identity — no remap
-    GAMMA       = auto()   # power-law (gamma > 1 = compress near, expand far)
-    S_CURVE     = auto()   # smooth ease-in/out (cosine)
-    LOGARITHMIC = auto()   # emphasises near depth differences
-    EXPONENTIAL = auto()   # emphasises far depth differences
+
+    LINEAR = auto()  # identity — no remap
+    GAMMA = auto()  # power-law (gamma > 1 = compress near, expand far)
+    S_CURVE = auto()  # smooth ease-in/out (cosine)
+    LOGARITHMIC = auto()  # emphasises near depth differences
+    EXPONENTIAL = auto()  # emphasises far depth differences
 
 
 # ---------------------------------------------------------------------------
 # Region mask descriptor
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class RegionMask:
@@ -78,13 +83,15 @@ class RegionMask:
         Depth multiplier where mask == 1.  0.0 = flatten to zero parallax;
         0.5 = halve depth; 1.0 = no change; 2.0 = double depth.
     """
-    mask:       np.ndarray
+
+    mask: np.ndarray
     multiplier: float = 0.0
 
 
 # ---------------------------------------------------------------------------
 # Parameter dataclass
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class DepthPrepParams:
@@ -123,23 +130,24 @@ class DepthPrepParams:
         Gaussian smooth.
     """
 
-    normalise:             bool              = True
-    invert:                bool              = False
-    bilateral_sigma_space: float             = 5.0
-    bilateral_sigma_color: float             = 0.1
-    dilation_px:           int               = 3
-    smooth_passes:         int               = 1
-    falloff_curve:         FalloffCurve      = FalloffCurve.LINEAR
-    falloff_gamma:         float             = 1.0
-    near_plane:            float             = 0.0
-    far_plane:             float             = 1.0
-    region_masks:          List[RegionMask]  = field(default_factory=list)
-    edge_preserve:         bool              = True
+    normalise: bool = True
+    invert: bool = False
+    bilateral_sigma_space: float = 5.0
+    bilateral_sigma_color: float = 0.1
+    dilation_px: int = 3
+    smooth_passes: int = 1
+    falloff_curve: FalloffCurve = FalloffCurve.LINEAR
+    falloff_gamma: float = 1.0
+    near_plane: float = 0.0
+    far_plane: float = 1.0
+    region_masks: List[RegionMask] = field(default_factory=list)
+    edge_preserve: bool = True
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def prep_depth(
     raw: np.ndarray,
@@ -173,9 +181,7 @@ def prep_depth(
     if params.bilateral_sigma_space > 0:
         for _ in range(params.smooth_passes):
             if params.edge_preserve:
-                d = _bilateral(d,
-                               params.bilateral_sigma_space,
-                               params.bilateral_sigma_color)
+                d = _bilateral(d, params.bilateral_sigma_space, params.bilateral_sigma_color)
             else:
                 d = _gaussian(d, params.bilateral_sigma_space)
 
@@ -210,11 +216,12 @@ def depth_from_image(path: str, params: Optional[DepthPrepParams] = None) -> np.
     or any Pillow-readable format.
     """
     from PIL import Image
+
     img = Image.open(path)
     # Handle 16-bit TIFFs
     if img.mode == "I;16":
         arr = np.frombuffer(img.tobytes(), dtype=np.uint16).reshape(img.size[::-1])
-        d   = arr.astype(np.float32) / 65535.0
+        d = arr.astype(np.float32) / 65535.0
     elif img.mode in ("RGB", "RGBA"):
         # Use luminance of colour depth maps
         d = np.asarray(img.convert("L"), dtype=np.float32) / 255.0
@@ -228,7 +235,7 @@ def depth_from_image(path: str, params: Optional[DepthPrepParams] = None) -> np.
 def compute_vergence_map(
     depth: np.ndarray,
     eye_sep_fraction: float = 0.06,
-    screen_distance:  float = 600.0,   # mm
+    screen_distance: float = 600.0,  # mm
 ) -> np.ndarray:
     """Estimate vergence angle (degrees) per pixel.
 
@@ -242,13 +249,13 @@ def compute_vergence_map(
     # Simplified: vergence ≈ atan(eye_sep / viewing_distance_at_depth)
     # depth=1 → at screen, depth=0 → far background
     viewing_dist = screen_distance * (1.0 + (1.0 - depth) * 2.0)
-    eye_sep_mm   = screen_distance * eye_sep_fraction
+    eye_sep_mm = screen_distance * eye_sep_fraction
     vergence_rad = np.arctan2(eye_sep_mm, viewing_dist)
     return np.degrees(vergence_rad).astype(np.float32)
 
 
 def detect_window_violations(
-    depth:     np.ndarray,
+    depth: np.ndarray,
     threshold: float = 0.05,
 ) -> np.ndarray:
     """Detect stereo window violations — regions where objects incorrectly
@@ -264,15 +271,15 @@ def detect_window_violations(
     H, W = depth.shape
     violation = np.zeros((H, W), dtype=bool)
 
-    border = 5   # pixel border width to check
+    border = 5  # pixel border width to check
     near_t = 1.0 - threshold
 
     # Check all four edges: if near content extends to within 'border' px
     for edge_slice, interior_slice in [
-        (depth[:border,  :],    depth[border:border*3,   :]),    # top
-        (depth[-border:, :],    depth[-border*3:-border, :]),    # bottom
-        (depth[:,  :border],    depth[:, border:border*3]),      # left
-        (depth[:, -border:],    depth[:, -border*3:-border]),    # right
+        (depth[:border, :], depth[border : border * 3, :]),  # top
+        (depth[-border:, :], depth[-border * 3 : -border, :]),  # bottom
+        (depth[:, :border], depth[:, border : border * 3]),  # left
+        (depth[:, -border:], depth[:, -border * 3 : -border]),  # right
     ]:
         if edge_slice.max() > near_t:
             # Near object detected at edge — flag the border region
@@ -285,6 +292,7 @@ def detect_window_violations(
 # ---------------------------------------------------------------------------
 # Internal — normalise / convert
 # ---------------------------------------------------------------------------
+
 
 def _to_float(arr: np.ndarray) -> np.ndarray:
     """Collapse to 2-D float32."""
@@ -310,15 +318,14 @@ def _normalise(d: np.ndarray) -> np.ndarray:
 # Internal — smoothing
 # ---------------------------------------------------------------------------
 
+
 def _bilateral(d: np.ndarray, sigma_space: float, sigma_color: float) -> np.ndarray:
     """Edge-aware bilateral filter.  Prefers OpenCV; falls back to iterative."""
     if _CV2:
         # cv2 bilateral needs uint8 or float32; d is float32 [0,1]
-        d8     = (d * 255.0).astype(np.uint8)
+        d8 = (d * 255.0).astype(np.uint8)
         d_size = max(3, int(sigma_space) * 2 + 1)
-        smooth = cv2.bilateralFilter(d8, d_size,
-                                     sigma_color * 255,
-                                     sigma_space)
+        smooth = cv2.bilateralFilter(d8, d_size, sigma_color * 255, sigma_space)
         return smooth.astype(np.float32) / 255.0
 
     if _SCIPY:
@@ -349,12 +356,12 @@ def _box_blur(d: np.ndarray, radius: int) -> np.ndarray:
 # Internal — dilation
 # ---------------------------------------------------------------------------
 
+
 def _dilate(d: np.ndarray, radius: int) -> np.ndarray:
     """Morphological grey-scale dilation (expand near / bright regions)."""
     if _CV2:
-        k   = cv2.getStructuringElement(
-                  cv2.MORPH_ELLIPSE, (radius * 2 + 1, radius * 2 + 1))
-        d8  = (d * 255).astype(np.uint8)
+        k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (radius * 2 + 1, radius * 2 + 1))
+        d8 = (d * 255).astype(np.uint8)
         out = cv2.dilate(d8, k)
         return out.astype(np.float32) / 255.0
 
@@ -363,14 +370,16 @@ def _dilate(d: np.ndarray, radius: int) -> np.ndarray:
 
     # Pure NumPy sliding-window max (slow but correct)
     from numpy.lib.stride_tricks import sliding_window_view
+
     pad = np.pad(d, radius, mode="edge")
-    win = sliding_window_view(pad, (radius*2+1, radius*2+1))
+    win = sliding_window_view(pad, (radius * 2 + 1, radius * 2 + 1))
     return win.max(axis=(-2, -1)).astype(np.float32)
 
 
 # ---------------------------------------------------------------------------
 # Internal — falloff curves
 # ---------------------------------------------------------------------------
+
 
 def _apply_curve(
     d: np.ndarray,
@@ -397,26 +406,27 @@ def _apply_curve(
 # Internal — region masks
 # ---------------------------------------------------------------------------
 
+
 def _apply_region_mask(d: np.ndarray, rm: RegionMask) -> np.ndarray:
     mask = np.clip(rm.mask.astype(np.float32), 0.0, 1.0)
     if mask.shape != d.shape:
         # Resize mask to match depth
         if _CV2:
-            mask = cv2.resize(mask, (d.shape[1], d.shape[0]),
-                              interpolation=cv2.INTER_LINEAR)
+            mask = cv2.resize(mask, (d.shape[1], d.shape[0]), interpolation=cv2.INTER_LINEAR)
         else:
             from PIL import Image
+
             m_img = Image.fromarray((mask * 255).astype(np.uint8))
             m_img = m_img.resize((d.shape[1], d.shape[0]), Image.BILINEAR)
-            mask  = np.asarray(m_img).astype(np.float32) / 255.0
+            mask = np.asarray(m_img).astype(np.float32) / 255.0
     multiplied = d * rm.multiplier
     return (d * (1.0 - mask) + multiplied * mask).astype(np.float32)
 
 
 def _border_mask(H: int, W: int, border: int) -> np.ndarray:
     m = np.zeros((H, W), dtype=bool)
-    m[:border,  :] = True
+    m[:border, :] = True
     m[-border:, :] = True
-    m[:,  :border] = True
+    m[:, :border] = True
     m[:, -border:] = True
     return m

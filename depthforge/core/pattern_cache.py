@@ -38,13 +38,13 @@ from typing import Optional, Union
 import numpy as np
 from PIL import Image
 
-from depthforge.core.pattern_gen import generate_pattern, PatternParams
-from depthforge.core.pattern_library import get_pattern, PatternEntry
-
+from depthforge.core.pattern_gen import PatternParams, generate_pattern
+from depthforge.core.pattern_library import get_pattern
 
 # ---------------------------------------------------------------------------
 # Cache key helpers
 # ---------------------------------------------------------------------------
+
 
 def _params_key(params: PatternParams) -> str:
     """Deterministic hash of PatternParams for use as cache key."""
@@ -76,6 +76,7 @@ def _file_key(path: Union[str, Path], width: int, height: int) -> str:
 # PatternCache
 # ---------------------------------------------------------------------------
 
+
 class PatternCache:
     """
     Thread-safe LRU cache for generated pattern tiles.
@@ -101,7 +102,7 @@ class PatternCache:
     def _get_raw(self, key: str) -> Optional[np.ndarray]:
         with self._lock:
             if key in self._store:
-                self._store.move_to_end(key)   # mark as recently used
+                self._store.move_to_end(key)  # mark as recently used
                 self._hits += 1
                 return self._store[key]
             self._misses += 1
@@ -170,7 +171,7 @@ class PatternCache:
             iw, ih = img.size
             if iw < width or ih < height:
                 # tile the source image
-                reps_x = -(-width // iw)   # ceiling division
+                reps_x = -(-width // iw)  # ceiling division
                 reps_y = -(-height // ih)
                 canvas = Image.new("RGBA", (iw * reps_x, ih * reps_y))
                 for ty in range(reps_y):
@@ -191,6 +192,7 @@ class PatternCache:
 
         Returns immediately; generation happens concurrently.
         """
+
         def _generate(p: PatternParams) -> None:
             self.get(p)
 
@@ -234,10 +236,7 @@ class PatternCache:
 
     def __repr__(self) -> str:
         s = self.stats()
-        return (
-            f"PatternCache(size={s['size']}/{s['max_tiles']}, "
-            f"hit_rate={s['hit_rate']:.1%})"
-        )
+        return f"PatternCache(size={s['size']}/{s['max_tiles']}, " f"hit_rate={s['hit_rate']:.1%})"
 
 
 # ---------------------------------------------------------------------------

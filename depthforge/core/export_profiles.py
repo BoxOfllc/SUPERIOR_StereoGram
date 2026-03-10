@@ -37,8 +37,7 @@ Public API
 
 from __future__ import annotations
 
-import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
 from typing import Optional, Union
@@ -46,39 +45,38 @@ from typing import Optional, Union
 import numpy as np
 from PIL import Image
 
-from depthforge import HAS_OCIO
-
-
 # ---------------------------------------------------------------------------
 # Enums
 # ---------------------------------------------------------------------------
 
+
 class ExportProfile(Enum):
-    PRINT_CMYK   = "print_cmyk"
-    WEB_SRGB     = "web_srgb"
-    BROADCAST    = "broadcast"
-    DCI_P3       = "dci_p3"
-    CUSTOM       = "custom"
+    PRINT_CMYK = "print_cmyk"
+    WEB_SRGB = "web_srgb"
+    BROADCAST = "broadcast"
+    DCI_P3 = "dci_p3"
+    CUSTOM = "custom"
 
 
 class OutputFormat(Enum):
-    PNG  = "png"
+    PNG = "png"
     TIFF = "tiff"
     JPEG = "jpeg"
-    EXR  = "exr"
+    EXR = "exr"
 
 
 class ColourSpace(Enum):
-    SRGB         = "sRGB"
-    REC709       = "Rec.709"
-    DCI_P3_D65   = "P3-D65"
-    LINEAR_SRGB  = "Linear sRGB"
-    CMYK_SAFE    = "CMYK-safe sRGB"
+    SRGB = "sRGB"
+    REC709 = "Rec.709"
+    DCI_P3_D65 = "P3-D65"
+    LINEAR_SRGB = "Linear sRGB"
+    CMYK_SAFE = "CMYK-safe sRGB"
 
 
 # ---------------------------------------------------------------------------
 # ExportParams
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ExportParams:
@@ -116,19 +114,20 @@ class ExportParams:
     notes : str
         Human-readable delivery notes.
     """
-    profile:        ExportProfile   = ExportProfile.CUSTOM
-    format:         OutputFormat    = OutputFormat.PNG
-    dpi:            int             = 72
-    colour_space:   ColourSpace     = ColourSpace.SRGB
-    width:          Optional[int]   = None
-    height:         Optional[int]   = None
-    legal_levels:   bool            = False
-    cmyk_safe:      bool            = False
-    jpeg_quality:   int             = 92
-    tiff_compress:  str             = "lzw"
-    embed_icc:      bool            = True
-    alpha_handling: str             = "keep"
-    notes:          str             = ""
+
+    profile: ExportProfile = ExportProfile.CUSTOM
+    format: OutputFormat = OutputFormat.PNG
+    dpi: int = 72
+    colour_space: ColourSpace = ColourSpace.SRGB
+    width: Optional[int] = None
+    height: Optional[int] = None
+    legal_levels: bool = False
+    cmyk_safe: bool = False
+    jpeg_quality: int = 92
+    tiff_compress: str = "lzw"
+    embed_icc: bool = True
+    alpha_handling: str = "keep"
+    notes: str = ""
 
 
 # ---------------------------------------------------------------------------
@@ -136,83 +135,77 @@ class ExportParams:
 # ---------------------------------------------------------------------------
 
 _PROFILES: dict[str, ExportParams] = {
-
     "print_cmyk": ExportParams(
-        profile       = ExportProfile.PRINT_CMYK,
-        format        = OutputFormat.TIFF,
-        dpi           = 300,
-        colour_space  = ColourSpace.CMYK_SAFE,
-        legal_levels  = False,
-        cmyk_safe     = True,
-        tiff_compress = "lzw",
-        embed_icc     = True,
-        alpha_handling= "flatten_white",
-        notes         = (
+        profile=ExportProfile.PRINT_CMYK,
+        format=OutputFormat.TIFF,
+        dpi=300,
+        colour_space=ColourSpace.CMYK_SAFE,
+        legal_levels=False,
+        cmyk_safe=True,
+        tiff_compress="lzw",
+        embed_icc=True,
+        alpha_handling="flatten_white",
+        notes=(
             "300dpi TIFF for offset/giclée print. sRGB gamut clipped to "
             "CMYK-reproducible range. Composite on white background."
         ),
     ),
-
     "web_srgb": ExportParams(
-        profile       = ExportProfile.WEB_SRGB,
-        format        = OutputFormat.PNG,
-        dpi           = 72,
-        colour_space  = ColourSpace.SRGB,
-        legal_levels  = False,
-        cmyk_safe     = False,
-        embed_icc     = True,
-        alpha_handling= "keep",
-        notes         = (
-            "sRGB PNG for web, social, and screen display. "
-            "Lossless with embedded sRGB ICC tag."
+        profile=ExportProfile.WEB_SRGB,
+        format=OutputFormat.PNG,
+        dpi=72,
+        colour_space=ColourSpace.SRGB,
+        legal_levels=False,
+        cmyk_safe=False,
+        embed_icc=True,
+        alpha_handling="keep",
+        notes=(
+            "sRGB PNG for web, social, and screen display. " "Lossless with embedded sRGB ICC tag."
         ),
     ),
-
     "broadcast": ExportParams(
-        profile       = ExportProfile.BROADCAST,
-        format        = OutputFormat.TIFF,
-        dpi           = 72,
-        colour_space  = ColourSpace.REC709,
-        legal_levels  = True,
-        cmyk_safe     = False,
-        tiff_compress = "none",
-        embed_icc     = True,
-        alpha_handling= "flatten_black",
-        notes         = (
+        profile=ExportProfile.BROADCAST,
+        format=OutputFormat.TIFF,
+        dpi=72,
+        colour_space=ColourSpace.REC709,
+        legal_levels=True,
+        cmyk_safe=False,
+        tiff_compress="none",
+        embed_icc=True,
+        alpha_handling="flatten_black",
+        notes=(
             "Rec.709 broadcast delivery. Legal levels 16–235 (luma). "
             "Uncompressed TIFF for master handoff."
         ),
     ),
-
     "dci_p3": ExportParams(
-        profile       = ExportProfile.DCI_P3,
-        format        = OutputFormat.TIFF,
-        dpi           = 72,
-        colour_space  = ColourSpace.DCI_P3_D65,
-        width         = 2048,
-        height        = 1080,
-        legal_levels  = False,
-        cmyk_safe     = False,
-        tiff_compress = "none",
-        embed_icc     = True,
-        alpha_handling= "flatten_black",
-        notes         = (
+        profile=ExportProfile.DCI_P3,
+        format=OutputFormat.TIFF,
+        dpi=72,
+        colour_space=ColourSpace.DCI_P3_D65,
+        width=2048,
+        height=1080,
+        legal_levels=False,
+        cmyk_safe=False,
+        tiff_compress="none",
+        embed_icc=True,
+        alpha_handling="flatten_black",
+        notes=(
             "DCI P3-D65 for digital cinema. 2K (2048×1080) uncompressed TIFF. "
             "Suitable for DCP wrap with external tool (e.g. OpenDCP)."
         ),
     ),
-
     "web_jpeg": ExportParams(
-        profile       = ExportProfile.WEB_SRGB,
-        format        = OutputFormat.JPEG,
-        dpi           = 96,
-        colour_space  = ColourSpace.SRGB,
-        legal_levels  = False,
-        cmyk_safe     = False,
-        jpeg_quality  = 88,
-        embed_icc     = True,
-        alpha_handling= "flatten_white",
-        notes         = "sRGB JPEG for web. Quality 88, composited on white.",
+        profile=ExportProfile.WEB_SRGB,
+        format=OutputFormat.JPEG,
+        dpi=96,
+        colour_space=ColourSpace.SRGB,
+        legal_levels=False,
+        cmyk_safe=False,
+        jpeg_quality=88,
+        embed_icc=True,
+        alpha_handling="flatten_white",
+        notes="sRGB JPEG for web. Quality 88, composited on white.",
     ),
 }
 
@@ -237,11 +230,9 @@ def get_profile(name: str) -> ExportParams:
     """
     name = name.lower().strip()
     if name not in _PROFILES:
-        raise KeyError(
-            f"Unknown export profile '{name}'. "
-            f"Available: {list_profiles()}"
-        )
+        raise KeyError(f"Unknown export profile '{name}'. " f"Available: {list_profiles()}")
     from dataclasses import replace
+
     return replace(_PROFILES[name])  # return a fresh copy
 
 
@@ -249,8 +240,9 @@ def get_profile(name: str) -> ExportParams:
 # Image transformation helpers
 # ---------------------------------------------------------------------------
 
+
 def _flatten_alpha(
-    image: np.ndarray,       # (H, W, 4) RGBA uint8
+    image: np.ndarray,  # (H, W, 4) RGBA uint8
     mode: str,
 ) -> np.ndarray:
     """Flatten alpha channel according to mode. Returns (H, W, 3) uint8."""
@@ -260,7 +252,7 @@ def _flatten_alpha(
         return image[..., :3]
 
     alpha = image[..., 3:4].astype(np.float32) / 255.0
-    rgb   = image[..., :3].astype(np.float32)
+    rgb = image[..., :3].astype(np.float32)
 
     if mode == "flatten_white":
         bg = np.full_like(rgb, 255.0)
@@ -323,6 +315,7 @@ def _resize_image(
 # ICC profile bytes (minimal sRGB and Rec.709 stubs)
 # ---------------------------------------------------------------------------
 
+
 def _get_icc_bytes(colour_space: ColourSpace) -> Optional[bytes]:
     """
     Return ICC profile bytes for embedding.
@@ -332,6 +325,7 @@ def _get_icc_bytes(colour_space: ColourSpace) -> Optional[bytes]:
     """
     try:
         import io
+
         if colour_space == ColourSpace.SRGB:
             p = Image.new("RGB", (1, 1))
             buf = io.BytesIO()
@@ -347,6 +341,7 @@ def _get_icc_bytes(colour_space: ColourSpace) -> Optional[bytes]:
 # ---------------------------------------------------------------------------
 # Main API
 # ---------------------------------------------------------------------------
+
 
 def apply_profile(
     image: np.ndarray,
@@ -436,10 +431,10 @@ def export_image(
 
     # Force correct extension
     ext_map = {
-        OutputFormat.PNG:  ".png",
+        OutputFormat.PNG: ".png",
         OutputFormat.TIFF: ".tiff",
         OutputFormat.JPEG: ".jpg",
-        OutputFormat.EXR:  ".exr",
+        OutputFormat.EXR: ".exr",
     }
     out_path = out_path.with_suffix(ext_map[params.format])
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -474,9 +469,9 @@ def export_image(
 
     elif params.format == OutputFormat.TIFF:
         compress_map = {
-            "none":     None,
-            "lzw":      "tiff_lzw",
-            "deflate":  "tiff_deflate",
+            "none": None,
+            "lzw": "tiff_lzw",
+            "deflate": "tiff_deflate",
             "packbits": "packbits",
         }
         comp = compress_map.get(params.tiff_compress.lower(), "tiff_lzw")

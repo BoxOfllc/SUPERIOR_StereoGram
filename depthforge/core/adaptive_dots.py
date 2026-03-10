@@ -27,20 +27,22 @@ as the pattern argument.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from dataclasses import dataclass
+from typing import Optional, Tuple
 
 import numpy as np
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageDraw
 
 try:
     import cv2
+
     _CV2 = True
 except ImportError:
     _CV2 = False
 
 try:
-    from scipy.ndimage import sobel, generic_gradient_magnitude
+    from scipy.ndimage import generic_gradient_magnitude, sobel
+
     _SCIPY = True
 except ImportError:
     _SCIPY = False
@@ -49,6 +51,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Parameters
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class AdaptiveDotParams:
@@ -81,18 +84,18 @@ class AdaptiveDotParams:
         Random positional jitter as fraction of spacing.  0 = grid; 1 = full.
     """
 
-    tile_width:      int                       = 256
-    tile_height:     int                       = 256
-    min_dot_radius:  int                       = 1
-    max_dot_radius:  int                       = 4
-    min_spacing:     int                       = 3
-    max_spacing:     int                       = 12
-    n_levels:        int                       = 5
-    complexity_blur: float                     = 2.0
-    dot_color:       Tuple[int, int, int]      = (255, 255, 255)
-    bg_color:        Tuple[int, int, int]      = (0, 0, 0)
-    seed:            Optional[int]             = None
-    jitter:          float                     = 0.3
+    tile_width: int = 256
+    tile_height: int = 256
+    min_dot_radius: int = 1
+    max_dot_radius: int = 4
+    min_spacing: int = 3
+    max_spacing: int = 12
+    n_levels: int = 5
+    complexity_blur: float = 2.0
+    dot_color: Tuple[int, int, int] = (255, 255, 255)
+    bg_color: Tuple[int, int, int] = (0, 0, 0)
+    seed: Optional[int] = None
+    jitter: float = 0.3
 
     def __post_init__(self) -> None:
         if self.min_dot_radius < 1:
@@ -109,8 +112,9 @@ class AdaptiveDotParams:
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def generate_adaptive_dots(
-    depth:  np.ndarray,
+    depth: np.ndarray,
     params: AdaptiveDotParams = AdaptiveDotParams(),
 ) -> np.ndarray:
     """Generate an adaptive-density SIRDS dot tile driven by depth complexity.
@@ -129,31 +133,28 @@ def generate_adaptive_dots(
     np.ndarray
         RGBA uint8 dot tile, shape (tile_H, tile_W, 4).
     """
-    rng  = np.random.default_rng(params.seed)
+    rng = np.random.default_rng(params.seed)
     cmap = _compute_complexity_map(depth, params)
 
     # Resize complexity map to tile size
     cmap_tile = _resize_map(cmap, params.tile_height, params.tile_width)
 
     # Discretise complexity into levels [0 … n_levels-1]
-    levels = np.digitize(cmap_tile,
-                         bins=np.linspace(0, 1, params.n_levels + 1)[1:-1])
+    levels = np.digitize(cmap_tile, bins=np.linspace(0, 1, params.n_levels + 1)[1:-1])
 
     # Build dot tile
-    canvas = Image.new("RGB",
-                       (params.tile_width, params.tile_height),
-                       params.bg_color)
-    draw   = ImageDraw.Draw(canvas)
+    canvas = Image.new("RGB", (params.tile_width, params.tile_height), params.bg_color)
+    draw = ImageDraw.Draw(canvas)
 
     for level in range(params.n_levels):
         # Higher level = more complex = smaller/denser dots
-        t       = level / max(1, params.n_levels - 1)   # 0 … 1
-        radius  = round(params.max_dot_radius  - t * (params.max_dot_radius  - params.min_dot_radius))
-        spacing = round(params.max_spacing     - t * (params.max_spacing     - params.min_spacing))
+        t = level / max(1, params.n_levels - 1)  # 0 … 1
+        radius = round(params.max_dot_radius - t * (params.max_dot_radius - params.min_dot_radius))
+        spacing = round(params.max_spacing - t * (params.max_spacing - params.min_spacing))
         spacing = max(radius * 2 + 1, spacing)
 
         # Mask of pixels at this level
-        level_mask = (levels == level)
+        level_mask = levels == level
 
         # Place dots on a jittered grid, only where level matches
         jitter_scale = spacing * params.jitter
@@ -163,13 +164,12 @@ def generate_adaptive_dots(
                 jy = int(y + rng.uniform(-jitter_scale, jitter_scale))
                 jx = int(x + rng.uniform(-jitter_scale, jitter_scale))
                 jy = max(0, min(params.tile_height - 1, jy))
-                jx = max(0, min(params.tile_width  - 1, jx))
+                jx = max(0, min(params.tile_width - 1, jx))
 
                 # Only draw if this position matches the complexity level
                 if level_mask[jy, jx]:
                     draw.ellipse(
-                        [jx - radius, jy - radius,
-                         jx + radius, jy + radius],
+                        [jx - radius, jy - radius, jx + radius, jy + radius],
                         fill=params.dot_color,
                     )
 
@@ -188,8 +188,9 @@ def complexity_from_depth(depth: np.ndarray) -> np.ndarray:
 # Internal — complexity map
 # ---------------------------------------------------------------------------
 
+
 def _compute_complexity_map(
-    depth:  np.ndarray,
+    depth: np.ndarray,
     params: AdaptiveDotParams,
 ) -> np.ndarray:
     """Compute a normalised [0, 1] complexity map from the depth map.
@@ -248,17 +249,18 @@ def _local_variance(d: np.ndarray, window: int = 7) -> np.ndarray:
     """Local variance in a sliding window via box filter trick."""
     w = window
     if _CV2:
-        d2   = d ** 2
-        mean  = cv2.blur(d,  (w, w))
+        d2 = d**2
+        mean = cv2.blur(d, (w, w))
         mean2 = cv2.blur(d2, (w, w))
-        var   = np.maximum(mean2 - mean ** 2, 0)
+        var = np.maximum(mean2 - mean**2, 0)
     else:
         # Pad and compute
-        pad  = w // 2
-        dp   = np.pad(d, pad, mode="reflect")
+        pad = w // 2
+        dp = np.pad(d, pad, mode="reflect")
         from numpy.lib.stride_tricks import sliding_window_view
+
         wins = sliding_window_view(dp, (w, w))
-        var  = wins.var(axis=(-2, -1))
+        var = wins.var(axis=(-2, -1))
 
     hi = var.max()
     if hi > 0:
@@ -273,11 +275,13 @@ def _gaussian_blur(arr: np.ndarray, sigma: float) -> np.ndarray:
         return cv2.GaussianBlur(arr, (k, k), sigma)
     try:
         from scipy.ndimage import gaussian_filter
+
         return gaussian_filter(arr, sigma=sigma).astype(np.float32)
     except ImportError:
         pass
     # Box blur fallback
     from depthforge.core.depth_prep import _box_blur
+
     return _box_blur(arr, max(1, int(sigma)))
 
 

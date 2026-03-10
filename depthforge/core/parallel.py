@@ -27,19 +27,17 @@ API
 
 from __future__ import annotations
 
-import math
 import multiprocessing
-import os
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import Callable, List, Optional
 
 import numpy as np
 
-
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
+
 
 def _default_workers() -> int:
     """Heuristic: min(logical CPUs, 8) — avoid over-subscription."""
@@ -70,11 +68,11 @@ class ParallelConfig:
         threads. Must be thread-safe.
     """
 
-    n_workers:              int                         = field(default_factory=_default_workers)
-    chunk_rows:             int                         = 64
-    min_rows_for_parallel:  int                         = 256
-    show_progress:          bool                        = False
-    progress_callback:      Optional[Callable]          = None
+    n_workers: int = field(default_factory=_default_workers)
+    chunk_rows: int = 64
+    min_rows_for_parallel: int = 256
+    show_progress: bool = False
+    progress_callback: Optional[Callable] = None
 
     def __post_init__(self):
         if self.n_workers <= 0:
@@ -87,11 +85,12 @@ class ParallelConfig:
 # Chunk worker
 # ---------------------------------------------------------------------------
 
+
 def _synthesize_chunk(
-    depth_chunk:  np.ndarray,    # (chunk_H, W) float32
-    pattern:      np.ndarray,    # (tile_H, tile_W, 4) uint8
-    params,                      # StereoParams
-    y_offset:     int,           # absolute row offset in full image
+    depth_chunk: np.ndarray,  # (chunk_H, W) float32
+    pattern: np.ndarray,  # (tile_H, tile_W, 4) uint8
+    params,  # StereoParams
+    y_offset: int,  # absolute row offset in full image
 ) -> np.ndarray:
     """Synthesize a contiguous band of scanlines.
 
@@ -123,15 +122,15 @@ def _synthesize_chunk(
     output = np.zeros((chunk_H, W, 4), dtype=np.uint8)
 
     for local_y in range(chunk_H):
-        global_y  = y_offset + local_y
+        global_y = y_offset + local_y
         row_shift = shift_map[local_y]
-        same      = np.full(W, -1, dtype=np.int32)
+        same = np.full(W, -1, dtype=np.int32)
 
         for x in range(W):
             s = int(row_shift[x])
             if s == 0:
                 continue
-            x_left  = x - abs(s) // 2
+            x_left = x - abs(s) // 2
             x_right = x + abs(s) - abs(s) // 2
             if 0 <= x_left < W and 0 <= x_right < W:
                 root = x_left
@@ -160,11 +159,12 @@ def _synthesize_chunk(
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def parallel_synthesize(
-    depth:   np.ndarray,
+    depth: np.ndarray,
     pattern: np.ndarray,
     params,
-    config:  Optional[ParallelConfig] = None,
+    config: Optional[ParallelConfig] = None,
 ) -> np.ndarray:
     """Synthesize a stereogram using multiple threads.
 
@@ -196,6 +196,7 @@ def parallel_synthesize(
     # ── Oversample pre-pass ──────────────────────────────────────────────
     if params.oversample > 1:
         from depthforge.core.synthesizer import _synthesize_oversampled
+
         return _synthesize_oversampled(depth, pattern, params)
 
     # ── Small image: serial ───────────────────────────────────────────────
@@ -209,7 +210,7 @@ def parallel_synthesize(
         y_end = min(y_start + chunk_size, H)
         chunks.append((y_start, y_end))
 
-    output  = np.zeros((H, W, 4), dtype=np.uint8)
+    output = np.zeros((H, W, 4), dtype=np.uint8)
     done_rows = 0
 
     with ThreadPoolExecutor(max_workers=config.n_workers) as executor:
@@ -227,7 +228,7 @@ def parallel_synthesize(
         for future in as_completed(futures):
             y0, y1 = futures[future]
             output[y0:y1] = future.result()
-            done_rows += (y1 - y0)
+            done_rows += y1 - y0
 
             if config.show_progress and config.progress_callback:
                 config.progress_callback(done_rows, H)
@@ -257,26 +258,31 @@ def benchmark(
     dict  ``{n_workers: elapsed_seconds}``
     """
     import time
+
+    from depthforge.core.pattern_gen import ColorMode, PatternParams, PatternType, generate_pattern
     from depthforge.core.synthesizer import StereoParams
-    from depthforge.core.pattern_gen import generate_pattern, PatternParams, PatternType, ColorMode
 
     if n_workers_list is None:
         n_workers_list = [1, 2, 4, min(8, _default_workers())]
 
     rng = np.random.default_rng(seed)
     depth = rng.random((H, W), dtype=np.float32)
-    pattern = generate_pattern(PatternParams(
-        pattern_type=PatternType.RANDOM_NOISE,
-        color_mode=ColorMode.GREYSCALE,
-        tile_width=128, tile_height=128, seed=seed,
-    ))
+    pattern = generate_pattern(
+        PatternParams(
+            pattern_type=PatternType.RANDOM_NOISE,
+            color_mode=ColorMode.GREYSCALE,
+            tile_width=128,
+            tile_height=128,
+            seed=seed,
+        )
+    )
     params = StereoParams(depth_factor=0.35, seed=seed)
 
     results = {}
     for n in sorted(set(n_workers_list)):
         cfg = ParallelConfig(n_workers=n, chunk_rows=64, min_rows_for_parallel=1)
-        t0  = time.perf_counter()
-        _   = parallel_synthesize(depth, pattern, params, cfg)
+        t0 = time.perf_counter()
+        _ = parallel_synthesize(depth, pattern, params, cfg)
         results[n] = round(time.perf_counter() - t0, 3)
 
     return results

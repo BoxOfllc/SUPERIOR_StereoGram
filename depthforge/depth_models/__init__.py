@@ -22,23 +22,25 @@ Both models require PyTorch. If PyTorch is unavailable, a
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
-
 
 # ---------------------------------------------------------------------------
 # Exception
 # ---------------------------------------------------------------------------
 
+
 class DepthEstimationError(RuntimeError):
     """Raised when depth estimation is unavailable or fails."""
+
     pass
 
 
 # ---------------------------------------------------------------------------
 # Abstract base
 # ---------------------------------------------------------------------------
+
 
 class DepthEstimator(ABC):
     """Abstract base class for all depth estimators.
@@ -132,7 +134,7 @@ def get_depth_estimator(name: str) -> DepthEstimator:
 
     # Import all model modules to trigger full registration (including mocks)
     try:
-        from depthforge.depth_models import midas as _m    # noqa
+        from depthforge.depth_models import midas as _m  # noqa
     except Exception:
         pass
     try:
@@ -142,9 +144,7 @@ def get_depth_estimator(name: str) -> DepthEstimator:
 
     if name not in _REGISTRY:
         available = list(_REGISTRY.keys())
-        raise DepthEstimationError(
-            f"Unknown depth model {name!r}. Available: {available}"
-        )
+        raise DepthEstimationError(f"Unknown depth model {name!r}. Available: {available}")
     return _REGISTRY[name]()
 
 
@@ -152,11 +152,11 @@ def list_estimators() -> list[str]:
     """Return list of registered estimator names (only those whose deps are available)."""
     # Trigger registration of both models
     try:
-        from depthforge.depth_models import midas as _      # noqa
+        from depthforge.depth_models import midas as _  # noqa
     except Exception:
         pass
     try:
-        from depthforge.depth_models import zoedepth as _   # noqa
+        from depthforge.depth_models import zoedepth as _  # noqa
     except Exception:
         pass
     return list(_REGISTRY.keys())

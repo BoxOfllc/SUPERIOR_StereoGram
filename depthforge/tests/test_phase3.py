@@ -7,26 +7,25 @@ Run:
     cd /home/claude && python -m unittest depthforge.tests.test_phase3 -v
 """
 
-import unittest
 import json
-import tempfile
 import os
-import sys
+import tempfile
+import unittest
 from pathlib import Path
 
 import numpy as np
 from PIL import Image
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_depth_file(H=64, W=96, path=None) -> str:
     """Save a synthetic depth PNG and return its path."""
     y, x = np.mgrid[0:H, 0:W]
     cx, cy = W / 2, H / 2
-    r = np.sqrt((x - cx)**2 + (y - cy)**2)
+    r = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
     depth = np.clip(1.0 - r / (min(W, H) * 0.45), 0.0, 1.0)
     if path is None:
         fd, path = tempfile.mkstemp(suffix=".png")
@@ -56,28 +55,33 @@ def _tmpfile(suffix=".png") -> str:
 # Pattern Library
 # ===========================================================================
 
+
 class TestPatternLibrary(unittest.TestCase):
 
     def test_list_patterns_returns_many(self):
         from depthforge.core.pattern_library import list_patterns
+
         names = list_patterns()
         self.assertGreater(len(names), 20)
 
     def test_all_categories_present(self):
         from depthforge.core.pattern_library import list_categories
+
         cats = list_categories()
         for expected in ["organic", "geometric", "psychedelic", "minimal"]:
             self.assertIn(expected, cats)
 
     def test_list_by_category(self):
         from depthforge.core.pattern_library import list_patterns
-        organic   = list_patterns("organic")
+
+        organic = list_patterns("organic")
         geometric = list_patterns("geometric")
         self.assertGreater(len(organic), 3)
         self.assertGreater(len(geometric), 3)
 
     def test_get_pattern_returns_rgba(self):
         from depthforge.core.pattern_library import get_pattern, list_patterns
+
         name = list_patterns()[0]
         out = get_pattern(name, width=64, height=64)
         self.assertEqual(out.dtype, np.uint8)
@@ -85,28 +89,33 @@ class TestPatternLibrary(unittest.TestCase):
 
     def test_get_pattern_correct_dimensions(self):
         from depthforge.core.pattern_library import get_pattern
+
         out = get_pattern("perlin_noise", width=80, height=60)
         self.assertEqual(out.shape, (60, 80, 4))
 
     def test_unknown_pattern_raises(self):
         from depthforge.core.pattern_library import get_pattern
+
         with self.assertRaises(KeyError):
             get_pattern("no_such_pattern_xyz")
 
     def test_seed_reproducibility(self):
         from depthforge.core.pattern_library import get_pattern
+
         a = get_pattern("perlin_noise", width=32, height=32, seed=7)
         b = get_pattern("perlin_noise", width=32, height=32, seed=7)
         np.testing.assert_array_equal(a, b)
 
     def test_different_seeds_differ(self):
         from depthforge.core.pattern_library import get_pattern
+
         a = get_pattern("perlin_noise", width=32, height=32, seed=1)
         b = get_pattern("perlin_noise", width=32, height=32, seed=999)
         self.assertFalse(np.array_equal(a, b))
 
     def test_all_patterns_generate_without_error(self):
-        from depthforge.core.pattern_library import list_patterns, get_pattern
+        from depthforge.core.pattern_library import get_pattern, list_patterns
+
         errors = []
         for name in list_patterns():
             try:
@@ -119,30 +128,35 @@ class TestPatternLibrary(unittest.TestCase):
 
     def test_organic_patterns_exist(self):
         from depthforge.core.pattern_library import list_patterns
+
         organic = list_patterns("organic")
         for expected in ["perlin_noise", "northern_lights", "water_ripples", "marble"]:
             self.assertIn(expected, organic)
 
     def test_geometric_patterns_exist(self):
         from depthforge.core.pattern_library import list_patterns
+
         geo = list_patterns("geometric")
         for expected in ["hexgrid", "dotgrid", "circuit_board", "checkerboard"]:
             self.assertIn(expected, geo)
 
     def test_psychedelic_patterns_exist(self):
         from depthforge.core.pattern_library import list_patterns
+
         psy = list_patterns("psychedelic")
         for expected in ["plasma_wave", "rainbow_bands", "kaleidoscope", "tie_dye"]:
             self.assertIn(expected, psy)
 
     def test_minimal_patterns_exist(self):
         from depthforge.core.pattern_library import list_patterns
+
         mini = list_patterns("minimal")
         for expected in ["fine_grain", "linen", "paper", "subtle_dots"]:
             self.assertIn(expected, mini)
 
     def test_pattern_alpha_always_255(self):
-        from depthforge.core.pattern_library import list_patterns, get_pattern
+        from depthforge.core.pattern_library import get_pattern, list_patterns
+
         # Check a sample of patterns have full alpha
         for name in list_patterns()[:8]:
             out = get_pattern(name, width=16, height=16)
@@ -150,6 +164,7 @@ class TestPatternLibrary(unittest.TestCase):
 
     def test_get_pattern_info(self):
         from depthforge.core.pattern_library import get_pattern_info
+
         info = get_pattern_info("plasma_wave")
         self.assertEqual(info.name, "plasma_wave")
         self.assertEqual(info.category, "psychedelic")
@@ -158,10 +173,12 @@ class TestPatternLibrary(unittest.TestCase):
 
     def test_available_count(self):
         from depthforge.core.pattern_library import available_count
+
         self.assertGreater(available_count(), 25)
 
     def test_scale_parameter_changes_output(self):
         from depthforge.core.pattern_library import get_pattern
+
         a = get_pattern("plasma_wave", width=64, height=64, scale=1.0, seed=1)
         b = get_pattern("plasma_wave", width=64, height=64, scale=3.0, seed=1)
         self.assertFalse(np.array_equal(a, b))
@@ -171,10 +188,12 @@ class TestPatternLibrary(unittest.TestCase):
 # Depth Models
 # ===========================================================================
 
+
 class TestDepthModels(unittest.TestCase):
 
     def test_list_estimators(self):
         from depthforge.depth_models import list_estimators
+
         names = list_estimators()
         # Mock estimators always available
         self.assertIn("midas_mock", names)
@@ -182,21 +201,25 @@ class TestDepthModels(unittest.TestCase):
 
     def test_get_mock_midas(self):
         from depthforge.depth_models import get_depth_estimator
+
         estimator = get_depth_estimator("midas_mock")
         self.assertEqual(estimator.name, "midas_mock")
 
     def test_get_mock_zoedepth(self):
         from depthforge.depth_models import get_depth_estimator
+
         estimator = get_depth_estimator("zoedepth_mock")
         self.assertEqual(estimator.name, "zoedepth_mock")
 
     def test_unknown_estimator_raises(self):
-        from depthforge.depth_models import get_depth_estimator, DepthEstimationError
+        from depthforge.depth_models import DepthEstimationError, get_depth_estimator
+
         with self.assertRaises(DepthEstimationError):
             get_depth_estimator("nonexistent_model_xyz")
 
     def test_mock_midas_estimate_shape(self):
         from depthforge.depth_models import get_depth_estimator
+
         estimator = get_depth_estimator("midas_mock")
         rgb = np.random.randint(0, 255, (64, 96, 3), dtype=np.uint8)
         depth = estimator.estimate(rgb)
@@ -204,6 +227,7 @@ class TestDepthModels(unittest.TestCase):
 
     def test_mock_midas_estimate_dtype(self):
         from depthforge.depth_models import get_depth_estimator
+
         estimator = get_depth_estimator("midas_mock")
         rgb = np.random.randint(0, 255, (32, 48, 3), dtype=np.uint8)
         depth = estimator.estimate(rgb)
@@ -211,6 +235,7 @@ class TestDepthModels(unittest.TestCase):
 
     def test_mock_midas_estimate_range(self):
         from depthforge.depth_models import get_depth_estimator
+
         estimator = get_depth_estimator("midas_mock")
         rgb = np.random.randint(0, 255, (32, 48, 3), dtype=np.uint8)
         depth = estimator.estimate(rgb)
@@ -219,6 +244,7 @@ class TestDepthModels(unittest.TestCase):
 
     def test_mock_zoedepth_estimate_shape(self):
         from depthforge.depth_models import get_depth_estimator
+
         estimator = get_depth_estimator("zoedepth_mock")
         rgb = np.random.randint(0, 255, (48, 64, 3), dtype=np.uint8)
         depth = estimator.estimate(rgb)
@@ -227,19 +253,22 @@ class TestDepthModels(unittest.TestCase):
     def test_mock_zoedepth_sphere_depth(self):
         """ZoeDepth mock should produce a sphere in the centre (bright centre)."""
         from depthforge.depth_models import get_depth_estimator
+
         estimator = get_depth_estimator("zoedepth_mock")
         H, W = 64, 96
         rgb = np.zeros((H, W, 3), dtype=np.uint8)
         depth = estimator.estimate(rgb)
-        centre = depth[H//2-5:H//2+5, W//2-5:W//2+5].mean()
-        edge   = depth[:5, :5].mean()
+        centre = depth[H // 2 - 5 : H // 2 + 5, W // 2 - 5 : W // 2 + 5].mean()
+        edge = depth[:5, :5].mean()
         self.assertGreater(centre, edge)
 
     def test_real_midas_unavailable_raises(self):
         """MiDaS real model should raise DepthEstimationError without torch."""
-        from depthforge.depth_models import get_depth_estimator, DepthEstimationError
+        from depthforge.depth_models import DepthEstimationError, get_depth_estimator
+
         try:
             import torch
+
             self.skipTest("PyTorch is installed — skipping unavailability test")
         except ImportError:
             estimator = get_depth_estimator("midas")
@@ -249,6 +278,7 @@ class TestDepthModels(unittest.TestCase):
     def test_estimate_accepts_rgba(self):
         """Estimator should handle RGBA input (drop alpha channel)."""
         from depthforge.depth_models import get_depth_estimator
+
         estimator = get_depth_estimator("midas_mock")
         rgba = np.random.randint(0, 255, (32, 48, 4), dtype=np.uint8)
         depth = estimator.estimate(rgba)
@@ -257,6 +287,7 @@ class TestDepthModels(unittest.TestCase):
     def test_estimate_accepts_greyscale(self):
         """Estimator should handle greyscale (H,W) input."""
         from depthforge.depth_models import get_depth_estimator
+
         estimator = get_depth_estimator("midas_mock")
         grey = np.random.randint(0, 255, (32, 48), dtype=np.uint8)
         depth = estimator.estimate(grey)
@@ -267,6 +298,7 @@ class TestDepthModels(unittest.TestCase):
 # IO Formats
 # ===========================================================================
 
+
 class TestIOFormats(unittest.TestCase):
 
     def _make_depth(self, H=32, W=48) -> np.ndarray:
@@ -275,6 +307,7 @@ class TestIOFormats(unittest.TestCase):
 
     def test_read_depth_png(self):
         from depthforge.io.formats import read_depth
+
         path = _make_depth_file(32, 48)
         try:
             depth = read_depth(path)
@@ -286,7 +319,8 @@ class TestIOFormats(unittest.TestCase):
             os.unlink(path)
 
     def test_write_depth_png(self):
-        from depthforge.io.formats import write_depth, read_depth
+        from depthforge.io.formats import read_depth, write_depth
+
         depth = self._make_depth()
         path = _tmpfile(".png")
         try:
@@ -298,9 +332,10 @@ class TestIOFormats(unittest.TestCase):
             os.unlink(path)
 
     def test_write_and_read_tiff_16bit(self):
-        from depthforge.io.formats import write_depth, read_depth
+        from depthforge.io.formats import read_depth, write_depth
+
         depth = self._make_depth()
-        path  = _tmpfile(".tiff")
+        path = _tmpfile(".tiff")
         try:
             write_depth(depth, path, bit_depth=16)
             loaded = read_depth(path)
@@ -311,9 +346,10 @@ class TestIOFormats(unittest.TestCase):
             os.unlink(path)
 
     def test_write_and_read_tiff_32bit(self):
-        from depthforge.io.formats import write_depth, read_depth
+        from depthforge.io.formats import read_depth, write_depth
+
         depth = self._make_depth()
-        path  = _tmpfile(".tiff")
+        path = _tmpfile(".tiff")
         try:
             write_depth(depth, path, bit_depth=32)
             loaded = read_depth(path)
@@ -323,6 +359,7 @@ class TestIOFormats(unittest.TestCase):
 
     def test_read_rgba_png(self):
         from depthforge.io.formats import read_rgba
+
         src_path = _make_source_file()
         try:
             rgba = read_rgba(src_path)
@@ -332,7 +369,8 @@ class TestIOFormats(unittest.TestCase):
             os.unlink(src_path)
 
     def test_write_rgba_png(self):
-        from depthforge.io.formats import write_rgba, read_rgba
+        from depthforge.io.formats import read_rgba, write_rgba
+
         img = np.random.randint(0, 255, (32, 48, 4), dtype=np.uint8)
         path = _tmpfile(".png")
         try:
@@ -345,6 +383,7 @@ class TestIOFormats(unittest.TestCase):
 
     def test_write_rgba_jpg(self):
         from depthforge.io.formats import write_rgba
+
         img = np.random.randint(0, 255, (32, 48, 4), dtype=np.uint8)
         path = _tmpfile(".jpg")
         try:
@@ -355,6 +394,7 @@ class TestIOFormats(unittest.TestCase):
 
     def test_write_rgba_tiff(self):
         from depthforge.io.formats import write_rgba
+
         img = np.random.randint(0, 255, (32, 48, 4), dtype=np.uint8)
         path = _tmpfile(".tiff")
         try:
@@ -366,9 +406,11 @@ class TestIOFormats(unittest.TestCase):
     def test_exr_raises_without_openexr(self):
         """EXR operations should raise RuntimeError if OpenEXR not installed."""
         from depthforge.io import formats
+
         if formats.HAS_EXR:
             self.skipTest("OpenEXR is installed")
         from depthforge.io.formats import read_depth, write_depth
+
         with self.assertRaises(RuntimeError):
             read_depth("/tmp/fake_test.exr")
         with self.assertRaises(RuntimeError):
@@ -377,6 +419,7 @@ class TestIOFormats(unittest.TestCase):
     def test_color_transform_linear_to_srgb(self):
         """apply_color_transform should work without OCIO (fallback)."""
         from depthforge.io.formats import apply_color_transform
+
         img = np.array([[[0.2, 0.5, 0.8, 1.0]]], dtype=np.float32)
         out = apply_color_transform(img, "linear", "sRGB")
         # Linear→sRGB: output should be brighter (gamma < 1)
@@ -384,6 +427,7 @@ class TestIOFormats(unittest.TestCase):
 
     def test_color_transform_srgb_to_linear(self):
         from depthforge.io.formats import apply_color_transform
+
         img = np.array([[[0.5, 0.5, 0.5, 1.0]]], dtype=np.float32)
         out = apply_color_transform(img, "sRGB", "linear")
         # sRGB→Linear: output should be darker
@@ -391,14 +435,18 @@ class TestIOFormats(unittest.TestCase):
 
     def test_color_transform_unknown_colorspace_warns(self):
         import warnings
+
         from depthforge.io.formats import apply_color_transform
+
         if __import__("depthforge.io.formats", fromlist=["HAS_EXR"]):
             pass
         from depthforge.io import formats
+
         if hasattr(formats, "_exr") and formats.HAS_EXR:
             pass
         try:
             import PyOpenColorIO
+
             self.skipTest("OCIO installed — different code path")
         except ImportError:
             img = np.ones((4, 4, 3), dtype=np.float32) * 0.5
@@ -413,67 +461,80 @@ class TestIOFormats(unittest.TestCase):
 # CLI Tests
 # ===========================================================================
 
+
 class TestCLI(unittest.TestCase):
     """Test CLI commands using Click's test runner."""
 
     def _runner(self):
         from click.testing import CliRunner
+
         return CliRunner()
 
     def test_cli_help(self):
         from depthforge.cli.main import cli
+
         result = self._runner().invoke(cli, ["--help"])
         self.assertEqual(result.exit_code, 0)
         self.assertIn("DepthForge", result.output)
 
     def test_sirds_help(self):
         from depthforge.cli.main import cli
+
         result = self._runner().invoke(cli, ["sirds", "--help"])
         self.assertEqual(result.exit_code, 0)
         self.assertIn("--depth", result.output)
 
     def test_texture_help(self):
         from depthforge.cli.main import cli
+
         result = self._runner().invoke(cli, ["texture", "--help"])
         self.assertEqual(result.exit_code, 0)
 
     def test_anaglyph_help(self):
         from depthforge.cli.main import cli
+
         result = self._runner().invoke(cli, ["anaglyph", "--help"])
         self.assertEqual(result.exit_code, 0)
 
     def test_hidden_help(self):
         from depthforge.cli.main import cli
+
         result = self._runner().invoke(cli, ["hidden", "--help"])
         self.assertEqual(result.exit_code, 0)
 
     def test_stereo_pair_help(self):
         from depthforge.cli.main import cli
+
         result = self._runner().invoke(cli, ["stereo-pair", "--help"])
         self.assertEqual(result.exit_code, 0)
 
     def test_batch_help(self):
         from depthforge.cli.main import cli
+
         result = self._runner().invoke(cli, ["batch", "--help"])
         self.assertEqual(result.exit_code, 0)
 
     def test_analyze_help(self):
         from depthforge.cli.main import cli
+
         result = self._runner().invoke(cli, ["analyze", "--help"])
         self.assertEqual(result.exit_code, 0)
 
     def test_presets_help(self):
         from depthforge.cli.main import cli
+
         result = self._runner().invoke(cli, ["presets", "--help"])
         self.assertEqual(result.exit_code, 0)
 
     def test_estimate_depth_help(self):
         from depthforge.cli.main import cli
+
         result = self._runner().invoke(cli, ["estimate-depth", "--help"])
         self.assertEqual(result.exit_code, 0)
 
     def test_presets_list(self):
         from depthforge.cli.main import cli
+
         result = self._runner().invoke(cli, ["presets", "--list"])
         self.assertEqual(result.exit_code, 0)
         self.assertIn("shallow", result.output)
@@ -482,23 +543,33 @@ class TestCLI(unittest.TestCase):
 
     def test_presets_show(self):
         from depthforge.cli.main import cli
+
         result = self._runner().invoke(cli, ["presets", "--show", "medium"])
         self.assertEqual(result.exit_code, 0)
         self.assertIn("depth_factor", result.output)
 
     def test_sirds_command(self):
         from depthforge.cli.main import cli
+
         depth_path = _make_depth_file(32, 48)
-        out_path   = _tmpfile(".png")
+        out_path = _tmpfile(".png")
         try:
-            result = self._runner().invoke(cli, [
-                "sirds",
-                "--depth", depth_path,
-                "--output", out_path,
-                "--depth-factor", "0.3",
-                "--tile-size", "48",
-                "--seed", "1",
-            ])
+            result = self._runner().invoke(
+                cli,
+                [
+                    "sirds",
+                    "--depth",
+                    depth_path,
+                    "--output",
+                    out_path,
+                    "--depth-factor",
+                    "0.3",
+                    "--tile-size",
+                    "48",
+                    "--seed",
+                    "1",
+                ],
+            )
             self.assertEqual(result.exit_code, 0, msg=result.output)
             self.assertTrue(Path(out_path).exists())
             img = Image.open(out_path)
@@ -510,18 +581,28 @@ class TestCLI(unittest.TestCase):
 
     def test_texture_command(self):
         from depthforge.cli.main import cli
+
         depth_path = _make_depth_file(32, 48)
-        out_path   = _tmpfile(".png")
+        out_path = _tmpfile(".png")
         try:
-            result = self._runner().invoke(cli, [
-                "texture",
-                "--depth", depth_path,
-                "--output", out_path,
-                "--pattern", "plasma",
-                "--color", "psychedelic",
-                "--tile-size", "48",
-                "--seed", "42",
-            ])
+            result = self._runner().invoke(
+                cli,
+                [
+                    "texture",
+                    "--depth",
+                    depth_path,
+                    "--output",
+                    out_path,
+                    "--pattern",
+                    "plasma",
+                    "--color",
+                    "psychedelic",
+                    "--tile-size",
+                    "48",
+                    "--seed",
+                    "42",
+                ],
+            )
             self.assertEqual(result.exit_code, 0, msg=result.output)
             self.assertTrue(Path(out_path).exists())
         finally:
@@ -531,15 +612,23 @@ class TestCLI(unittest.TestCase):
 
     def test_hidden_star_command(self):
         from depthforge.cli.main import cli
+
         out_path = _tmpfile(".png")
         try:
-            result = self._runner().invoke(cli, [
-                "hidden",
-                "--shape", "star",
-                "--width", "96",
-                "--height", "64",
-                "--output", out_path,
-            ])
+            result = self._runner().invoke(
+                cli,
+                [
+                    "hidden",
+                    "--shape",
+                    "star",
+                    "--width",
+                    "96",
+                    "--height",
+                    "64",
+                    "--output",
+                    out_path,
+                ],
+            )
             self.assertEqual(result.exit_code, 0, msg=result.output)
             self.assertTrue(Path(out_path).exists())
         finally:
@@ -548,15 +637,23 @@ class TestCLI(unittest.TestCase):
 
     def test_hidden_text_command(self):
         from depthforge.cli.main import cli
+
         out_path = _tmpfile(".png")
         try:
-            result = self._runner().invoke(cli, [
-                "hidden",
-                "--text", "HI",
-                "--width", "192",
-                "--height", "64",
-                "--output", out_path,
-            ])
+            result = self._runner().invoke(
+                cli,
+                [
+                    "hidden",
+                    "--text",
+                    "HI",
+                    "--width",
+                    "192",
+                    "--height",
+                    "64",
+                    "--output",
+                    out_path,
+                ],
+            )
             self.assertEqual(result.exit_code, 0, msg=result.output)
         finally:
             if Path(out_path).exists():
@@ -564,17 +661,25 @@ class TestCLI(unittest.TestCase):
 
     def test_anaglyph_command(self):
         from depthforge.cli.main import cli
-        src_path   = _make_source_file(32, 48)
+
+        src_path = _make_source_file(32, 48)
         depth_path = _make_depth_file(32, 48)
-        out_path   = _tmpfile(".png")
+        out_path = _tmpfile(".png")
         try:
-            result = self._runner().invoke(cli, [
-                "anaglyph",
-                "--source", src_path,
-                "--depth", depth_path,
-                "--output", out_path,
-                "--mode", "optimised",
-            ])
+            result = self._runner().invoke(
+                cli,
+                [
+                    "anaglyph",
+                    "--source",
+                    src_path,
+                    "--depth",
+                    depth_path,
+                    "--output",
+                    out_path,
+                    "--mode",
+                    "optimised",
+                ],
+            )
             self.assertEqual(result.exit_code, 0, msg=result.output)
             self.assertTrue(Path(out_path).exists())
         finally:
@@ -585,17 +690,25 @@ class TestCLI(unittest.TestCase):
 
     def test_stereo_pair_sbs_command(self):
         from depthforge.cli.main import cli
-        src_path   = _make_source_file(32, 48)
+
+        src_path = _make_source_file(32, 48)
         depth_path = _make_depth_file(32, 48)
-        out_path   = _tmpfile(".png")
+        out_path = _tmpfile(".png")
         try:
-            result = self._runner().invoke(cli, [
-                "stereo-pair",
-                "--source", src_path,
-                "--depth", depth_path,
-                "--output", out_path,
-                "--layout", "side-by-side",
-            ])
+            result = self._runner().invoke(
+                cli,
+                [
+                    "stereo-pair",
+                    "--source",
+                    src_path,
+                    "--depth",
+                    depth_path,
+                    "--output",
+                    out_path,
+                    "--layout",
+                    "side-by-side",
+                ],
+            )
             self.assertEqual(result.exit_code, 0, msg=result.output)
             self.assertTrue(Path(out_path).exists())
         finally:
@@ -606,17 +719,25 @@ class TestCLI(unittest.TestCase):
 
     def test_stereo_pair_separate_command(self):
         from depthforge.cli.main import cli
-        src_path   = _make_source_file(32, 48)
+
+        src_path = _make_source_file(32, 48)
         depth_path = _make_depth_file(32, 48)
-        out_path   = _tmpfile(".png")
+        out_path = _tmpfile(".png")
         try:
-            result = self._runner().invoke(cli, [
-                "stereo-pair",
-                "--source", src_path,
-                "--depth", depth_path,
-                "--output", out_path,
-                "--layout", "separate",
-            ])
+            result = self._runner().invoke(
+                cli,
+                [
+                    "stereo-pair",
+                    "--source",
+                    src_path,
+                    "--depth",
+                    depth_path,
+                    "--output",
+                    out_path,
+                    "--layout",
+                    "separate",
+                ],
+            )
             self.assertEqual(result.exit_code, 0, msg=result.output)
         finally:
             for p in [src_path, depth_path]:
@@ -630,14 +751,21 @@ class TestCLI(unittest.TestCase):
 
     def test_analyze_command(self):
         from depthforge.cli.main import cli
+
         depth_path = _make_depth_file(32, 48)
         try:
-            result = self._runner().invoke(cli, [
-                "analyze",
-                "--depth", depth_path,
-                "--frame-width", "640",
-                "--depth-factor", "0.35",
-            ])
+            result = self._runner().invoke(
+                cli,
+                [
+                    "analyze",
+                    "--depth",
+                    depth_path,
+                    "--frame-width",
+                    "640",
+                    "--depth-factor",
+                    "0.35",
+                ],
+            )
             self.assertEqual(result.exit_code, 0, msg=result.output)
             self.assertIn("Comfort Analysis", result.output)
         finally:
@@ -645,14 +773,20 @@ class TestCLI(unittest.TestCase):
 
     def test_analyze_json_output(self):
         from depthforge.cli.main import cli
+
         depth_path = _make_depth_file(32, 48)
-        json_path  = _tmpfile(".json")
+        json_path = _tmpfile(".json")
         try:
-            result = self._runner().invoke(cli, [
-                "analyze",
-                "--depth", depth_path,
-                "--json", json_path,
-            ])
+            result = self._runner().invoke(
+                cli,
+                [
+                    "analyze",
+                    "--depth",
+                    depth_path,
+                    "--json",
+                    json_path,
+                ],
+            )
             self.assertEqual(result.exit_code, 0, msg=result.output)
             data = json.loads(Path(json_path).read_text())
             self.assertIn("overall_score", data)
@@ -664,43 +798,61 @@ class TestCLI(unittest.TestCase):
 
     def test_hidden_no_shape_raises(self):
         from depthforge.cli.main import cli
-        result = self._runner().invoke(cli, [
-            "hidden", "--width", "96", "--height", "64",
-            "--output", "/tmp/test_no_shape.png"
-        ])
+
+        result = self._runner().invoke(
+            cli, ["hidden", "--width", "96", "--height", "64", "--output", "/tmp/test_no_shape.png"]
+        )
         self.assertNotEqual(result.exit_code, 0)
 
     def test_batch_command(self):
-        from depthforge.cli.main import cli
         import tempfile
+
+        from depthforge.cli.main import cli
+
         with tempfile.TemporaryDirectory() as in_dir, tempfile.TemporaryDirectory() as out_dir:
             # Create a few depth files
             for i in range(3):
                 _make_depth_file(32, 48, path=f"{in_dir}/depth_{i:02d}.png")
-            result = self._runner().invoke(cli, [
-                "batch",
-                "--input-dir", in_dir,
-                "--output-dir", out_dir,
-                "--mode", "texture",
-                "--preset", "shallow",
-                "--pattern", "perlin",
-                "--color", "greyscale",
-            ])
+            result = self._runner().invoke(
+                cli,
+                [
+                    "batch",
+                    "--input-dir",
+                    in_dir,
+                    "--output-dir",
+                    out_dir,
+                    "--mode",
+                    "texture",
+                    "--preset",
+                    "shallow",
+                    "--pattern",
+                    "perlin",
+                    "--color",
+                    "greyscale",
+                ],
+            )
             self.assertEqual(result.exit_code, 0, msg=result.output)
             output_files = list(Path(out_dir).glob("*.png"))
             self.assertEqual(len(output_files), 3)
 
     def test_sirds_with_preset(self):
         from depthforge.cli.main import cli
+
         depth_path = _make_depth_file(32, 48)
-        out_path   = _tmpfile(".png")
+        out_path = _tmpfile(".png")
         try:
-            result = self._runner().invoke(cli, [
-                "sirds",
-                "--depth", depth_path,
-                "--output", out_path,
-                "--preset", "shallow",
-            ])
+            result = self._runner().invoke(
+                cli,
+                [
+                    "sirds",
+                    "--depth",
+                    depth_path,
+                    "--output",
+                    out_path,
+                    "--preset",
+                    "shallow",
+                ],
+            )
             self.assertEqual(result.exit_code, 0, msg=result.output)
         finally:
             os.unlink(depth_path)
@@ -709,14 +861,20 @@ class TestCLI(unittest.TestCase):
 
     def test_analyze_saves_heatmap(self):
         from depthforge.cli.main import cli
-        depth_path  = _make_depth_file(32, 48)
+
+        depth_path = _make_depth_file(32, 48)
         heatmap_out = _tmpfile(".png")
         try:
-            result = self._runner().invoke(cli, [
-                "analyze",
-                "--depth", depth_path,
-                "--output-heatmap", heatmap_out,
-            ])
+            result = self._runner().invoke(
+                cli,
+                [
+                    "analyze",
+                    "--depth",
+                    depth_path,
+                    "--output-heatmap",
+                    heatmap_out,
+                ],
+            )
             self.assertEqual(result.exit_code, 0, msg=result.output)
             self.assertTrue(Path(heatmap_out).exists())
         finally:
@@ -729,48 +887,61 @@ class TestCLI(unittest.TestCase):
 # Phase 3 Integration
 # ===========================================================================
 
+
 class TestPhase3Integration(unittest.TestCase):
 
     def test_pattern_library_into_synthesizer(self):
         """Library patterns should feed directly into the synthesizer."""
+        from depthforge.core.depth_prep import DepthPrepParams, prep_depth
         from depthforge.core.pattern_library import get_pattern
-        from depthforge.core.synthesizer import synthesize, StereoParams
-        from depthforge.core.depth_prep import prep_depth, DepthPrepParams
+        from depthforge.core.synthesizer import StereoParams, synthesize
 
         H, W = 32, 48
         y, x = np.mgrid[0:H, 0:W]
-        depth_raw = np.clip(1.0 - np.sqrt((x - W/2)**2 + (y - H/2)**2) / (W/2), 0, 1).astype(np.float32)
+        depth_raw = np.clip(
+            1.0 - np.sqrt((x - W / 2) ** 2 + (y - H / 2) ** 2) / (W / 2), 0, 1
+        ).astype(np.float32)
         depth = prep_depth(depth_raw, DepthPrepParams())
 
         pattern = get_pattern("crystalline", width=48, height=48, seed=7)
-        result  = synthesize(depth, pattern, StereoParams(depth_factor=0.3))
+        result = synthesize(depth, pattern, StereoParams(depth_factor=0.3))
         self.assertEqual(result.shape, (H, W, 4))
 
     def test_mock_depth_estimate_into_synthesizer(self):
         """AI depth mock → prep → synthesize pipeline."""
+        from depthforge.core.depth_prep import DepthPrepParams, prep_depth
+        from depthforge.core.pattern_gen import (
+            ColorMode,
+            PatternParams,
+            PatternType,
+            generate_pattern,
+        )
+        from depthforge.core.synthesizer import StereoParams, synthesize
         from depthforge.depth_models import get_depth_estimator
-        from depthforge.core.depth_prep import prep_depth, DepthPrepParams
-        from depthforge.core.synthesizer import synthesize, StereoParams
-        from depthforge.core.pattern_gen import generate_pattern, PatternParams, PatternType, ColorMode
 
         H, W = 32, 48
-        rgb   = np.random.randint(100, 200, (H, W, 3), dtype=np.uint8)
-        est   = get_depth_estimator("midas_mock")
+        rgb = np.random.randint(100, 200, (H, W, 3), dtype=np.uint8)
+        est = get_depth_estimator("midas_mock")
         depth = est.estimate(rgb)
         depth = prep_depth(depth, DepthPrepParams())
 
-        pattern = generate_pattern(PatternParams(
-            pattern_type=PatternType.RANDOM_NOISE,
-            tile_width=48, tile_height=48,
-            color_mode=ColorMode.GREYSCALE, seed=1,
-        ))
+        pattern = generate_pattern(
+            PatternParams(
+                pattern_type=PatternType.RANDOM_NOISE,
+                tile_width=48,
+                tile_height=48,
+                color_mode=ColorMode.GREYSCALE,
+                seed=1,
+            )
+        )
         result = synthesize(depth, pattern, StereoParams())
         self.assertEqual(result.shape, (H, W, 4))
 
     def test_io_round_trip_tiff(self):
         """Write and re-read a synthesized output as TIFF."""
-        from depthforge.io.formats import write_rgba, read_rgba
         import tempfile
+
+        from depthforge.io.formats import read_rgba, write_rgba
 
         img = np.random.randint(0, 255, (32, 48, 4), dtype=np.uint8)
         with tempfile.NamedTemporaryFile(suffix=".tiff", delete=False) as f:

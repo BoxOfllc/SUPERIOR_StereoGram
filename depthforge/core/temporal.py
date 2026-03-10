@@ -33,15 +33,15 @@ API
 from __future__ import annotations
 
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Deque, List, Optional
 
 import numpy as np
 
-
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class TemporalConfig:
@@ -74,20 +74,20 @@ class TemporalConfig:
         temporal smoothing strength to track fast depth changes.
     """
 
-    strategy:               str     = "ema"
-    alpha:                  float   = 0.3
-    window_size:            int     = 5
-    flow_blend:             float   = 0.3
-    scene_cut_threshold:    float   = 0.35
-    scene_cut_reset:        bool    = True
-    min_motion_for_flow:    float   = 1.0
-    depth_change_threshold: float   = 0.15
+    strategy: str = "ema"
+    alpha: float = 0.3
+    window_size: int = 5
+    flow_blend: float = 0.3
+    scene_cut_threshold: float = 0.35
+    scene_cut_reset: bool = True
+    min_motion_for_flow: float = 1.0
+    depth_change_threshold: float = 0.15
 
     def __post_init__(self):
         valid = {"ema", "windowed", "flow_guided", "adaptive"}
         if self.strategy not in valid:
             raise ValueError(f"strategy must be one of {valid}, got {self.strategy!r}")
-        self.alpha      = float(np.clip(self.alpha, 0.01, 1.0))
+        self.alpha = float(np.clip(self.alpha, 0.01, 1.0))
         self.flow_blend = float(np.clip(self.flow_blend, 0.0, 1.0))
 
 
@@ -95,11 +95,12 @@ class TemporalConfig:
 # Per-strategy implementations
 # ---------------------------------------------------------------------------
 
+
 class _EMABuffer:
     """Exponential moving average depth buffer."""
 
     def __init__(self, alpha: float):
-        self.alpha   = alpha
+        self.alpha = alpha
         self._smooth: Optional[np.ndarray] = None
 
     def reset(self):
@@ -138,10 +139,10 @@ class _FlowGuidedBuffer:
     """Flow-guided temporal blending."""
 
     def __init__(self, blend: float, flow_config=None):
-        self.blend        = blend
+        self.blend = blend
         self._prev_depth: Optional[np.ndarray] = None
         self._prev_frame: Optional[np.ndarray] = None
-        self._flow_cfg    = flow_config
+        self._flow_cfg = flow_config
 
     def reset(self):
         self._prev_depth = None
@@ -155,18 +156,22 @@ class _FlowGuidedBuffer:
 
         # Compute flow and warp previous depth to current position
         try:
-            from depthforge.core.optical_flow import compute_flow, flow_warp, FlowDepthConfig
-            cfg  = self._flow_cfg or FlowDepthConfig()
+            from depthforge.core.optical_flow import FlowDepthConfig, compute_flow, flow_warp
+
+            cfg = self._flow_cfg or FlowDepthConfig()
             flow = compute_flow(self._prev_frame, frame, cfg)
 
             # Warp previous depth map using the flow
-            prev_d_rgba = np.stack([
-                (self._prev_depth * 255).astype(np.uint8),
-                np.zeros_like(self._prev_depth, dtype=np.uint8),
-                np.zeros_like(self._prev_depth, dtype=np.uint8),
-                np.full(self._prev_depth.shape, 255, dtype=np.uint8),
-            ], axis=-1)
-            warped_rgba  = flow_warp(prev_d_rgba, flow)
+            prev_d_rgba = np.stack(
+                [
+                    (self._prev_depth * 255).astype(np.uint8),
+                    np.zeros_like(self._prev_depth, dtype=np.uint8),
+                    np.zeros_like(self._prev_depth, dtype=np.uint8),
+                    np.full(self._prev_depth.shape, 255, dtype=np.uint8),
+                ],
+                axis=-1,
+            )
+            warped_rgba = flow_warp(prev_d_rgba, flow)
             warped_depth = warped_rgba[:, :, 0].astype(np.float32) / 255.0
 
             # Blend: current depth (1-blend) + warped previous (blend)
@@ -190,6 +195,7 @@ class _FlowGuidedBuffer:
 # TemporalSmoother
 # ---------------------------------------------------------------------------
 
+
 class TemporalSmoother:
     """Unified temporal depth smoother.
 
@@ -202,17 +208,17 @@ class TemporalSmoother:
     """
 
     def __init__(self, config: Optional[TemporalConfig] = None):
-        self.config       = config or TemporalConfig()
+        self.config = config or TemporalConfig()
         self._frame_count = 0
         self._prev_frame: Optional[np.ndarray] = None
-        self._ema         = _EMABuffer(self.config.alpha)
-        self._windowed    = _WindowedBuffer(self.config.window_size)
-        self._flow        = _FlowGuidedBuffer(self.config.flow_blend)
+        self._ema = _EMABuffer(self.config.alpha)
+        self._windowed = _WindowedBuffer(self.config.window_size)
+        self._flow = _FlowGuidedBuffer(self.config.flow_blend)
 
     def reset(self) -> None:
         """Reset all internal state (call on scene cut or at stream start)."""
         self._frame_count = 0
-        self._prev_frame  = None
+        self._prev_frame = None
         self._ema.reset()
         self._windowed.reset()
         self._flow.reset()
@@ -239,11 +245,8 @@ class TemporalSmoother:
         from depthforge.core.optical_flow import detect_scene_cut
 
         # ── Scene-cut detection ──────────────────────────────────────────
-        if (self.config.scene_cut_reset and
-                self._prev_frame is not None and
-                frame is not None):
-            if detect_scene_cut(self._prev_frame, frame,
-                                 threshold=self.config.scene_cut_threshold):
+        if self.config.scene_cut_reset and self._prev_frame is not None and frame is not None:
+            if detect_scene_cut(self._prev_frame, frame, threshold=self.config.scene_cut_threshold):
                 self.reset()
 
         self._frame_count += 1
@@ -299,6 +302,7 @@ class TemporalSmoother:
 # Depth history buffer for look-ahead smoothing
 # ---------------------------------------------------------------------------
 
+
 class DepthHistory:
     """Fixed-size sliding window of past depth frames.
 
@@ -346,15 +350,15 @@ class DepthHistory:
         if not self._buf:
             return None
         frames = np.stack(list(self._buf), axis=0).astype(np.float32)  # (T, H, W)
-        T      = frames.shape[0]
+        T = frames.shape[0]
 
         # Gaussian weights centred on the middle frame
-        centre  = (T - 1) / 2.0
+        centre = (T - 1) / 2.0
         weights = np.exp(-0.5 * ((np.arange(T) - centre) / sigma) ** 2)
         weights = weights / weights.sum()
 
         # Weighted sum along temporal axis
-        result = np.einsum('t,thw->hw', weights, frames)
+        result = np.einsum("t,thw->hw", weights, frames)
         return result.astype(np.float32)
 
     def clear(self) -> None:

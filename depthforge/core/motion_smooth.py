@@ -44,9 +44,6 @@ import numpy as np
 
 from depthforge import HAS_CV2, HAS_SCIPY
 from depthforge.core.optical_flow import (
-    FlowDepthConfig,
-    compute_flow,
-    flow_warp,
     detect_scene_cut,
 )
 
@@ -58,11 +55,12 @@ if HAS_SCIPY:
 # Parameters
 # ---------------------------------------------------------------------------
 
+
 class FlowBackend(Enum):
-    AUTO         = "auto"
-    FARNEBACK    = "farneback"
+    AUTO = "auto"
+    FARNEBACK = "farneback"
     HORN_SCHUNCK = "horn_schunck"
-    NONE         = "none"
+    NONE = "none"
 
 
 @dataclass
@@ -98,22 +96,24 @@ class MotionSmoothParams:
     hs_lambda : float
         Regularisation for Horn-Schunck.
     """
-    temporal_alpha:       float      = 0.35
-    motion_sensitivity:   float      = 0.8
-    flow_scale:           float      = 0.5
-    motion_blur_sigma:    float      = 3.0
-    scene_cut_threshold:  float      = 0.15
-    auto_reset_on_cut:    bool       = True
-    farneback_levels:     int        = 3
-    farneback_winsize:    int        = 15
-    hs_iterations:        int        = 80
-    hs_lambda:            float      = 0.1
-    backend:              FlowBackend = FlowBackend.AUTO
+
+    temporal_alpha: float = 0.35
+    motion_sensitivity: float = 0.8
+    flow_scale: float = 0.5
+    motion_blur_sigma: float = 3.0
+    scene_cut_threshold: float = 0.15
+    auto_reset_on_cut: bool = True
+    farneback_levels: int = 3
+    farneback_winsize: int = 15
+    hs_iterations: int = 80
+    hs_lambda: float = 0.1
+    backend: FlowBackend = FlowBackend.AUTO
 
 
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _effective_backend(params: MotionSmoothParams) -> FlowBackend:
     if params.backend != FlowBackend.AUTO:
@@ -130,7 +130,7 @@ def _to_gray_u8(frame: np.ndarray) -> np.ndarray:
     if frame.ndim == 2:
         return frame.astype(np.uint8)
     rgb = frame[..., :3] if frame.shape[2] >= 3 else frame
-    gray = (0.299 * rgb[..., 0] + 0.587 * rgb[..., 1] + 0.114 * rgb[..., 2])
+    gray = 0.299 * rgb[..., 0] + 0.587 * rgb[..., 1] + 0.114 * rgb[..., 2]
     return gray.astype(np.uint8)
 
 
@@ -147,13 +147,22 @@ def _flow_hs(
     I1 = prev_gray.astype(np.float32) / 255.0
     I2 = curr_gray.astype(np.float32) / 255.0
 
-    Ix = (np.roll(I1, -1, axis=1) - np.roll(I1, 1, axis=1) +
-          np.roll(I2, -1, axis=1) - np.roll(I2, 1, axis=1)) / 4.0
-    Iy = (np.roll(I1, -1, axis=0) - np.roll(I1, 1, axis=0) +
-          np.roll(I2, -1, axis=0) - np.roll(I2, 1, axis=0)) / 4.0
+    Ix = (
+        np.roll(I1, -1, axis=1)
+        - np.roll(I1, 1, axis=1)
+        + np.roll(I2, -1, axis=1)
+        - np.roll(I2, 1, axis=1)
+    ) / 4.0
+    Iy = (
+        np.roll(I1, -1, axis=0)
+        - np.roll(I1, 1, axis=0)
+        + np.roll(I2, -1, axis=0)
+        - np.roll(I2, 1, axis=0)
+    ) / 4.0
     It = I2 - I1
 
     from scipy.ndimage import uniform_filter
+
     u = np.zeros_like(I1)
     v = np.zeros_like(I1)
     lam = params.hs_lambda
@@ -189,14 +198,18 @@ def _estimate_flow(
     scale = params.flow_scale
     if scale < 1.0 and HAS_CV2:
         import cv2
+
         sh, sw = max(1, int(H * scale)), max(1, int(W * scale))
         prev_g = cv2.resize(prev_g, (sw, sh), interpolation=cv2.INTER_AREA)
         curr_g = cv2.resize(curr_g, (sw, sh), interpolation=cv2.INTER_AREA)
 
     if backend == FlowBackend.FARNEBACK and HAS_CV2:
         import cv2
+
         flow_small = cv2.calcOpticalFlowFarneback(
-            prev_g, curr_g, None,
+            prev_g,
+            curr_g,
+            None,
             pyr_scale=0.5,
             levels=params.farneback_levels,
             winsize=params.farneback_winsize,
@@ -212,6 +225,7 @@ def _estimate_flow(
     if scale < 1.0 and flow_small.shape[:2] != (H, W):
         if HAS_CV2:
             import cv2
+
             sx = W / flow_small.shape[1]
             sy = H / flow_small.shape[0]
             flow_small[..., 0] *= sx
@@ -219,12 +233,16 @@ def _estimate_flow(
             flow = cv2.resize(flow_small, (W, H), interpolation=cv2.INTER_LINEAR)
         elif HAS_SCIPY:
             from scipy.ndimage import zoom
+
             sx = W / flow_small.shape[1]
             sy = H / flow_small.shape[0]
-            flow = np.stack([
-                zoom(flow_small[..., 0], (sy, sx)) * sx,
-                zoom(flow_small[..., 1], (sy, sx)) * sy,
-            ], axis=-1)
+            flow = np.stack(
+                [
+                    zoom(flow_small[..., 0], (sy, sx)) * sx,
+                    zoom(flow_small[..., 1], (sy, sx)) * sy,
+                ],
+                axis=-1,
+            )
         else:
             flow = flow_small
     else:
@@ -234,8 +252,8 @@ def _estimate_flow(
 
 
 def _warp(
-    depth: np.ndarray,   # (H, W) float32
-    flow: np.ndarray,    # (H, W, 2) float32
+    depth: np.ndarray,  # (H, W) float32
+    flow: np.ndarray,  # (H, W, 2) float32
 ) -> np.ndarray:
     """Backward warp depth by flow. Falls back to nearest-neighbour."""
     H, W = depth.shape
@@ -245,9 +263,8 @@ def _warp(
 
     if HAS_SCIPY:
         from scipy.ndimage import map_coordinates
-        warped = map_coordinates(
-            depth, [src_y.ravel(), src_x.ravel()], order=1, mode='nearest'
-        )
+
+        warped = map_coordinates(depth, [src_y.ravel(), src_x.ravel()], order=1, mode="nearest")
         return warped.reshape(H, W).astype(np.float32)
     else:
         xi = np.round(src_x).astype(np.int32).clip(0, W - 1)
@@ -256,7 +273,7 @@ def _warp(
 
 
 def _blend_weight(
-    flow: np.ndarray,       # (H, W, 2)
+    flow: np.ndarray,  # (H, W, 2)
     alpha_base: float,
     sensitivity: float,
     blur_sigma: float,
@@ -281,12 +298,13 @@ def _blend_weight(
 # Stateless single-frame function
 # ---------------------------------------------------------------------------
 
+
 def motion_smooth_depth(
-    prev_depth:  np.ndarray,
-    curr_depth:  np.ndarray,
-    prev_frame:  Optional[np.ndarray],
-    curr_frame:  Optional[np.ndarray],
-    params:      Optional[MotionSmoothParams] = None,
+    prev_depth: np.ndarray,
+    curr_depth: np.ndarray,
+    prev_frame: Optional[np.ndarray],
+    curr_frame: Optional[np.ndarray],
+    params: Optional[MotionSmoothParams] = None,
 ) -> np.ndarray:
     """
     Motion-aware temporal blend of two depth maps.
@@ -320,10 +338,10 @@ def motion_smooth_depth(
 
     if flow is not None:
         warped_prev = _warp(prev_depth, flow)
-        alpha_map   = _blend_weight(flow, p.temporal_alpha, p.motion_sensitivity, p.motion_blur_sigma)
+        alpha_map = _blend_weight(flow, p.temporal_alpha, p.motion_sensitivity, p.motion_blur_sigma)
     else:
         warped_prev = prev_depth.astype(np.float32)
-        alpha_map   = p.temporal_alpha
+        alpha_map = p.temporal_alpha
 
     return (alpha_map * warped_prev + (1.0 - alpha_map) * curr_depth).astype(np.float32)
 
@@ -331,6 +349,7 @@ def motion_smooth_depth(
 # ---------------------------------------------------------------------------
 # Stateful smoother
 # ---------------------------------------------------------------------------
+
 
 class MotionSmoother:
     """
@@ -342,14 +361,14 @@ class MotionSmoother:
 
     def __init__(self, params: Optional[MotionSmoothParams] = None):
         self.params = params or MotionSmoothParams()
-        self._prev_depth:  Optional[np.ndarray] = None
-        self._prev_frame:  Optional[np.ndarray] = None
+        self._prev_depth: Optional[np.ndarray] = None
+        self._prev_frame: Optional[np.ndarray] = None
         self._frame_index: int = 0
 
     def reset(self) -> None:
         """Clear all frame history."""
-        self._prev_depth  = None
-        self._prev_frame  = None
+        self._prev_depth = None
+        self._prev_frame = None
         self._frame_index = 0
 
     def update(
@@ -372,15 +391,21 @@ class MotionSmoother:
         depth = depth.astype(np.float32)
 
         if self._prev_depth is None:
-            self._prev_depth  = depth.copy()
-            self._prev_frame  = source_frame
+            self._prev_depth = depth.copy()
+            self._prev_frame = source_frame
             self._frame_index = 1
             return depth.copy()
 
         # Scene-cut detection
         if self.params.auto_reset_on_cut:
-            proxy_prev = self._prev_frame if self._prev_frame is not None else (self._prev_depth * 255).astype(np.uint8)
-            proxy_curr = source_frame     if source_frame     is not None else (depth * 255).astype(np.uint8)
+            proxy_prev = (
+                self._prev_frame
+                if self._prev_frame is not None
+                else (self._prev_depth * 255).astype(np.uint8)
+            )
+            proxy_curr = (
+                source_frame if source_frame is not None else (depth * 255).astype(np.uint8)
+            )
             if detect_scene_cut(proxy_prev, proxy_curr, threshold=self.params.scene_cut_threshold):
                 self._prev_depth = depth.copy()
                 self._prev_frame = source_frame
@@ -388,12 +413,14 @@ class MotionSmoother:
                 return depth.copy()
 
         smoothed = motion_smooth_depth(
-            self._prev_depth, depth,
-            self._prev_frame, source_frame,
+            self._prev_depth,
+            depth,
+            self._prev_frame,
+            source_frame,
             self.params,
         )
-        self._prev_depth  = smoothed
-        self._prev_frame  = source_frame
+        self._prev_depth = smoothed
+        self._prev_frame = source_frame
         self._frame_index += 1
         return smoothed
 

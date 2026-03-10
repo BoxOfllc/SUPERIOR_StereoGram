@@ -1,0 +1,181 @@
+{
+  "last_node_id": 9,
+  "last_link_id": 5,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [30, 20],
+      "size": {"0": 800, "1": 70},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "Hidden Image Workflow — DepthForge v0.5\nEncodes invisible shapes and text into random-dot stereograms. No external depth map needed.\nLeft branch: geometric shape (star). Right branch: text message (HELLO). Viewer sees nothing until eyes relax."},
+      "widgets_values": ["Hidden Image Workflow — DepthForge v0.5\nEncodes invisible shapes and text into random-dot stereograms. No external depth map needed.\nLeft branch: geometric shape (star). Right branch: text message (HELLO). Viewer sees nothing until eyes relax."]
+    },
+    {
+      "id": 2,
+      "type": "DF_PatternGen",
+      "pos": [30, 130],
+      "size": {"0": 245, "1": 226},
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "pattern",         "type": "PATTERN", "links": [1, 2], "slot_index": 0},
+        {"name": "pattern_preview", "type": "IMAGE",   "links": [],     "slot_index": 1}
+      ],
+      "title": "DF Pattern Gen — Base Noise",
+      "properties": {"Node name for S&R": "DF_PatternGen"},
+      "widgets_values": ["random_noise", "greyscale", 128, 128, 42, 1.0]
+    },
+    {
+      "id": 3,
+      "type": "Note",
+      "pos": [30, 400],
+      "size": {"0": 245, "1": 90},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "random_noise greyscale = classic magic-eye look.\nSame pattern feeds both hidden-image nodes\nso they share a visual baseline for comparison."},
+      "widgets_values": ["random_noise greyscale = classic magic-eye look.\nSame pattern feeds both hidden-image nodes\nso they share a visual baseline for comparison."]
+    },
+    {
+      "id": 4,
+      "type": "DF_HiddenImage",
+      "pos": [350, 130],
+      "size": {"0": 245, "1": 310},
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "pattern", "type": "PATTERN", "link": 1}
+      ],
+      "outputs": [
+        {"name": "hidden_stereogram", "type": "IMAGE", "links": [3], "slot_index": 0},
+        {"name": "depth_preview",     "type": "IMAGE", "links": [4], "slot_index": 1}
+      ],
+      "title": "DF Hidden Image — Star Shape",
+      "properties": {"Node name for S&R": "DF_HiddenImage"},
+      "widgets_values": [1920, 1080, "star", "", 180, 0.75, 0.10, 4]
+    },
+    {
+      "id": 5,
+      "type": "DF_HiddenImage",
+      "pos": [350, 490],
+      "size": {"0": 245, "1": 310},
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "pattern", "type": "PATTERN", "link": 2}
+      ],
+      "outputs": [
+        {"name": "hidden_stereogram", "type": "IMAGE", "links": [5], "slot_index": 0},
+        {"name": "depth_preview",     "type": "IMAGE", "links": [],  "slot_index": 1}
+      ],
+      "title": "DF Hidden Image — Text: HELLO",
+      "properties": {"Node name for S&R": "DF_HiddenImage"},
+      "widgets_values": [1920, 1080, "none", "HELLO", 180, 0.75, 0.10, 4]
+    },
+    {
+      "id": 6,
+      "type": "Note",
+      "pos": [350, 840],
+      "size": {"0": 245, "1": 110},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "foreground_depth 0.75 = shape appears to float\nin front of the background plane.\nbackground_depth 0.10 = recedes into distance.\nedge_soften_px 4 = reduces hard-edge ringing.\nText needs a large font_size (180+) to be legible."},
+      "widgets_values": ["foreground_depth 0.75 = shape appears to float\nin front of the background plane.\nbackground_depth 0.10 = recedes into distance.\nedge_soften_px 4 = reduces hard-edge ringing.\nText needs a large font_size (180+) to be legible."]
+    },
+    {
+      "id": 7,
+      "type": "PreviewImage",
+      "pos": [670, 130],
+      "size": {"0": 210, "1": 246},
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 3}],
+      "outputs": [],
+      "title": "Hidden Star Stereogram",
+      "properties": {"Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    },
+    {
+      "id": 8,
+      "type": "PreviewImage",
+      "pos": [670, 410],
+      "size": {"0": 210, "1": 246},
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 4}],
+      "outputs": [],
+      "title": "Star Depth Map Preview",
+      "properties": {"Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    },
+    {
+      "id": 9,
+      "type": "PreviewImage",
+      "pos": [670, 490],
+      "size": {"0": 210, "1": 246},
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [{"name": "images", "type": "IMAGE", "link": 5}],
+      "outputs": [],
+      "title": "Hidden Text Stereogram (HELLO)",
+      "properties": {"Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    }
+  ],
+  "links": [
+    [1, 2, 0, 4, 0, "PATTERN"],
+    [2, 2, 0, 5, 0, "PATTERN"],
+    [3, 4, 0, 7, 0, "IMAGE"],
+    [4, 4, 1, 8, 0, "IMAGE"],
+    [5, 5, 0, 9, 0, "IMAGE"]
+  ],
+  "groups": [
+    {
+      "title": "1 \u2014 Base Pattern",
+      "bounding": [10, 110, 285, 390],
+      "color": "#3f789e",
+      "font_size": 24
+    },
+    {
+      "title": "2a \u2014 Geometric Shape (Star)",
+      "bounding": [330, 110, 285, 440],
+      "color": "#6f5a32",
+      "font_size": 24
+    },
+    {
+      "title": "2b \u2014 Text Encoding (HELLO)",
+      "bounding": [330, 470, 285, 490],
+      "color": "#5a3a6a",
+      "font_size": 24
+    },
+    {
+      "title": "3 \u2014 Preview",
+      "bounding": [650, 110, 250, 750],
+      "color": "#6a3a3a",
+      "font_size": 24
+    }
+  ],
+  "config": {},
+  "extra": {"ds": {"scale": 0.85, "offset": [0, 0]}},
+  "version": 0.4
+}

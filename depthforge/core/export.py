@@ -35,15 +35,14 @@ API
 
 from __future__ import annotations
 
-import os
 import json
-from dataclasses import dataclass, field, asdict
+import os
+from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 from PIL import Image
-
 
 # ---------------------------------------------------------------------------
 # Supported formats
@@ -51,13 +50,13 @@ from PIL import Image
 
 #: File extension → PIL/Pillow save format string
 FORMAT_MAP: Dict[str, str] = {
-    ".png":  "PNG",
-    ".jpg":  "JPEG",
+    ".png": "PNG",
+    ".jpg": "JPEG",
     ".jpeg": "JPEG",
-    ".tif":  "TIFF",
+    ".tif": "TIFF",
     ".tiff": "TIFF",
     ".webp": "WEBP",
-    ".bmp":  "BMP",
+    ".bmp": "BMP",
 }
 
 #: Formats that support 16-bit output
@@ -70,6 +69,7 @@ SUPPORTS_ALPHA = {".png", ".tiff", ".tif", ".webp", ".bmp"}
 # ---------------------------------------------------------------------------
 # ExportProfile
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ExportProfile:
@@ -115,23 +115,23 @@ class ExportProfile:
         Free-form delivery instructions.
     """
 
-    name:             str   = "custom"
-    display_name:     str   = "Custom"
-    format:           str   = ".png"
-    dpi:              int   = 72
-    color_space:      str   = "sRGB"
-    bit_depth:        int   = 8
-    include_alpha:    bool  = False
-    target_width:     int   = 0
-    target_height:    int   = 0
-    jpeg_quality:     int   = 95
-    png_compress:     int   = 6
-    tiff_compress:    str   = "lzw"
-    embed_icc:        bool  = True
-    icc_profile_path: str   = ""
-    embed_metadata:   bool  = True
-    watermark:        str   = ""
-    notes:            str   = ""
+    name: str = "custom"
+    display_name: str = "Custom"
+    format: str = ".png"
+    dpi: int = 72
+    color_space: str = "sRGB"
+    bit_depth: int = 8
+    include_alpha: bool = False
+    target_width: int = 0
+    target_height: int = 0
+    jpeg_quality: int = 95
+    png_compress: int = 6
+    tiff_compress: str = "lzw"
+    embed_icc: bool = True
+    icc_profile_path: str = ""
+    embed_metadata: bool = True
+    watermark: str = ""
+    notes: str = ""
 
     def __post_init__(self):
         if self.bit_depth not in (8, 16):
@@ -195,7 +195,7 @@ _BUILTIN_PROFILES: Dict[str, ExportProfile] = {
         display_name="Print — CMYK TIFF (300dpi)",
         format=".tiff",
         dpi=300,
-        color_space="sRGB",   # converted to CMYK at save time
+        color_space="sRGB",  # converted to CMYK at save time
         bit_depth=8,
         include_alpha=False,
         tiff_compress="none",
@@ -234,7 +234,7 @@ _BUILTIN_PROFILES: Dict[str, ExportProfile] = {
     "archive_exr": ExportProfile(
         name="archive_exr",
         display_name="Archival — EXR (Linear)",
-        format=".tiff",    # EXR requires OpenEXR; fall back to TIFF
+        format=".tiff",  # EXR requires OpenEXR; fall back to TIFF
         dpi=72,
         color_space="Linear",
         bit_depth=16,
@@ -300,6 +300,7 @@ def register_profile(profile: ExportProfile) -> None:
 # Exporter
 # ---------------------------------------------------------------------------
 
+
 class Exporter:
     """Apply an ExportProfile and write a stereogram to disk.
 
@@ -316,10 +317,10 @@ class Exporter:
 
     def export(
         self,
-        image:    np.ndarray,
+        image: np.ndarray,
         out_path: str,
         *,
-        depth:    Optional[np.ndarray] = None,
+        depth: Optional[np.ndarray] = None,
     ) -> str:
         """Export a single stereogram image.
 
@@ -340,7 +341,7 @@ class Exporter:
         p = self.profile
 
         # ── Determine output path ─────────────────────────────────────────
-        out     = Path(out_path)
+        out = Path(out_path)
         if out.suffix.lower() not in FORMAT_MAP:
             out = out.with_suffix(p.format)
         out.parent.mkdir(parents=True, exist_ok=True)
@@ -371,10 +372,10 @@ class Exporter:
 
     def export_batch(
         self,
-        items:      List[Tuple["np.ndarray", str]],
+        items: List[Tuple["np.ndarray", str]],
         output_dir: str,
         *,
-        n_workers:  int = 1,
+        n_workers: int = 1,
     ) -> List[str]:
         """Export a batch of images.
 
@@ -396,7 +397,7 @@ class Exporter:
 
         def _safe_path(stem: str) -> str:
             """Reject stems containing path separators or traversal sequences."""
-            safe = Path(stem).name   # strips any directory component
+            safe = Path(stem).name  # strips any directory component
             if safe != stem.replace("\\", "/").split("/")[-1]:
                 raise ValueError(
                     f"name_stem {stem!r} contains path separators. "
@@ -404,23 +405,16 @@ class Exporter:
                 )
             resolved = (out_root / safe).resolve()
             if not str(resolved).startswith(str(out_root)):
-                raise ValueError(
-                    f"name_stem {stem!r} would escape the output directory."
-                )
+                raise ValueError(f"name_stem {stem!r} would escape the output directory.")
             return str(out_root / safe)
 
         if n_workers == 1:
-            return [
-                self.export(img, _safe_path(stem))
-                for img, stem in items
-            ]
+            return [self.export(img, _safe_path(stem)) for img, stem in items]
 
         from concurrent.futures import ThreadPoolExecutor
+
         with ThreadPoolExecutor(max_workers=n_workers) as pool:
-            futures = [
-                pool.submit(self.export, img, _safe_path(stem))
-                for img, stem in items
-            ]
+            futures = [pool.submit(self.export, img, _safe_path(stem)) for img, stem in items]
             return [f.result() for f in futures]
 
     # ── Internal helpers ───────────────────────────────────────────────────
@@ -431,7 +425,11 @@ class Exporter:
         arr = image
 
         if arr.dtype != np.uint8:
-            arr = (np.clip(arr, 0, 1) * 255).astype(np.uint8) if arr.max() <= 1.0 else arr.astype(np.uint8)
+            arr = (
+                (np.clip(arr, 0, 1) * 255).astype(np.uint8)
+                if arr.max() <= 1.0
+                else arr.astype(np.uint8)
+            )
 
         if arr.ndim == 3 and arr.shape[2] == 4:
             img = Image.fromarray(arr, mode="RGBA")
@@ -445,7 +443,10 @@ class Exporter:
             if img.mode == "RGBA":
                 img = img.convert("RGBA")
                 r, g, b, a = img.split()
-                def to16(ch): return ch.point(lambda x: x * 257)
+
+                def to16(ch):
+                    return ch.point(lambda x: x * 257)
+
                 img = Image.merge("RGBA", (to16(r), to16(g), to16(b), to16(a)))
             else:
                 img = img.convert("RGB")
@@ -469,49 +470,56 @@ class Exporter:
         """Burn a semi-transparent text watermark into the bottom-right."""
         try:
             from PIL import ImageDraw, ImageFont
+
             draw = ImageDraw.Draw(img)
-            W, H  = img.size
+            W, H = img.size
             font_size = max(12, H // 40)
             try:
-                font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", font_size)
+                font = ImageFont.truetype(
+                    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", font_size
+                )
             except Exception:
                 font = ImageFont.load_default()
 
             # Measure text
             bbox = draw.textbbox((0, 0), text, font=font)
-            tw   = bbox[2] - bbox[0]
-            th   = bbox[3] - bbox[1]
-            x    = W - tw - 20
-            y    = H - th - 20
+            tw = bbox[2] - bbox[0]
+            th = bbox[3] - bbox[1]
+            x = W - tw - 20
+            y = H - th - 20
 
             # Drop shadow + text
-            draw.text((x+1, y+1), text, font=font, fill=(0, 0, 0, 120))
-            draw.text((x,   y),   text, font=font, fill=(255, 255, 255, 180))
+            draw.text((x + 1, y + 1), text, font=font, fill=(0, 0, 0, 120))
+            draw.text((x, y), text, font=font, fill=(255, 255, 255, 180))
         except Exception:
             pass
         return img
 
     def _build_save_kwargs(self, img: Image.Image) -> dict:
         """Build Pillow save() kwargs from the profile."""
-        p   = self.profile
-        fmt = FORMAT_MAP[Path(img.filename).suffix.lower()] if hasattr(img, 'filename') and img.filename else FORMAT_MAP.get(p.format, "PNG")
+        p = self.profile
+        fmt = (
+            FORMAT_MAP[Path(img.filename).suffix.lower()]
+            if hasattr(img, "filename") and img.filename
+            else FORMAT_MAP.get(p.format, "PNG")
+        )
         kw: dict = {"format": fmt}
 
         if fmt == "PNG":
             kw["compress_level"] = p.png_compress
         elif fmt == "JPEG":
-            kw["quality"]    = p.jpeg_quality
+            kw["quality"] = p.jpeg_quality
             kw["subsampling"] = 0  # 4:4:4
         elif fmt == "TIFF":
             compress_map = {
-                "none":    "raw",
-                "lzw":     "tiff_lzw",
+                "none": "raw",
+                "lzw": "tiff_lzw",
                 "deflate": "tiff_deflate",
-                "jpeg":    "jpeg",
+                "jpeg": "jpeg",
             }
             kw["compression"] = compress_map.get(p.tiff_compress, "tiff_lzw")
         elif fmt == "WEBP":
-            kw["quality"]  = p.jpeg_quality
+            kw["quality"] = p.jpeg_quality
             kw["lossless"] = False
 
         if p.dpi and p.embed_metadata:
@@ -523,6 +531,7 @@ class Exporter:
 # ---------------------------------------------------------------------------
 # ExportQueue — async batch export
 # ---------------------------------------------------------------------------
+
 
 class ExportQueue:
     """A thread-safe queue for background export jobs.
@@ -548,26 +557,27 @@ class ExportQueue:
 
     def __init__(
         self,
-        profile:    "str | ExportProfile",
+        profile: "str | ExportProfile",
         output_dir: str,
-        n_workers:  int = 2,
+        n_workers: int = 2,
     ):
-        self._exporter   = Exporter(profile)
+        self._exporter = Exporter(profile)
         self._output_dir = output_dir
-        self._n_workers  = n_workers
-        self._futures    = []
-        self._executor   = None
+        self._n_workers = n_workers
+        self._futures = []
+        self._executor = None
 
     def start(self) -> None:
         """Start the background thread pool."""
         from concurrent.futures import ThreadPoolExecutor
+
         self._executor = ThreadPoolExecutor(max_workers=self._n_workers)
 
     def enqueue(self, image: np.ndarray, name_stem: str) -> None:
         """Submit an image for background export."""
         if self._executor is None:
             self.start()
-        path   = os.path.join(self._output_dir, name_stem)
+        path = os.path.join(self._output_dir, name_stem)
         future = self._executor.submit(self._exporter.export, image, path)
         self._futures.append(future)
 

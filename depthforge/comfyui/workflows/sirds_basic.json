@@ -1,0 +1,199 @@
+{
+  "last_node_id": 10,
+  "last_link_id": 4,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [30, 20],
+      "size": {"0": 720, "1": 70},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "SIRDS Basic Workflow — DepthForge v0.5\nMinimal test: Load depth map \u2192 DF Depth Prep \u2192 DF Pattern Gen \u2192 DF Stereogram \u2192 Preview\nDepth map convention: WHITE = near (close to camera), BLACK = far (background)"},
+      "widgets_values": ["SIRDS Basic Workflow — DepthForge v0.5\nMinimal test: Load depth map \u2192 DF Depth Prep \u2192 DF Pattern Gen \u2192 DF Stereogram \u2192 Preview\nDepth map convention: WHITE = near (close to camera), BLACK = far (background)"]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [30, 130],
+      "size": {"0": 220, "1": 314},
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [1], "slot_index": 0},
+        {"name": "MASK",  "type": "MASK",  "links": [],  "slot_index": 1}
+      ],
+      "title": "Load Depth Map",
+      "properties": {"Node name for S&R": "LoadImage"},
+      "widgets_values": ["depth_test.png", "image"]
+    },
+    {
+      "id": 3,
+      "type": "Note",
+      "pos": [30, 478],
+      "size": {"0": 220, "1": 100},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "Load any grayscale depth map.\nWHITE pixel = 1.0 = nearest point\nBLACK pixel = 0.0 = farthest point\nAny resolution works."},
+      "widgets_values": ["Load any grayscale depth map.\nWHITE pixel = 1.0 = nearest point\nBLACK pixel = 0.0 = farthest point\nAny resolution works."]
+    },
+    {
+      "id": 4,
+      "type": "DF_DepthPrep",
+      "pos": [310, 130],
+      "size": {"0": 245, "1": 272},
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "depth_image", "type": "IMAGE", "link": 1}
+      ],
+      "outputs": [
+        {"name": "depth_map",     "type": "DEPTH_MAP", "links": [2], "slot_index": 0},
+        {"name": "depth_preview", "type": "IMAGE",     "links": [],  "slot_index": 1}
+      ],
+      "title": "DF Depth Prep",
+      "properties": {"Node name for S&R": "DF_DepthPrep"},
+      "widgets_values": [false, 5.0, 0.1, 3, "linear", 0.0, 1.0]
+    },
+    {
+      "id": 5,
+      "type": "DF_PatternGen",
+      "pos": [310, 450],
+      "size": {"0": 245, "1": 226},
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "pattern",         "type": "PATTERN", "links": [3], "slot_index": 0},
+        {"name": "pattern_preview", "type": "IMAGE",   "links": [],  "slot_index": 1}
+      ],
+      "title": "DF Pattern Gen — Random Noise",
+      "properties": {"Node name for S&R": "DF_PatternGen"},
+      "widgets_values": ["random_noise", "greyscale", 128, 128, 42, 1.0]
+    },
+    {
+      "id": 6,
+      "type": "Note",
+      "pos": [310, 710],
+      "size": {"0": 245, "1": 90},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "random_noise is the classic SIRDS dot pattern.\nSeed 42 keeps output reproducible.\n128\u00d7128 tile is sufficient for any output size."},
+      "widgets_values": ["random_noise is the classic SIRDS dot pattern.\nSeed 42 keeps output reproducible.\n128\u00d7128 tile is sufficient for any output size."]
+    },
+    {
+      "id": 7,
+      "type": "DF_Stereogram",
+      "pos": [620, 260],
+      "size": {"0": 245, "1": 272},
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "depth_map", "type": "DEPTH_MAP", "link": 2},
+        {"name": "pattern",   "type": "PATTERN",   "link": 3}
+      ],
+      "outputs": [
+        {"name": "stereogram", "type": "IMAGE", "links": [4], "slot_index": 0}
+      ],
+      "title": "DF Stereogram — SIRDS",
+      "properties": {"Node name for S&R": "DF_Stereogram"},
+      "widgets_values": [0.35, 0.033, 1, false, 42, false, "none"]
+    },
+    {
+      "id": 8,
+      "type": "Note",
+      "pos": [620, 570],
+      "size": {"0": 245, "1": 100},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "depth_factor 0.35 = comfortable pop for most viewers.\nmax_parallax 0.033 = 1\u215e image width (safe fusion limit).\nRaise depth_factor to 0.5 for more dramatic depth."},
+      "widgets_values": ["depth_factor 0.35 = comfortable pop for most viewers.\nmax_parallax 0.033 = 1\u215e image width (safe fusion limit).\nRaise depth_factor to 0.5 for more dramatic depth."]
+    },
+    {
+      "id": 9,
+      "type": "PreviewImage",
+      "pos": [930, 260],
+      "size": {"0": 210, "1": 246},
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 4}
+      ],
+      "outputs": [],
+      "title": "SIRDS Output Preview",
+      "properties": {"Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    },
+    {
+      "id": 10,
+      "type": "Note",
+      "pos": [930, 540],
+      "size": {"0": 210, "1": 110},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "Viewing tip:\nRelax your eyes as if looking\nthrough the image into the distance.\nA 3D scene slowly emerges.\nParallel-viewing technique (no cross-eye)."},
+      "widgets_values": ["Viewing tip:\nRelax your eyes as if looking\nthrough the image into the distance.\nA 3D scene slowly emerges.\nParallel-viewing technique (no cross-eye)."]
+    }
+  ],
+  "links": [
+    [1, 2, 0, 4, 0, "IMAGE"],
+    [2, 4, 0, 7, 0, "DEPTH_MAP"],
+    [3, 5, 0, 7, 1, "PATTERN"],
+    [4, 7, 0, 9, 0, "IMAGE"]
+  ],
+  "groups": [
+    {
+      "title": "1 \u2014 Load Depth Map",
+      "bounding": [10, 110, 260, 490],
+      "color": "#3f789e",
+      "font_size": 24
+    },
+    {
+      "title": "2 \u2014 Depth Processing & Pattern",
+      "bounding": [290, 110, 285, 710],
+      "color": "#6f5a32",
+      "font_size": 24
+    },
+    {
+      "title": "3 \u2014 SIRDS Synthesis",
+      "bounding": [600, 240, 285, 440],
+      "color": "#4a6a4a",
+      "font_size": 24
+    },
+    {
+      "title": "4 \u2014 Preview",
+      "bounding": [910, 240, 250, 420],
+      "color": "#6a3a3a",
+      "font_size": 24
+    }
+  ],
+  "config": {},
+  "extra": {"ds": {"scale": 0.85, "offset": [0, 0]}},
+  "version": 0.4
+}

@@ -1,0 +1,1171 @@
+{
+  "last_node_id": 25,
+  "last_link_id": 19,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [
+        30,
+        20
+      ],
+      "size": {
+        "0": 1200,
+        "1": 70
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {
+        "text": "Full Production Pipeline \u00e2\u20ac\u201d DepthForge v0.5 \u00e2\u20ac\u201d ALL 10 NODES\nFlow: Load \u2192 DF_DepthPrep \u2192 DF_SafetyLimiter \u2192 DF_QCOverlay \u2192 [DF_Stereogram | DF_AnaglyphOut | DF_StereoPair | DF_HiddenImage | DF_VideoSequence]\nDF_PatternGen and DF_PatternLibrary feed the synthesis nodes. Each output branch is independently previewable."
+      },
+      "widgets_values": [
+        "Full Production Pipeline \u00e2\u20ac\u201d DepthForge v0.5 \u00e2\u20ac\u201d ALL 10 NODES\nFlow: Load \u2192 DF_DepthPrep \u2192 DF_SafetyLimiter \u2192 DF_QCOverlay \u2192 [DF_Stereogram | DF_AnaglyphOut | DF_StereoPair | DF_HiddenImage | DF_VideoSequence]\nDF_PatternGen and DF_PatternLibrary feed the synthesis nodes. Each output branch is independently previewable."
+      ]
+    },
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [
+        30,
+        130
+      ],
+      "size": {
+        "0": 220,
+        "1": 314
+      },
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            1,
+            2
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Load Source Image (RGB)",
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "source_image.png",
+        "image"
+      ]
+    },
+    {
+      "id": 3,
+      "type": "LoadImage",
+      "pos": [
+        30,
+        490
+      ],
+      "size": {
+        "0": 220,
+        "1": 314
+      },
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            3
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "Load Depth Map",
+      "properties": {
+        "Node name for S&R": "LoadImage"
+      },
+      "widgets_values": [
+        "depth_test.png",
+        "image"
+      ]
+    },
+    {
+      "id": 4,
+      "type": "Note",
+      "pos": [
+        30,
+        840
+      ],
+      "size": {
+        "0": 220,
+        "1": 70
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {
+        "text": "STAGE 1: LOAD\nSource image (RGB) and depth map\nmust be the same pixel resolution."
+      },
+      "widgets_values": [
+        "STAGE 1: LOAD\nSource image (RGB) and depth map\nmust be the same pixel resolution."
+      ]
+    },
+    {
+      "id": 5,
+      "type": "DF_DepthPrep",
+      "pos": [
+        320,
+        310
+      ],
+      "size": {
+        "0": 245,
+        "1": 272
+      },
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "depth_image",
+          "type": "IMAGE",
+          "link": 3
+        }
+      ],
+      "outputs": [
+        {
+          "name": "depth_map",
+          "type": "DEPTH_MAP",
+          "links": [
+            4
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "depth_preview",
+          "type": "IMAGE",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "DF Depth Prep",
+      "properties": {
+        "Node name for S&R": "DF_DepthPrep"
+      },
+      "widgets_values": [
+        false,
+        5.0,
+        0.1,
+        3,
+        "s_curve",
+        0.0,
+        1.0
+      ]
+    },
+    {
+      "id": 6,
+      "type": "Note",
+      "pos": [
+        320,
+        620
+      ],
+      "size": {
+        "0": 245,
+        "1": 70
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {
+        "text": "STAGE 2: DEPTH PREP\nBilateral smooth + dilation fills thin\ngaps. S_curve gives cinematic roll-off."
+      },
+      "widgets_values": [
+        "STAGE 2: DEPTH PREP\nBilateral smooth + dilation fills thin\ngaps. S_curve gives cinematic roll-off."
+      ]
+    },
+    {
+      "id": 7,
+      "type": "DF_SafetyLimiter",
+      "pos": [
+        640,
+        130
+      ],
+      "size": {
+        "0": 245,
+        "1": 246
+      },
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "depth_map",
+          "type": "DEPTH_MAP",
+          "link": 4
+        }
+      ],
+      "outputs": [
+        {
+          "name": "safe_depth",
+          "type": "DEPTH_MAP",
+          "links": [
+            5,
+            6,
+            7,
+            8
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "depth_preview",
+          "type": "IMAGE",
+          "links": [
+            10
+          ],
+          "slot_index": 1
+        },
+        {
+          "name": "violation_report",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 2
+        }
+      ],
+      "title": "DF Safety Limiter",
+      "properties": {
+        "Node name for S&R": "DF_SafetyLimiter"
+      },
+      "widgets_values": [
+        "standard",
+        0.6,
+        0.15,
+        0.02,
+        0.98,
+        true
+      ]
+    },
+    {
+      "id": 8,
+      "type": "DF_QCOverlay",
+      "pos": [
+        640,
+        430
+      ],
+      "size": {
+        "0": 245,
+        "1": 272
+      },
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "depth_map",
+          "type": "DEPTH_MAP",
+          "link": 5
+        }
+      ],
+      "outputs": [
+        {
+          "name": "qc_image",
+          "type": "IMAGE",
+          "links": [
+            11
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "comfort_summary",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "DF QC Overlay \u00e2\u20ac\u201d Parallax Heatmap",
+      "properties": {
+        "Node name for S&R": "DF_QCOverlay"
+      },
+      "widgets_values": [
+        "parallax_heatmap",
+        1920,
+        0.35,
+        0.033,
+        8,
+        "inferno",
+        true
+      ]
+    },
+    {
+      "id": 9,
+      "type": "Note",
+      "pos": [
+        640,
+        750
+      ],
+      "size": {
+        "0": 245,
+        "1": 80
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {
+        "text": "STAGE 3: SAFETY & QC\nSafetyLimiter clips extreme depth.\nQCOverlay shows parallax as heatmap.\nviolation_report + comfort_summary are text outputs."
+      },
+      "widgets_values": [
+        "STAGE 3: SAFETY & QC\nSafetyLimiter clips extreme depth.\nQCOverlay shows parallax as heatmap.\nviolation_report + comfort_summary are text outputs."
+      ]
+    },
+    {
+      "id": 10,
+      "type": "DF_PatternGen",
+      "pos": [
+        960,
+        130
+      ],
+      "size": {
+        "0": 245,
+        "1": 226
+      },
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "pattern",
+          "type": "PATTERN",
+          "links": [
+            12,
+            13
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "pattern_preview",
+          "type": "IMAGE",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "DF Pattern Gen \u00e2\u20ac\u201d Random Noise",
+      "properties": {
+        "Node name for S&R": "DF_PatternGen"
+      },
+      "widgets_values": [
+        "random_noise",
+        "greyscale",
+        128,
+        128,
+        42,
+        1.0
+      ]
+    },
+    {
+      "id": 11,
+      "type": "DF_PatternLibrary",
+      "pos": [
+        960,
+        410
+      ],
+      "size": {
+        "0": 245,
+        "1": 226
+      },
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "pattern",
+          "type": "PATTERN",
+          "links": [
+            14
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "pattern_preview",
+          "type": "IMAGE",
+          "links": [],
+          "slot_index": 1
+        },
+        {
+          "name": "pattern_info",
+          "type": "STRING",
+          "links": [],
+          "slot_index": 2
+        }
+      ],
+      "title": "DF Pattern Library \u00e2\u20ac\u201d Named Pattern",
+      "properties": {
+        "Node name for S&R": "DF_PatternLibrary"
+      },
+      "widgets_values": [
+        "crystalline",
+        128,
+        128,
+        42,
+        1.0
+      ]
+    },
+    {
+      "id": 12,
+      "type": "Note",
+      "pos": [
+        960,
+        680
+      ],
+      "size": {
+        "0": 245,
+        "1": 70
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {
+        "text": "STAGE 4: PATTERN SOURCES\nPatternGen \u2192 SIRDS + Video branches.\nPatternLibrary (crystalline) \u2192 Hidden Image branch."
+      },
+      "widgets_values": [
+        "STAGE 4: PATTERN SOURCES\nPatternGen \u2192 SIRDS + Video branches.\nPatternLibrary (crystalline) \u2192 Hidden Image branch."
+      ]
+    },
+    {
+      "id": 13,
+      "type": "DF_Stereogram",
+      "pos": [
+        1280,
+        100
+      ],
+      "size": {
+        "0": 245,
+        "1": 272
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "depth_map",
+          "type": "DEPTH_MAP",
+          "link": 6
+        },
+        {
+          "name": "pattern",
+          "type": "PATTERN",
+          "link": 12
+        }
+      ],
+      "outputs": [
+        {
+          "name": "stereogram",
+          "type": "IMAGE",
+          "links": [
+            15
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "DF Stereogram \u00e2\u20ac\u201d SIRDS",
+      "properties": {
+        "Node name for S&R": "DF_Stereogram"
+      },
+      "widgets_values": [
+        0.35,
+        0.033,
+        1,
+        false,
+        42,
+        false,
+        "none"
+      ]
+    },
+    {
+      "id": 14,
+      "type": "DF_AnaglyphOut",
+      "pos": [
+        1280,
+        430
+      ],
+      "size": {
+        "0": 245,
+        "1": 226
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source_image",
+          "type": "IMAGE",
+          "link": 1
+        },
+        {
+          "name": "depth_map",
+          "type": "DEPTH_MAP",
+          "link": 7
+        }
+      ],
+      "outputs": [
+        {
+          "name": "anaglyph",
+          "type": "IMAGE",
+          "links": [
+            16
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "DF Anaglyph Out \u00e2\u20ac\u201d Optimised",
+      "properties": {
+        "Node name for S&R": "DF_AnaglyphOut"
+      },
+      "widgets_values": [
+        "optimised",
+        0.35,
+        30,
+        false,
+        1.0
+      ]
+    },
+    {
+      "id": 15,
+      "type": "DF_StereoPair",
+      "pos": [
+        1280,
+        720
+      ],
+      "size": {
+        "0": 245,
+        "1": 286
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "source_image",
+          "type": "IMAGE",
+          "link": 2
+        },
+        {
+          "name": "depth_map",
+          "type": "DEPTH_MAP",
+          "link": 8
+        }
+      ],
+      "outputs": [
+        {
+          "name": "left_view",
+          "type": "IMAGE",
+          "links": [],
+          "slot_index": 0
+        },
+        {
+          "name": "right_view",
+          "type": "IMAGE",
+          "links": [],
+          "slot_index": 1
+        },
+        {
+          "name": "occlusion_mask",
+          "type": "IMAGE",
+          "links": [],
+          "slot_index": 2
+        },
+        {
+          "name": "composed",
+          "type": "IMAGE",
+          "links": [
+            17
+          ],
+          "slot_index": 3
+        }
+      ],
+      "title": "DF Stereo Pair \u00e2\u20ac\u201d Side-by-Side",
+      "properties": {
+        "Node name for S&R": "DF_StereoPair"
+      },
+      "widgets_values": [
+        0.033,
+        0.5,
+        "edge",
+        3,
+        "side_by_side",
+        0
+      ]
+    },
+    {
+      "id": 16,
+      "type": "DF_HiddenImage",
+      "pos": [
+        1280,
+        1070
+      ],
+      "size": {
+        "0": 245,
+        "1": 310
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "pattern",
+          "type": "PATTERN",
+          "link": 14
+        }
+      ],
+      "outputs": [
+        {
+          "name": "hidden_stereogram",
+          "type": "IMAGE",
+          "links": [
+            18
+          ],
+          "slot_index": 0
+        },
+        {
+          "name": "depth_preview",
+          "type": "IMAGE",
+          "links": [],
+          "slot_index": 1
+        }
+      ],
+      "title": "DF Hidden Image \u00e2\u20ac\u201d Diamond",
+      "properties": {
+        "Node name for S&R": "DF_HiddenImage"
+      },
+      "widgets_values": [
+        1920,
+        1080,
+        "diamond",
+        "",
+        180,
+        0.75,
+        0.1,
+        4
+      ]
+    },
+    {
+      "id": 17,
+      "type": "DF_VideoSequence",
+      "pos": [
+        1280,
+        1450
+      ],
+      "size": {
+        "0": 245,
+        "1": 246
+      },
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "depth_sequence",
+          "type": "IMAGE",
+          "link": 10
+        },
+        {
+          "name": "pattern",
+          "type": "PATTERN",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "stereogram_sequence",
+          "type": "IMAGE",
+          "links": [
+            19
+          ],
+          "slot_index": 0
+        }
+      ],
+      "title": "DF Video Sequence \u00e2\u20ac\u201d Temporal Smooth",
+      "properties": {
+        "Node name for S&R": "DF_VideoSequence"
+      },
+      "widgets_values": [
+        0.35,
+        0.033,
+        0.3,
+        true,
+        "none",
+        42
+      ]
+    },
+    {
+      "id": 18,
+      "type": "Note",
+      "pos": [
+        1280,
+        1750
+      ],
+      "size": {
+        "0": 245,
+        "1": 100
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {
+        "text": "STAGE 5: OUTPUT BRANCHES\nSIRDS \u2192 classic random-dot stereogram\nAnaglyph \u2192 red/cyan glasses output\nStereo Pair \u2192 side-by-side L/R views\nHidden Image \u2192 invisible diamond shape\nVideo Sequence \u2192 temporally-smooth frame"
+      },
+      "widgets_values": [
+        "STAGE 5: OUTPUT BRANCHES\nSIRDS \u2192 classic random-dot stereogram\nAnaglyph \u2192 red/cyan glasses output\nStereo Pair \u2192 side-by-side L/R views\nHidden Image \u2192 invisible diamond shape\nVideo Sequence \u2192 temporally-smooth frame"
+      ]
+    },
+    {
+      "id": 19,
+      "type": "PreviewImage",
+      "pos": [
+        1600,
+        100
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 15
+        }
+      ],
+      "outputs": [],
+      "title": "SIRDS Output",
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 20,
+      "type": "PreviewImage",
+      "pos": [
+        1600,
+        390
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 11
+        }
+      ],
+      "outputs": [],
+      "title": "QC Heatmap",
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 21,
+      "type": "PreviewImage",
+      "pos": [
+        1600,
+        680
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 16
+        }
+      ],
+      "outputs": [],
+      "title": "Anaglyph Output",
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 22,
+      "type": "PreviewImage",
+      "pos": [
+        1600,
+        970
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 17
+        }
+      ],
+      "outputs": [],
+      "title": "Stereo Pair (Composed)",
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 23,
+      "type": "PreviewImage",
+      "pos": [
+        1600,
+        1260
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 18
+        }
+      ],
+      "outputs": [],
+      "title": "Hidden Image Output",
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 24,
+      "type": "PreviewImage",
+      "pos": [
+        1600,
+        1550
+      ],
+      "size": {
+        "0": 210,
+        "1": 246
+      },
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 19
+        }
+      ],
+      "outputs": [],
+      "title": "Video Sequence Frame",
+      "properties": {
+        "Node name for S&R": "PreviewImage"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 25,
+      "type": "Note",
+      "pos": [
+        1600,
+        1840
+      ],
+      "size": {
+        "0": 210,
+        "1": 90
+      },
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {
+        "text": "All 10 DepthForge nodes active.\nSwap PreviewImage for SaveImage\nto write outputs to disk.\nCTRL+click any node to bypass it."
+      },
+      "widgets_values": [
+        "All 10 DepthForge nodes active.\nSwap PreviewImage for SaveImage\nto write outputs to disk.\nCTRL+click any node to bypass it."
+      ]
+    }
+  ],
+  "links": [
+    [
+      1,
+      2,
+      0,
+      14,
+      0,
+      "IMAGE"
+    ],
+    [
+      2,
+      2,
+      0,
+      15,
+      0,
+      "IMAGE"
+    ],
+    [
+      3,
+      3,
+      0,
+      5,
+      0,
+      "IMAGE"
+    ],
+    [
+      4,
+      5,
+      0,
+      7,
+      0,
+      "DEPTH_MAP"
+    ],
+    [
+      5,
+      7,
+      0,
+      8,
+      0,
+      "DEPTH_MAP"
+    ],
+    [
+      6,
+      7,
+      0,
+      13,
+      0,
+      "DEPTH_MAP"
+    ],
+    [
+      7,
+      7,
+      0,
+      14,
+      1,
+      "DEPTH_MAP"
+    ],
+    [
+      8,
+      7,
+      0,
+      15,
+      1,
+      "DEPTH_MAP"
+    ],
+    [
+      10,
+      7,
+      1,
+      17,
+      0,
+      "IMAGE"
+    ],
+    [
+      11,
+      8,
+      0,
+      20,
+      0,
+      "IMAGE"
+    ],
+    [
+      12,
+      10,
+      0,
+      13,
+      1,
+      "PATTERN"
+    ],
+    [
+      13,
+      10,
+      0,
+      17,
+      1,
+      "PATTERN"
+    ],
+    [
+      14,
+      11,
+      0,
+      16,
+      0,
+      "PATTERN"
+    ],
+    [
+      15,
+      13,
+      0,
+      19,
+      0,
+      "IMAGE"
+    ],
+    [
+      16,
+      14,
+      0,
+      21,
+      0,
+      "IMAGE"
+    ],
+    [
+      17,
+      15,
+      3,
+      22,
+      0,
+      "IMAGE"
+    ],
+    [
+      18,
+      16,
+      0,
+      23,
+      0,
+      "IMAGE"
+    ],
+    [
+      19,
+      17,
+      0,
+      24,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [
+    {
+      "title": "1 \u2014 Load",
+      "bounding": [
+        10,
+        110,
+        260,
+        840
+      ],
+      "color": "#3f789e",
+      "font_size": 24
+    },
+    {
+      "title": "2 \u2014 Depth Prep",
+      "bounding": [
+        300,
+        290,
+        285,
+        410
+      ],
+      "color": "#6f5a32",
+      "font_size": 24
+    },
+    {
+      "title": "3 \u2014 Safety & QC",
+      "bounding": [
+        620,
+        110,
+        285,
+        760
+      ],
+      "color": "#7a4a6a",
+      "font_size": 24
+    },
+    {
+      "title": "4 \u2014 Pattern Sources",
+      "bounding": [
+        940,
+        110,
+        285,
+        670
+      ],
+      "color": "#4a5a2a",
+      "font_size": 24
+    },
+    {
+      "title": "5 \u2014 All 10 Output Nodes",
+      "bounding": [
+        1260,
+        80,
+        285,
+        1800
+      ],
+      "color": "#4a6a4a",
+      "font_size": 24
+    },
+    {
+      "title": "6 \u2014 Preview",
+      "bounding": [
+        1580,
+        80,
+        250,
+        1870
+      ],
+      "color": "#6a3a3a",
+      "font_size": 24
+    }
+  ],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.5,
+      "offset": [
+        0,
+        0
+      ]
+    }
+  },
+  "version": 0.4
+}

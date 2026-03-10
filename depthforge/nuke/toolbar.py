@@ -34,6 +34,7 @@ from __future__ import annotations
 
 try:
     import nuke
+
     _NUKE_AVAILABLE = True
 except ImportError:
     _NUKE_AVAILABLE = False
@@ -68,30 +69,31 @@ nuke.message(
 
 #: (label, mode, preset, shortcut_or_None)
 _MAIN_ITEMS = [
-    ("Stereogram (SIRDS)",      "SIRDS",       "medium",  "Alt+Shift+S"),
-    ("Texture Stereogram",      "Texture",     "medium",  "Alt+Shift+T"),
-    ("Anaglyph 3D",             "Anaglyph",    "medium",  "Alt+Shift+A"),
-    ("Stereo Pair",             "StereoPair",  "medium",  "Alt+Shift+P"),
-    ("Hidden Image",            "HiddenImage", "medium",  None),
-    (None, None, None, None),   # separator
-    ("Depth Prep",              "DepthPrep",   "none",    None),
-    ("QC Overlay",              "QCOverlay",   "none",    None),
-    ("Safety Limiter",          "Safety",      "none",    None),
+    ("Stereogram (SIRDS)", "SIRDS", "medium", "Alt+Shift+S"),
+    ("Texture Stereogram", "Texture", "medium", "Alt+Shift+T"),
+    ("Anaglyph 3D", "Anaglyph", "medium", "Alt+Shift+A"),
+    ("Stereo Pair", "StereoPair", "medium", "Alt+Shift+P"),
+    ("Hidden Image", "HiddenImage", "medium", None),
+    (None, None, None, None),  # separator
+    ("Depth Prep", "DepthPrep", "none", None),
+    ("QC Overlay", "QCOverlay", "none", None),
+    ("Safety Limiter", "Safety", "none", None),
 ]
 
 _PRESET_ITEMS = [
-    ("Shallow (Safe)",          "SIRDS", "shallow"),
-    ("Medium (Default)",        "SIRDS", "medium"),
-    ("Deep (High Impact)",      "SIRDS", "deep"),
-    ("Cinema (SMPTE)",          "SIRDS", "cinema"),
-    ("Print (300 dpi)",         "SIRDS", "print"),
-    ("Broadcast (EBU R95)",     "SIRDS", "broadcast"),
+    ("Shallow (Safe)", "SIRDS", "shallow"),
+    ("Medium (Default)", "SIRDS", "medium"),
+    ("Deep (High Impact)", "SIRDS", "deep"),
+    ("Cinema (SMPTE)", "SIRDS", "cinema"),
+    ("Print (300 dpi)", "SIRDS", "print"),
+    ("Broadcast (EBU R95)", "SIRDS", "broadcast"),
 ]
 
 
 # ---------------------------------------------------------------------------
 # Registration
 # ---------------------------------------------------------------------------
+
 
 def register_menu(menu_name: str = "DepthForge"):
     """Register the DepthForge toolbar menu in Nuke.
@@ -109,8 +111,8 @@ def register_menu(menu_name: str = "DepthForge"):
     if not _NUKE_AVAILABLE:
         raise RuntimeError("Nuke is not available in this environment.")
 
-    toolbar   = nuke.menu("Nuke")
-    df_menu   = toolbar.addMenu(menu_name, icon="DepthForge.png")
+    toolbar = nuke.menu("Nuke")
+    df_menu = toolbar.addMenu(menu_name, icon="DepthForge.png")
 
     # Main synthesis nodes
     for label, mode, preset, shortcut in _MAIN_ITEMS:
@@ -118,9 +120,9 @@ def register_menu(menu_name: str = "DepthForge"):
             df_menu.addSeparator()
             continue
         snippet = _CREATE_NODE_SNIPPET.format(mode=mode, preset=preset)
-        kwargs  = {}
+        kwargs = {}
         if shortcut:
-            kwargs["shortcutContext"] = 2   # Node graph context
+            kwargs["shortcutContext"] = 2  # Node graph context
         df_menu.addCommand(label, snippet, **kwargs)
 
     df_menu.addSeparator()
@@ -151,6 +153,7 @@ def unregister_menu(menu_name: str = "DepthForge") -> None:
 # Viewer LUT registration (cosmetic — adds "DepthForge Depth" LUT option)
 # ---------------------------------------------------------------------------
 
+
 def register_viewer_luts() -> None:
     """Register DepthForge-specific viewer LUT presets in Nuke."""
     if not _NUKE_AVAILABLE:
@@ -163,12 +166,13 @@ def register_viewer_luts() -> None:
             ("Vectorfield",),
         )
     except Exception:
-        pass   # Non-critical — viewer LUT is cosmetic
+        pass  # Non-critical — viewer LUT is cosmetic
 
 
 # ---------------------------------------------------------------------------
 # knobChanged callback for DepthForge Group nodes
 # ---------------------------------------------------------------------------
+
 
 def _knob_changed_callback() -> None:
     """Update knob enabled-states when df_mode changes on a DepthForge Group node.
@@ -186,10 +190,15 @@ def _knob_changed_callback() -> None:
 
     mode = node["df_mode"].value() if node.knob("df_mode") else "SIRDS"
 
-    _anaglyph_knobs   = ["df_anaglyph_mode", "df_swap_eyes", "df_gamma"]
+    _anaglyph_knobs = ["df_anaglyph_mode", "df_swap_eyes", "df_gamma"]
     _stereopair_knobs = ["df_bg_fill", "df_eye_balance", "df_feather_px"]
-    _hidden_knobs     = ["df_hidden_shape", "df_hidden_text", "df_fg_depth",
-                         "df_bg_depth", "df_edge_soften"]
+    _hidden_knobs = [
+        "df_hidden_shape",
+        "df_hidden_text",
+        "df_fg_depth",
+        "df_bg_depth",
+        "df_edge_soften",
+    ]
 
     for k in _anaglyph_knobs:
         if node.knob(k):

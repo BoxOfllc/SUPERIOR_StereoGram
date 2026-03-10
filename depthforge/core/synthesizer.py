@@ -21,17 +21,16 @@ Public API
 
 from __future__ import annotations
 
-import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
 from PIL import Image
 
-
 # ---------------------------------------------------------------------------
 # Parameter dataclass
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class StereoParams:
@@ -67,14 +66,14 @@ class StereoParams:
         would exceed it.  Also limits pattern contrast for photosensitivity.
     """
 
-    depth_factor:            float         = 0.4
-    max_parallax_fraction:   float         = 1.0 / 30.0
-    eye_separation_fraction: float         = 0.06
-    convergence:             float         = 0.5
-    invert_depth:            bool          = False
-    oversample:              int           = 1
-    seed:                    Optional[int] = None
-    safe_mode:               bool          = False
+    depth_factor: float = 0.4
+    max_parallax_fraction: float = 1.0 / 30.0
+    eye_separation_fraction: float = 0.06
+    convergence: float = 0.5
+    invert_depth: bool = False
+    oversample: int = 1
+    seed: Optional[int] = None
+    safe_mode: bool = False
 
     # ---- derived / validated ----
     def __post_init__(self) -> None:
@@ -84,9 +83,7 @@ class StereoParams:
             raise ValueError("convergence must be in [0, 1]")
         if self.safe_mode:
             # Hard cap at comfortable limit
-            self.max_parallax_fraction = min(
-                self.max_parallax_fraction, 1.0 / 30.0
-            )
+            self.max_parallax_fraction = min(self.max_parallax_fraction, 1.0 / 30.0)
             self.depth_factor = max(-0.5, min(0.5, self.depth_factor))
 
     def max_shift_px(self, width: int) -> int:
@@ -102,10 +99,11 @@ class StereoParams:
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def synthesize(
-    depth:   np.ndarray,
+    depth: np.ndarray,
     pattern: np.ndarray,
-    params:  StereoParams = StereoParams(),
+    params: StereoParams = StereoParams(),
 ) -> np.ndarray:
     """Synthesize a single-image stereogram.
 
@@ -147,9 +145,8 @@ def synthesize(
 # Internal helpers
 # ---------------------------------------------------------------------------
 
-def _validate_inputs(
-    depth: np.ndarray, pattern: np.ndarray
-) -> tuple[np.ndarray, np.ndarray]:
+
+def _validate_inputs(depth: np.ndarray, pattern: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """Normalise and validate input arrays."""
     # --- depth ---
     if depth.ndim != 2:
@@ -164,8 +161,7 @@ def _validate_inputs(
     # --- pattern ---
     if pattern.ndim == 2:
         # Greyscale → RGBA
-        rgba = np.stack([pattern, pattern, pattern,
-                         np.full_like(pattern, 255)], axis=-1)
+        rgba = np.stack([pattern, pattern, pattern, np.full_like(pattern, 255)], axis=-1)
         pattern = rgba.astype(np.uint8)
     elif pattern.ndim == 3 and pattern.shape[2] == 3:
         alpha = np.full((*pattern.shape[:2], 1), 255, dtype=np.uint8)
@@ -173,22 +169,21 @@ def _validate_inputs(
     elif pattern.ndim == 3 and pattern.shape[2] == 4:
         pattern = pattern.astype(np.uint8)
     else:
-        raise ValueError(f"pattern must be (H,W), (H,W,3), or (H,W,4), "
-                         f"got {pattern.shape}")
+        raise ValueError(f"pattern must be (H,W), (H,W,3), or (H,W,4), " f"got {pattern.shape}")
     return depth, pattern
 
 
 def _synthesize_core(
-    depth:   np.ndarray,
+    depth: np.ndarray,
     pattern: np.ndarray,
-    params:  StereoParams,
+    params: StereoParams,
 ) -> np.ndarray:
     """Inner synthesis loop — operates at native resolution."""
     H, W = depth.shape
     tile_H, tile_W = pattern.shape[:2]
 
     max_shift = params.max_shift_px(W)
-    eye_sep   = params.eye_sep_px(W)
+    eye_sep = params.eye_sep_px(W)
 
     # Convergence offset: shift depth so that convergence depth = 0 parallax
     # We scale depth relative to convergence plane
@@ -202,8 +197,8 @@ def _synthesize_core(
     output = np.zeros((H, W, 4), dtype=np.uint8)
 
     for y in range(H):
-        row_shift = shift_map[y]           # (W,) int32
-        same      = np.full(W, -1, dtype=np.int32)  # same[x] → linked x
+        row_shift = shift_map[y]  # (W,) int32
+        same = np.full(W, -1, dtype=np.int32)  # same[x] → linked x
 
         # Build constraint links
         # For each pixel x: left eye sees x - s//2, right eye sees x + s//2
@@ -212,7 +207,7 @@ def _synthesize_core(
             s = int(row_shift[x])
             if s == 0:
                 continue
-            x_left  = x - abs(s) // 2
+            x_left = x - abs(s) // 2
             x_right = x + abs(s) - abs(s) // 2
             if 0 <= x_left < W and 0 <= x_right < W:
                 # Follow chain: find root of x_left
@@ -224,7 +219,7 @@ def _synthesize_core(
 
         # Assign colours respecting constraints
         color_idx = np.full(W, -1, dtype=np.int32)  # index into tile col
-        pat_row   = pattern[y % tile_H]             # (tile_W, 4)
+        pat_row = pattern[y % tile_H]  # (tile_W, 4)
 
         for x in range(W):
             linked = same[x]
@@ -240,9 +235,9 @@ def _synthesize_core(
 
 
 def _synthesize_oversampled(
-    depth:   np.ndarray,
+    depth: np.ndarray,
     pattern: np.ndarray,
-    params:  StereoParams,
+    params: StereoParams,
 ) -> np.ndarray:
     """Render at oversample× resolution then Lanczos-downsample."""
     s = params.oversample
@@ -257,14 +252,14 @@ def _synthesize_oversampled(
 
     # Temporarily override oversample to avoid recursion
     p2 = StereoParams(
-        depth_factor            = params.depth_factor,
-        max_parallax_fraction   = params.max_parallax_fraction,
-        eye_separation_fraction = params.eye_separation_fraction,
-        convergence             = params.convergence,
-        invert_depth            = False,   # already applied
-        oversample              = 1,
-        seed                    = params.seed,
-        safe_mode               = False,   # already applied
+        depth_factor=params.depth_factor,
+        max_parallax_fraction=params.max_parallax_fraction,
+        eye_separation_fraction=params.eye_separation_fraction,
+        convergence=params.convergence,
+        invert_depth=False,  # already applied
+        oversample=1,
+        seed=params.seed,
+        safe_mode=False,  # already applied
     )
 
     hi_res = _synthesize_core(depth_up, pat_up, p2)
@@ -278,6 +273,7 @@ def _synthesize_oversampled(
 # ---------------------------------------------------------------------------
 # Convenience: load / save helpers used by tests and CLI
 # ---------------------------------------------------------------------------
+
 
 def load_depth_image(path: str) -> np.ndarray:
     """Load a depth image (any bit depth) → float32 [0, 1] array."""

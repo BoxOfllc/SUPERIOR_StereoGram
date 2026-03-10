@@ -106,7 +106,35 @@ target-version = ["py39"]
 
 [tool.ruff]
 line-length = 100
+
+[tool.ruff.lint]
+# E501 excluded: Black enforces line length; ruff wrapping causes conflicts.
 select = ["E", "F", "W", "I"]
+ignore = ["E501"]
+
+[tool.ruff.lint.per-file-ignores]
+# Public-API __init__.py re-exports: names appear "unused" to ruff but are
+# intentionally re-exported; imports appear after package-level flag code
+# (HAS_CV2 etc.), which is an intentional initialisation order.
+"**/__init__.py" = ["E402", "F401"]
+# Optional-dependency guard pattern used throughout the codebase:
+#   try:
+#       import cv2          # used only when HAS_CV2 is True
+#   except ImportError:
+#       cv2 = None
+# ruff cannot trace the conditional use, so F401 is a false positive here.
+# Core modules also contain inline-style lambdas and semicolons inherited
+# from earlier algorithm ports — keep those as-is to avoid churn.
+"core/*.py" = ["F401", "E701", "E702", "E731", "F841", "F821"]
+"depth_models/*.py" = ["F401", "E731"]
+# Test files use compact semicolon syntax and optional try/import patterns.
+"tests/*.py" = ["E702", "F401", "F841", "F811"]
+# Web and CLI have long option strings; style-only issues tolerated.
+"web/*.py" = ["F401", "E731"]
+# Nuke gizmo: np imported inside method body; string annotations are forward refs.
+"nuke/*.py" = ["F821", "F401"]
+# OFX plugin: inline-if pattern identical to core/*.py.
+"ofx/*.py" = ["E701", "E702", "F401"]
 
 [tool.mypy]
 python_version = "3.9"

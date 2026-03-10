@@ -24,17 +24,17 @@ Presets
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, field, asdict
-from typing import Optional
+from dataclasses import asdict, dataclass
 from pathlib import Path
+from typing import Optional
 
-from depthforge.core.synthesizer import StereoParams
 from depthforge.core.depth_prep import DepthPrepParams, FalloffCurve
-
+from depthforge.core.synthesizer import StereoParams
 
 # ---------------------------------------------------------------------------
 # Preset dataclass
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class Preset:
@@ -64,6 +64,7 @@ class Preset:
     notes : str
         Additional delivery or usage notes
     """
+
     name: str
     display_name: str
     description: str
@@ -135,7 +136,7 @@ PRESET_SHALLOW = Preset(
     ),
     stereo_params=StereoParams(
         depth_factor=0.20,
-        max_parallax_fraction=0.025,   # 2.5% — well within comfort zone
+        max_parallax_fraction=0.025,  # 2.5% — well within comfort zone
         eye_separation_fraction=0.065,
         convergence=0.0,
         safe_mode=True,
@@ -164,7 +165,7 @@ PRESET_MEDIUM = Preset(
     ),
     stereo_params=StereoParams(
         depth_factor=0.35,
-        max_parallax_fraction=1/30,    # ~3.33% — classic comfort recommendation
+        max_parallax_fraction=1 / 30,  # ~3.33% — classic comfort recommendation
         eye_separation_fraction=0.065,
         convergence=0.0,
         safe_mode=False,
@@ -194,11 +195,11 @@ PRESET_DEEP = Preset(
     ),
     stereo_params=StereoParams(
         depth_factor=0.55,
-        max_parallax_fraction=0.05,   # 5% — pushing comfort limits
+        max_parallax_fraction=0.05,  # 5% — pushing comfort limits
         eye_separation_fraction=0.065,
         convergence=0.0,
         safe_mode=False,
-        oversample=2,                  # oversample for quality at large shifts
+        oversample=2,  # oversample for quality at large shifts
     ),
     depth_params=DepthPrepParams(
         bilateral_sigma_space=4.0,
@@ -227,9 +228,9 @@ PRESET_CINEMA = Preset(
     ),
     stereo_params=StereoParams(
         depth_factor=0.30,
-        max_parallax_fraction=0.022,   # SMPTE guideline: ~2% for theatre
+        max_parallax_fraction=0.022,  # SMPTE guideline: ~2% for theatre
         eye_separation_fraction=0.065,
-        convergence=0.02,              # slight positive convergence for theatre
+        convergence=0.02,  # slight positive convergence for theatre
         safe_mode=False,
         oversample=2,
     ),
@@ -262,11 +263,11 @@ PRESET_PRINT = Preset(
     ),
     stereo_params=StereoParams(
         depth_factor=0.28,
-        max_parallax_fraction=0.025,   # print viewed closer, keep parallax tight
+        max_parallax_fraction=0.025,  # print viewed closer, keep parallax tight
         eye_separation_fraction=0.065,
         convergence=0.0,
         safe_mode=False,
-        oversample=2,                  # oversample — upscale to print resolution
+        oversample=2,  # oversample — upscale to print resolution
     ),
     depth_params=DepthPrepParams(
         bilateral_sigma_space=6.0,
@@ -278,7 +279,7 @@ PRESET_PRINT = Preset(
     ),
     output_dpi=300,
     color_space="CMYK-safe",
-    target_width=3000,     # 10" at 300dpi
+    target_width=3000,  # 10" at 300dpi
     notes=(
         "Output at 300dpi minimum. For CMYK conversion: saturate pattern to "
         "<320% total ink coverage. Psychedelic color modes may shift significantly "
@@ -298,7 +299,7 @@ PRESET_BROADCAST = Preset(
     ),
     stereo_params=StereoParams(
         depth_factor=0.22,
-        max_parallax_fraction=0.020,   # EBU R95 guidance: ~2% for 16:9 displays
+        max_parallax_fraction=0.020,  # EBU R95 guidance: ~2% for 16:9 displays
         eye_separation_fraction=0.065,
         convergence=0.01,
         safe_mode=True,
@@ -329,7 +330,8 @@ PRESET_BROADCAST = Preset(
 # ---------------------------------------------------------------------------
 
 _PRESETS: dict[str, Preset] = {
-    p.name: p for p in [
+    p.name: p
+    for p in [
         PRESET_SHALLOW,
         PRESET_MEDIUM,
         PRESET_DEEP,
@@ -376,8 +378,7 @@ def register_preset(preset: Preset, overwrite: bool = False) -> None:
     """
     if preset.name in _PRESETS and not overwrite:
         raise ValueError(
-            f"Preset {preset.name!r} already registered. "
-            "Use overwrite=True to replace it."
+            f"Preset {preset.name!r} already registered. " "Use overwrite=True to replace it."
         )
     _PRESETS[preset.name] = preset
 

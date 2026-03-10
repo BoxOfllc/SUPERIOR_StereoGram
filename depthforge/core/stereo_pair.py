@@ -30,13 +30,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Optional, Tuple
+from typing import Tuple
 
 import numpy as np
-from PIL import Image
 
 try:
     import cv2
+
     _CV2 = True
 except ImportError:
     _CV2 = False
@@ -46,16 +46,18 @@ except ImportError:
 # Enums
 # ---------------------------------------------------------------------------
 
+
 class StereoLayout(Enum):
-    SEPARATE     = auto()
+    SEPARATE = auto()
     SIDE_BY_SIDE = auto()
-    TOP_BOTTOM   = auto()
-    ANAGLYPH     = auto()
+    TOP_BOTTOM = auto()
+    ANAGLYPH = auto()
 
 
 # ---------------------------------------------------------------------------
 # Parameters
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class StereoPairParams:
@@ -83,21 +85,23 @@ class StereoPairParams:
         "mirror" = mirror-reflect
         "black"  = fill with zero
     """
-    max_parallax_fraction: float        = 1.0 / 30.0
-    eye_balance:           float        = 0.5
-    layout:                StereoLayout = StereoLayout.SEPARATE
-    feather_px:            int          = 3
-    invert_depth:          bool         = False
-    background_fill:       str          = "edge"
+
+    max_parallax_fraction: float = 1.0 / 30.0
+    eye_balance: float = 0.5
+    layout: StereoLayout = StereoLayout.SEPARATE
+    feather_px: int = 3
+    invert_depth: bool = False
+    background_fill: str = "edge"
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def make_stereo_pair(
     source: np.ndarray,
-    depth:  np.ndarray,
+    depth: np.ndarray,
     params: StereoPairParams = StereoPairParams(),
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Synthesise a stereo pair from source image and depth map.
@@ -128,8 +132,8 @@ def make_stereo_pair(
     l_frac = params.eye_balance
     r_frac = 1.0 - params.eye_balance
 
-    left,  left_occ  = _warp_view(source_rgba, shift_map, -l_frac, params)
-    right, right_occ = _warp_view(source_rgba, shift_map,  r_frac, params)
+    left, left_occ = _warp_view(source_rgba, shift_map, -l_frac, params)
+    right, right_occ = _warp_view(source_rgba, shift_map, r_frac, params)
 
     # Combined occlusion mask: any pixel exposed in either view
     occ = np.maximum(left_occ, right_occ)
@@ -139,14 +143,15 @@ def make_stereo_pair(
 
     if params.layout == StereoLayout.SIDE_BY_SIDE:
         combined = np.concatenate([left, right], axis=1)
-        return combined, combined, occ   # same array twice for convenience
+        return combined, combined, occ  # same array twice for convenience
 
     if params.layout == StereoLayout.TOP_BOTTOM:
         combined = np.concatenate([left, right], axis=0)
         return combined, combined, occ
 
     if params.layout == StereoLayout.ANAGLYPH:
-        from depthforge.core.anaglyph import make_anaglyph, AnaglyphParams
+        from depthforge.core.anaglyph import AnaglyphParams, make_anaglyph
+
         ana = make_anaglyph(left, right, AnaglyphParams())
         return ana, ana, occ
 
@@ -154,10 +159,10 @@ def make_stereo_pair(
 
 
 def compose_side_by_side(
-    left:   np.ndarray,
-    right:  np.ndarray,
+    left: np.ndarray,
+    right: np.ndarray,
     gap_px: int = 0,
-    gap_color: Tuple[int,int,int,int] = (0,0,0,255),
+    gap_color: Tuple[int, int, int, int] = (0, 0, 0, 255),
 ) -> np.ndarray:
     """Compose L and R into a side-by-side image, optionally with a gap."""
     if gap_px > 0:
@@ -171,22 +176,23 @@ def compose_side_by_side(
 # Internal — view warping
 # ---------------------------------------------------------------------------
 
+
 def _warp_view(
-    source:    np.ndarray,
+    source: np.ndarray,
     shift_map: np.ndarray,
     direction: float,
-    params:    StereoPairParams,
+    params: StereoPairParams,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Warp source by shift_map * direction → (warped_rgba, occlusion_mask)."""
     H, W = source.shape[:2]
-    output  = np.zeros((H, W, 4), dtype=np.uint8)
+    output = np.zeros((H, W, 4), dtype=np.uint8)
     covered = np.zeros((H, W), dtype=bool)
 
     # Per-row forward warp
     for y in range(H):
         row_shift = (shift_map[y] * direction).astype(np.int32)
-        xs        = np.arange(W, dtype=np.int32)
-        xs_dest   = np.clip(xs + row_shift, 0, W - 1)
+        xs = np.arange(W, dtype=np.int32)
+        xs_dest = np.clip(xs + row_shift, 0, W - 1)
 
         # Write — later pixels (higher x) overwrite earlier for correct occlusion
         output[y, xs_dest] = source[y, xs]
@@ -201,9 +207,9 @@ def _warp_view(
 
 
 def _fill_uncovered(
-    output:    np.ndarray,
-    mask:      np.ndarray,   # True where pixel was NOT written
-    source:    np.ndarray,
+    output: np.ndarray,
+    mask: np.ndarray,  # True where pixel was NOT written
+    source: np.ndarray,
     fill_mode: str,
 ) -> np.ndarray:
     """Fill occluded (uncovered) pixels in output."""
@@ -251,6 +257,7 @@ def _fill_uncovered(
 # Internal — utilities
 # ---------------------------------------------------------------------------
 
+
 def _ensure_rgba(arr: np.ndarray) -> np.ndarray:
     """Ensure array is RGBA uint8 (H, W, 4)."""
     if arr.dtype != np.uint8:
@@ -259,7 +266,7 @@ def _ensure_rgba(arr: np.ndarray) -> np.ndarray:
         arr = np.stack([arr, arr, arr, np.full_like(arr, 255)], axis=-1)
     elif arr.shape[2] == 3:
         alpha = np.full((*arr.shape[:2], 1), 255, dtype=np.uint8)
-        arr   = np.concatenate([arr, alpha], axis=-1)
+        arr = np.concatenate([arr, alpha], axis=-1)
     return arr
 
 
@@ -270,4 +277,5 @@ def _feather_mask(mask: np.ndarray, radius: int) -> np.ndarray:
         return cv2.GaussianBlur(mask, (k, k), radius * 0.5)
     # NumPy fallback — box blur
     from depthforge.core.depth_prep import _box_blur
+
     return _box_blur(mask, radius)

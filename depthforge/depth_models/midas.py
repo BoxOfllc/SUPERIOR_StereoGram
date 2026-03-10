@@ -14,8 +14,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from depthforge.depth_models import DepthEstimator, DepthEstimationError, _REGISTRY
-
+from depthforge.depth_models import _REGISTRY, DepthEstimationError, DepthEstimator
 
 # ---------------------------------------------------------------------------
 # Availability check
@@ -24,12 +23,14 @@ from depthforge.depth_models import DepthEstimator, DepthEstimationError, _REGIS
 try:
     import torch
     import torchvision
+
     _TORCH_OK = True
 except ImportError:
     _TORCH_OK = False
 
 try:
     import timm  # noqa — needed by MiDaS DPT
+
     _TIMM_OK = True
 except ImportError:
     _TIMM_OK = False
@@ -38,6 +39,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # MiDaS estimator
 # ---------------------------------------------------------------------------
+
 
 class MiDaSEstimator(DepthEstimator):
     """MiDaS v3.1 DPT-Large monocular depth estimator.
@@ -51,13 +53,13 @@ class MiDaSEstimator(DepthEstimator):
     """
 
     _MODEL_NAME = "DPT_Large"
-    _HUB_REPO   = "intel-isl/MiDaS"
+    _HUB_REPO = "intel-isl/MiDaS"
     _INPUT_SIZE = 384
 
     def __init__(self):
         self._torch_model = None
-        self._transform   = None
-        self._device      = None
+        self._transform = None
+        self._device = None
         super().__init__()
 
     @property
@@ -68,13 +70,12 @@ class MiDaSEstimator(DepthEstimator):
         if not _TORCH_OK:
             raise DepthEstimationError(
                 "MiDaS requires PyTorch. Install it with:\n"
-                "  pip install \"depthforge[ai]\"\n"
+                '  pip install "depthforge[ai]"\n'
                 "or: pip install torch torchvision timm"
             )
         if not _TIMM_OK:
             raise DepthEstimationError(
-                "MiDaS requires timm. Install it with:\n"
-                "  pip install timm"
+                "MiDaS requires timm. Install it with:\n" "  pip install timm"
             )
 
         import torch
@@ -130,6 +131,7 @@ _REGISTRY["midas"] = MiDaSEstimator
 # Mock estimator for testing (activated when PyTorch unavailable)
 # ---------------------------------------------------------------------------
 
+
 class _MockMiDaSEstimator(DepthEstimator):
     """Synthetic depth estimator for testing without PyTorch.
 
@@ -142,7 +144,7 @@ class _MockMiDaSEstimator(DepthEstimator):
         return "midas_mock"
 
     def _load_model(self) -> None:
-        pass   # no model to load
+        pass  # no model to load
 
     def _infer(self, rgb: np.ndarray) -> np.ndarray:
         """Generate depth from luminance (bright = near)."""
@@ -151,10 +153,12 @@ class _MockMiDaSEstimator(DepthEstimator):
         # Apply Gaussian blur to create smooth depth
         try:
             import cv2
+
             depth = cv2.GaussianBlur(lum / 255.0, (31, 31), 8.0)
         except ImportError:
             # NumPy box blur
             from numpy.lib.stride_tricks import sliding_window_view
+
             lum_n = lum / 255.0
             pad = 8
             padded = np.pad(lum_n, pad, mode="edge")

@@ -35,7 +35,6 @@ Public API
 
 from __future__ import annotations
 
-import hashlib
 import threading
 from dataclasses import dataclass, field
 from enum import Enum
@@ -44,10 +43,10 @@ from typing import Optional, Union
 
 import numpy as np
 
-
 # ---------------------------------------------------------------------------
 # Data types
 # ---------------------------------------------------------------------------
+
 
 class LUTType(Enum):
     LUT_1D = "1D"
@@ -74,18 +73,20 @@ class LUT:
     domain_max : np.ndarray (3,) float32
     description : str
     """
-    name:        str
-    lut_type:    LUTType
-    size:        int
-    table:       np.ndarray
-    domain_min:  np.ndarray = field(default_factory=lambda: np.zeros(3, np.float32))
-    domain_max:  np.ndarray = field(default_factory=lambda: np.ones(3, np.float32))
+
+    name: str
+    lut_type: LUTType
+    size: int
+    table: np.ndarray
+    domain_min: np.ndarray = field(default_factory=lambda: np.zeros(3, np.float32))
+    domain_max: np.ndarray = field(default_factory=lambda: np.ones(3, np.float32))
     description: str = ""
 
 
 # ---------------------------------------------------------------------------
 # .cube parser
 # ---------------------------------------------------------------------------
+
 
 def load_cube(path: Union[str, Path]) -> LUT:
     """
@@ -108,13 +109,13 @@ def load_cube(path: Union[str, Path]) -> LUT:
     if not path.exists():
         raise FileNotFoundError(f"LUT file not found: {path}")
 
-    lut_type:   Optional[LUTType]   = None
-    size:       Optional[int]       = None
-    domain_min  = np.zeros(3, np.float32)
-    domain_max  = np.ones(3, np.float32)
-    name        = path.stem
+    lut_type: Optional[LUTType] = None
+    size: Optional[int] = None
+    domain_min = np.zeros(3, np.float32)
+    domain_max = np.ones(3, np.float32)
+    name = path.stem
     description = ""
-    data_rows:  list[list[float]] = []
+    data_rows: list[list[float]] = []
 
     with open(path, "r", encoding="utf-8", errors="replace") as f:
         for line in f:
@@ -136,10 +137,14 @@ def load_cube(path: Union[str, Path]) -> LUT:
                 name = line.split(None, 1)[1].strip('"')
             elif upper.startswith("DOMAIN_MIN"):
                 parts = line.split()
-                domain_min = np.array([float(parts[1]), float(parts[2]), float(parts[3])], np.float32)
+                domain_min = np.array(
+                    [float(parts[1]), float(parts[2]), float(parts[3])], np.float32
+                )
             elif upper.startswith("DOMAIN_MAX"):
                 parts = line.split()
-                domain_max = np.array([float(parts[1]), float(parts[2]), float(parts[3])], np.float32)
+                domain_max = np.array(
+                    [float(parts[1]), float(parts[2]), float(parts[3])], np.float32
+                )
             else:
                 # Data line
                 try:
@@ -160,7 +165,7 @@ def load_cube(path: Union[str, Path]) -> LUT:
             raise ValueError(f"1D LUT expected {expected} rows, got {len(data)}")
         table = data  # (size, 3)
     else:
-        expected = size ** 3
+        expected = size**3
         if len(data) != expected:
             raise ValueError(f"3D LUT expected {expected} rows, got {len(data)}")
         # Reshape to (R, G, B, 3) — .cube iterates B fastest
@@ -181,8 +186,9 @@ def load_cube(path: Union[str, Path]) -> LUT:
 # LUT application
 # ---------------------------------------------------------------------------
 
+
 def _apply_1d_lut(
-    rgb: np.ndarray,   # (H, W, 3) float32 in [0, 1]
+    rgb: np.ndarray,  # (H, W, 3) float32 in [0, 1]
     lut: LUT,
 ) -> np.ndarray:
     """Apply 1D LUT via linear interpolation per channel."""
@@ -190,7 +196,7 @@ def _apply_1d_lut(
     indices = np.clip(rgb * (size - 1), 0, size - 1)
     idx_lo = indices.astype(np.int32)
     idx_hi = np.minimum(idx_lo + 1, size - 1)
-    frac   = indices - idx_lo
+    frac = indices - idx_lo
 
     out = np.empty_like(rgb)
     for c in range(3):
@@ -202,7 +208,7 @@ def _apply_1d_lut(
 
 
 def _apply_3d_lut(
-    rgb: np.ndarray,   # (H, W, 3) float32 in [0, 1]
+    rgb: np.ndarray,  # (H, W, 3) float32 in [0, 1]
     lut: LUT,
 ) -> np.ndarray:
     """Apply 3D LUT via trilinear interpolation."""
@@ -246,15 +252,15 @@ def _apply_3d_lut(
     c10 = c100 * (1 - fb_) + c101 * fb_
     c11 = c110 * (1 - fb_) + c111 * fb_
 
-    c0  = c00 * (1 - fg_)  + c01  * fg_
-    c1  = c10 * (1 - fg_)  + c11  * fg_
+    c0 = c00 * (1 - fg_) + c01 * fg_
+    c1 = c10 * (1 - fg_) + c11 * fg_
 
     result = c0 * (1 - fr_) + c1 * fr_
     return result.astype(np.float32)
 
 
 def apply_lut(
-    image: np.ndarray,   # RGBA or RGB uint8
+    image: np.ndarray,  # RGBA or RGB uint8
     lut: LUT,
     strength: float = 1.0,
 ) -> np.ndarray:
@@ -308,6 +314,7 @@ def apply_lut(
 # .cube writer
 # ---------------------------------------------------------------------------
 
+
 def save_cube(lut: LUT, path: Union[str, Path]) -> Path:
     """
     Save a LUT to .cube format.
@@ -318,7 +325,7 @@ def save_cube(lut: LUT, path: Union[str, Path]) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
 
     lines = [
-        f"TITLE \"{lut.name}\"",
+        f'TITLE "{lut.name}"',
         f"# {lut.description}" if lut.description else "# Created by DepthForge",
         "",
         f"DOMAIN_MIN {lut.domain_min[0]:.6f} {lut.domain_min[1]:.6f} {lut.domain_min[2]:.6f}",
@@ -347,16 +354,22 @@ def save_cube(lut: LUT, path: Union[str, Path]) -> Path:
 # Built-in LUT library (algorithmically generated)
 # ---------------------------------------------------------------------------
 
+
 def _make_identity_3d(size: int = 33) -> LUT:
     """Identity LUT — no change."""
     N = size
     r = np.linspace(0, 1, N)
     g = np.linspace(0, 1, N)
     b = np.linspace(0, 1, N)
-    RR, GG, BB = np.meshgrid(r, g, b, indexing='ij')
+    RR, GG, BB = np.meshgrid(r, g, b, indexing="ij")
     table = np.stack([RR, GG, BB], axis=-1).astype(np.float32)
-    return LUT(name="identity", lut_type=LUTType.LUT_3D, size=N, table=table,
-               description="Identity — no colour change")
+    return LUT(
+        name="identity",
+        lut_type=LUTType.LUT_3D,
+        size=N,
+        table=table,
+        description="Identity — no colour change",
+    )
 
 
 def _make_warm_shadows(size: int = 33) -> LUT:
@@ -452,14 +465,14 @@ def _make_forest(size: int = 33) -> LUT:
 
 
 _BUILTIN_LUTS: dict[str, LUT] = {
-    "identity":    _make_identity_3d(),
+    "identity": _make_identity_3d(),
     "warm_shadows": _make_warm_shadows(),
-    "cold_steel":  _make_cold_steel(),
-    "neon_boost":  _make_neon_boost(),
-    "sepia":       _make_sepia(),
-    "inverse":     _make_inverse(),
+    "cold_steel": _make_cold_steel(),
+    "neon_boost": _make_neon_boost(),
+    "sepia": _make_sepia(),
+    "inverse": _make_inverse(),
     "psychedelic": _make_psychedelic(),
-    "forest":      _make_forest(),
+    "forest": _make_forest(),
 }
 
 
@@ -476,10 +489,7 @@ def get_builtin_lut(name: str) -> LUT:
     """
     name = name.lower().strip()
     if name not in _BUILTIN_LUTS:
-        raise KeyError(
-            f"Unknown built-in LUT '{name}'. "
-            f"Available: {list_builtin_luts()}"
-        )
+        raise KeyError(f"Unknown built-in LUT '{name}'. " f"Available: {list_builtin_luts()}")
     return _BUILTIN_LUTS[name]
 
 
@@ -487,11 +497,13 @@ def get_builtin_lut(name: str) -> LUT:
 # Thread-safe LUT cache
 # ---------------------------------------------------------------------------
 
+
 class LUTCache:
     """Thread-safe LRU cache for file-loaded LUTs."""
 
     def __init__(self, max_luts: int = 16):
         from collections import OrderedDict
+
         self._store: OrderedDict[str, LUT] = OrderedDict()
         self._max = max_luts
         self._lock = threading.Lock()

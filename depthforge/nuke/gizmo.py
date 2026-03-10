@@ -41,24 +41,23 @@ RGBA stereogram image, native Nuke stereo views, or anaglyph
 from __future__ import annotations
 
 import json
-import os
-import tempfile
 from pathlib import Path
 from typing import Optional
-
 
 # ---------------------------------------------------------------------------
 # Nuke availability guard
 # ---------------------------------------------------------------------------
 
 try:
-    import nuke
     import nukescripts
+
+    import nuke
+
     _NUKE_AVAILABLE = True
 except ImportError:
     _NUKE_AVAILABLE = False
-    nuke         = None
-    nukescripts  = None
+    nuke = None
+    nukescripts = None
 
 
 # ---------------------------------------------------------------------------
@@ -69,77 +68,116 @@ except ImportError:
 #: Each entry: (type, name, label, default, extras)
 STEREOGRAM_KNOBS = [
     # --- Mode ---
-    ("Enumeration_Knob",  "df_mode",         "Mode",
-     ["SIRDS", "Texture", "Anaglyph", "StereoPair", "HiddenImage"], {}),
-
+    (
+        "Enumeration_Knob",
+        "df_mode",
+        "Mode",
+        ["SIRDS", "Texture", "Anaglyph", "StereoPair", "HiddenImage"],
+        {},
+    ),
     # --- Preset ---
-    ("Enumeration_Knob",  "df_preset",        "Preset",
-     ["none", "shallow", "medium", "deep", "cinema", "print", "broadcast"], {}),
-
+    (
+        "Enumeration_Knob",
+        "df_preset",
+        "Preset",
+        ["none", "shallow", "medium", "deep", "cinema", "print", "broadcast"],
+        {},
+    ),
     # --- Depth controls ---
-    ("Double_Knob",       "df_depth_factor",  "Depth Factor",   0.35, {"min": 0.0, "max": 1.0}),
-    ("Double_Knob",       "df_max_parallax",  "Max Parallax",   0.033,{"min": 0.005,"max": 0.1}),
-    ("Boolean_Knob",      "df_safe_mode",     "Safe Mode",      False, {}),
-    ("Int_Knob",          "df_oversample",    "Oversample",     1,    {"min": 1, "max": 4}),
-    ("Int_Knob",          "df_seed",          "Seed",           42,   {"min": 0}),
-    ("Boolean_Knob",      "df_invert_depth",  "Invert Depth",   False, {}),
-
+    ("Double_Knob", "df_depth_factor", "Depth Factor", 0.35, {"min": 0.0, "max": 1.0}),
+    ("Double_Knob", "df_max_parallax", "Max Parallax", 0.033, {"min": 0.005, "max": 0.1}),
+    ("Boolean_Knob", "df_safe_mode", "Safe Mode", False, {}),
+    ("Int_Knob", "df_oversample", "Oversample", 1, {"min": 1, "max": 4}),
+    ("Int_Knob", "df_seed", "Seed", 42, {"min": 0}),
+    ("Boolean_Knob", "df_invert_depth", "Invert Depth", False, {}),
     # --- Depth conditioning ---
-    ("Tab_Knob",          "_tab_depth",       "Depth Conditioning", None, {}),
-    ("Double_Knob",       "df_bilateral_space","Bilateral Space",  5.0, {"min": 0, "max": 30}),
-    ("Double_Knob",       "df_bilateral_color","Bilateral Color",  0.1, {"min": 0.01, "max": 1.0}),
-    ("Int_Knob",          "df_dilation",      "Dilation (px)",  3,    {"min": 0, "max": 20}),
-    ("Enumeration_Knob",  "df_falloff",       "Falloff Curve",
-     ["linear", "gamma", "s_curve", "logarithmic", "exponential"], {}),
-    ("Double_Knob",       "df_near_plane",    "Near Plane",     0.0,  {"min": 0, "max": 1}),
-    ("Double_Knob",       "df_far_plane",     "Far Plane",      1.0,  {"min": 0, "max": 1}),
-
+    ("Tab_Knob", "_tab_depth", "Depth Conditioning", None, {}),
+    ("Double_Knob", "df_bilateral_space", "Bilateral Space", 5.0, {"min": 0, "max": 30}),
+    ("Double_Knob", "df_bilateral_color", "Bilateral Color", 0.1, {"min": 0.01, "max": 1.0}),
+    ("Int_Knob", "df_dilation", "Dilation (px)", 3, {"min": 0, "max": 20}),
+    (
+        "Enumeration_Knob",
+        "df_falloff",
+        "Falloff Curve",
+        ["linear", "gamma", "s_curve", "logarithmic", "exponential"],
+        {},
+    ),
+    ("Double_Knob", "df_near_plane", "Near Plane", 0.0, {"min": 0, "max": 1}),
+    ("Double_Knob", "df_far_plane", "Far Plane", 1.0, {"min": 0, "max": 1}),
     # --- Pattern ---
-    ("Tab_Knob",          "_tab_pattern",     "Pattern", None, {}),
-    ("Enumeration_Knob",  "df_pattern_type",  "Pattern Type",
-     ["random_noise", "perlin", "plasma", "voronoi", "geometric_grid",
-      "mandelbrot", "dot_matrix"], {}),
-    ("Enumeration_Knob",  "df_color_mode",    "Color Mode",
-     ["greyscale", "monochrome", "psychedelic"], {}),
-    ("Int_Knob",          "df_tile_width",    "Tile Width",    128,   {"min": 32, "max": 512}),
-    ("Int_Knob",          "df_tile_height",   "Tile Height",   128,   {"min": 32, "max": 512}),
-    ("Double_Knob",       "df_pattern_scale", "Pattern Scale", 1.0,   {"min": 0.1, "max": 8.0}),
-
+    ("Tab_Knob", "_tab_pattern", "Pattern", None, {}),
+    (
+        "Enumeration_Knob",
+        "df_pattern_type",
+        "Pattern Type",
+        [
+            "random_noise",
+            "perlin",
+            "plasma",
+            "voronoi",
+            "geometric_grid",
+            "mandelbrot",
+            "dot_matrix",
+        ],
+        {},
+    ),
+    (
+        "Enumeration_Knob",
+        "df_color_mode",
+        "Color Mode",
+        ["greyscale", "monochrome", "psychedelic"],
+        {},
+    ),
+    ("Int_Knob", "df_tile_width", "Tile Width", 128, {"min": 32, "max": 512}),
+    ("Int_Knob", "df_tile_height", "Tile Height", 128, {"min": 32, "max": 512}),
+    ("Double_Knob", "df_pattern_scale", "Pattern Scale", 1.0, {"min": 0.1, "max": 8.0}),
     # --- Anaglyph ---
-    ("Tab_Knob",          "_tab_anaglyph",    "Anaglyph", None, {}),
-    ("Enumeration_Knob",  "df_anaglyph_mode", "Mode",
-     ["true", "grey", "colour", "half_colour", "optimised"], {}),
-    ("Boolean_Knob",      "df_swap_eyes",     "Swap Eyes",     False, {}),
-    ("Double_Knob",       "df_gamma",         "Gamma",         1.0,   {"min": 0.5, "max": 3.0}),
-
+    ("Tab_Knob", "_tab_anaglyph", "Anaglyph", None, {}),
+    (
+        "Enumeration_Knob",
+        "df_anaglyph_mode",
+        "Mode",
+        ["true", "grey", "colour", "half_colour", "optimised"],
+        {},
+    ),
+    ("Boolean_Knob", "df_swap_eyes", "Swap Eyes", False, {}),
+    ("Double_Knob", "df_gamma", "Gamma", 1.0, {"min": 0.5, "max": 3.0}),
     # --- Stereo pair ---
-    ("Tab_Knob",          "_tab_stereo",      "Stereo Pair", None, {}),
-    ("Enumeration_Knob",  "df_bg_fill",       "Background Fill",
-     ["edge", "mirror", "black"], {}),
-    ("Double_Knob",       "df_eye_balance",   "Eye Balance",   0.5,  {"min": 0, "max": 1}),
-    ("Int_Knob",          "df_feather_px",    "Feather (px)",  3,    {"min": 0, "max": 20}),
-
+    ("Tab_Knob", "_tab_stereo", "Stereo Pair", None, {}),
+    ("Enumeration_Knob", "df_bg_fill", "Background Fill", ["edge", "mirror", "black"], {}),
+    ("Double_Knob", "df_eye_balance", "Eye Balance", 0.5, {"min": 0, "max": 1}),
+    ("Int_Knob", "df_feather_px", "Feather (px)", 3, {"min": 0, "max": 20}),
     # --- Hidden image ---
-    ("Tab_Knob",          "_tab_hidden",      "Hidden Image", None, {}),
-    ("Enumeration_Knob",  "df_hidden_shape",  "Shape",
-     ["none", "circle", "square", "triangle", "star", "diamond", "arrow"], {}),
-    ("String_Knob",       "df_hidden_text",   "Text",          "", {}),
-    ("Double_Knob",       "df_fg_depth",      "Foreground Depth",0.75,{"min": 0.1, "max": 1.0}),
-    ("Double_Knob",       "df_bg_depth",      "Background Depth",0.10,{"min": 0.0, "max": 0.9}),
-    ("Int_Knob",          "df_edge_soften",   "Edge Soften (px)", 4, {"min": 0, "max": 20}),
-
+    ("Tab_Knob", "_tab_hidden", "Hidden Image", None, {}),
+    (
+        "Enumeration_Knob",
+        "df_hidden_shape",
+        "Shape",
+        ["none", "circle", "square", "triangle", "star", "diamond", "arrow"],
+        {},
+    ),
+    ("String_Knob", "df_hidden_text", "Text", "", {}),
+    ("Double_Knob", "df_fg_depth", "Foreground Depth", 0.75, {"min": 0.1, "max": 1.0}),
+    ("Double_Knob", "df_bg_depth", "Background Depth", 0.10, {"min": 0.0, "max": 0.9}),
+    ("Int_Knob", "df_edge_soften", "Edge Soften (px)", 4, {"min": 0, "max": 20}),
     # --- QC / Safety ---
-    ("Tab_Knob",          "_tab_qc",          "QC & Safety", None, {}),
-    ("Boolean_Knob",      "df_show_heatmap",  "Show Heatmap",  False, {}),
-    ("Boolean_Knob",      "df_auto_safe",     "Auto Safety Limit", True, {}),
-    ("Enumeration_Knob",  "df_safety_profile","Safety Profile",
-     ["conservative", "standard", "relaxed", "cinema"], {}),
+    ("Tab_Knob", "_tab_qc", "QC & Safety", None, {}),
+    ("Boolean_Knob", "df_show_heatmap", "Show Heatmap", False, {}),
+    ("Boolean_Knob", "df_auto_safe", "Auto Safety Limit", True, {}),
+    (
+        "Enumeration_Knob",
+        "df_safety_profile",
+        "Safety Profile",
+        ["conservative", "standard", "relaxed", "cinema"],
+        {},
+    ),
 ]
 
 
 # ---------------------------------------------------------------------------
 # Gizmo class
 # ---------------------------------------------------------------------------
+
 
 class DepthForgeGizmo:
     """Pure-Python representation of the DepthForge Nuke gizmo.
@@ -149,7 +187,7 @@ class DepthForgeGizmo:
     ``nuke.createNode`` calls are only made when ``nuke`` is importable.
     """
 
-    GIZMO_NAME    = "DepthForge_Stereogram"
+    GIZMO_NAME = "DepthForge_Stereogram"
     GIZMO_VERSION = "0.3.0"
 
     def __init__(self, knob_values: Optional[dict] = None):
@@ -223,12 +261,12 @@ class DepthForgeGizmo:
         p = Path(path).resolve()
         if not p.exists():
             raise FileNotFoundError(f"Gizmo JSON not found: {p}")
-        if p.stat().st_size > 1 * 1024 * 1024:   # 1 MB cap
+        if p.stat().st_size > 1 * 1024 * 1024:  # 1 MB cap
             raise ValueError("Gizmo JSON file too large (max 1 MB).")
 
         try:
             raw = p.read_text(encoding="utf-8")
-            d   = json.loads(raw)
+            d = json.loads(raw)
         except json.JSONDecodeError as exc:
             raise ValueError(f"Invalid JSON in gizmo file: {exc}") from exc
 
@@ -276,32 +314,39 @@ class DepthForgeGizmo:
         np.ndarray  uint8 RGBA (H, W, 4)
         """
         import numpy as np
-        from depthforge.core.depth_prep import prep_depth, DepthPrepParams, FalloffCurve
-        from depthforge.core.synthesizer import synthesize, StereoParams
-        from depthforge.core.pattern_gen import generate_pattern, PatternParams, PatternType, ColorMode
+
+        from depthforge.core.depth_prep import DepthPrepParams, FalloffCurve, prep_depth
+        from depthforge.core.pattern_gen import (
+            ColorMode,
+            PatternParams,
+            PatternType,
+            generate_pattern,
+        )
+        from depthforge.core.synthesizer import StereoParams, synthesize
 
         mode = self._values.get("df_mode", "SIRDS")
 
         # Apply safety limiter if requested
         if self._values.get("df_auto_safe", True):
             from depthforge.core.comfort import SafetyLimiter, SafetyLimiterParams, VergenceProfile
+
             profile_name = self._values.get("df_safety_profile", "standard")
-            profile_map  = {
+            profile_map = {
                 "conservative": VergenceProfile.CONSERVATIVE,
-                "standard":     VergenceProfile.STANDARD,
-                "relaxed":      VergenceProfile.RELAXED,
-                "cinema":       VergenceProfile.CINEMA,
+                "standard": VergenceProfile.STANDARD,
+                "relaxed": VergenceProfile.RELAXED,
+                "cinema": VergenceProfile.CINEMA,
             }
-            limiter   = SafetyLimiter(SafetyLimiterParams.from_profile(
-                profile_map[profile_name], warn_on_violation=False
-            ))
+            limiter = SafetyLimiter(
+                SafetyLimiterParams.from_profile(profile_map[profile_name], warn_on_violation=False)
+            )
             depth, _, _ = limiter.apply(depth)
 
         # Depth conditioning
         falloff_map = {
-            "linear":      FalloffCurve.LINEAR,
-            "gamma":       FalloffCurve.GAMMA,
-            "s_curve":     FalloffCurve.S_CURVE,
+            "linear": FalloffCurve.LINEAR,
+            "gamma": FalloffCurve.GAMMA,
+            "s_curve": FalloffCurve.S_CURVE,
             "logarithmic": FalloffCurve.LOGARITHMIC,
             "exponential": FalloffCurve.EXPONENTIAL,
         }
@@ -322,6 +367,7 @@ class DepthForgeGizmo:
         preset_name = self._values.get("df_preset", "none")
         if preset_name != "none":
             from depthforge.core.presets import get_preset
+
             preset = get_preset(preset_name)
             sp = preset.stereo_params
         else:
@@ -337,33 +383,34 @@ class DepthForgeGizmo:
         # Pattern
         if pattern is None:
             type_map = {
-                "random_noise":   PatternType.RANDOM_NOISE,
-                "perlin":         PatternType.PERLIN,
-                "plasma":         PatternType.PLASMA,
-                "voronoi":        PatternType.VORONOI,
+                "random_noise": PatternType.RANDOM_NOISE,
+                "perlin": PatternType.PERLIN,
+                "plasma": PatternType.PLASMA,
+                "voronoi": PatternType.VORONOI,
                 "geometric_grid": PatternType.GEOMETRIC_GRID,
-                "mandelbrot":     PatternType.MANDELBROT,
-                "dot_matrix":     PatternType.DOT_MATRIX,
+                "mandelbrot": PatternType.MANDELBROT,
+                "dot_matrix": PatternType.DOT_MATRIX,
             }
             color_map = {
-                "greyscale":   ColorMode.GREYSCALE,
-                "monochrome":  ColorMode.MONOCHROME,
+                "greyscale": ColorMode.GREYSCALE,
+                "monochrome": ColorMode.MONOCHROME,
                 "psychedelic": ColorMode.PSYCHEDELIC,
             }
-            pattern = generate_pattern(PatternParams(
-                pattern_type=type_map.get(
-                    self._values.get("df_pattern_type", "random_noise"),
-                    PatternType.RANDOM_NOISE
-                ),
-                tile_width=self._values.get("df_tile_width", 128),
-                tile_height=self._values.get("df_tile_height", 128),
-                color_mode=color_map.get(
-                    self._values.get("df_color_mode", "greyscale"),
-                    ColorMode.GREYSCALE
-                ),
-                seed=self._values.get("df_seed", 42),
-                scale=self._values.get("df_pattern_scale", 1.0),
-            ))
+            pattern = generate_pattern(
+                PatternParams(
+                    pattern_type=type_map.get(
+                        self._values.get("df_pattern_type", "random_noise"),
+                        PatternType.RANDOM_NOISE,
+                    ),
+                    tile_width=self._values.get("df_tile_width", 128),
+                    tile_height=self._values.get("df_tile_height", 128),
+                    color_mode=color_map.get(
+                        self._values.get("df_color_mode", "greyscale"), ColorMode.GREYSCALE
+                    ),
+                    seed=self._values.get("df_seed", 42),
+                    scale=self._values.get("df_pattern_scale", 1.0),
+                )
+            )
 
         # Dispatch by mode
         if mode == "SIRDS" or mode == "Texture":
@@ -371,25 +418,34 @@ class DepthForgeGizmo:
 
         elif mode == "Anaglyph":
             if source is None:
-                source = np.stack([
-                    (depth * 255).astype(np.uint8),
-                    (depth * 180).astype(np.uint8),
-                    ((1 - depth) * 200).astype(np.uint8),
-                    np.full(depth.shape, 255, np.uint8),
-                ], axis=-1)
-            from depthforge.core.anaglyph import make_anaglyph_from_depth, AnaglyphParams, AnaglyphMode
+                source = np.stack(
+                    [
+                        (depth * 255).astype(np.uint8),
+                        (depth * 180).astype(np.uint8),
+                        ((1 - depth) * 200).astype(np.uint8),
+                        np.full(depth.shape, 255, np.uint8),
+                    ],
+                    axis=-1,
+                )
+            from depthforge.core.anaglyph import (
+                AnaglyphMode,
+                AnaglyphParams,
+                make_anaglyph_from_depth,
+            )
+
             mode_map = {
-                "true":       AnaglyphMode.TRUE_ANAGLYPH,
-                "grey":       AnaglyphMode.GREY_ANAGLYPH,
-                "colour":     AnaglyphMode.COLOUR_ANAGLYPH,
-                "half_colour":AnaglyphMode.HALF_COLOUR,
-                "optimised":  AnaglyphMode.OPTIMISED,
+                "true": AnaglyphMode.TRUE_ANAGLYPH,
+                "grey": AnaglyphMode.GREY_ANAGLYPH,
+                "colour": AnaglyphMode.COLOUR_ANAGLYPH,
+                "half_colour": AnaglyphMode.HALF_COLOUR,
+                "optimised": AnaglyphMode.OPTIMISED,
             }
             H, W = source.shape[:2]
             px = int(W * 0.065 * sp.depth_factor)
             params = AnaglyphParams(
-                mode=mode_map.get(self._values.get("df_anaglyph_mode", "optimised"),
-                                  AnaglyphMode.OPTIMISED),
+                mode=mode_map.get(
+                    self._values.get("df_anaglyph_mode", "optimised"), AnaglyphMode.OPTIMISED
+                ),
                 parallax_px=px,
                 swap_eyes=self._values.get("df_swap_eyes", False),
                 gamma=self._values.get("df_gamma", 1.0),
@@ -399,7 +455,12 @@ class DepthForgeGizmo:
         elif mode == "StereoPair":
             if source is None:
                 raise ValueError("StereoPair mode requires a source image.")
-            from depthforge.core.stereo_pair import make_stereo_pair, compose_side_by_side, StereoPairParams
+            from depthforge.core.stereo_pair import (
+                StereoPairParams,
+                compose_side_by_side,
+                make_stereo_pair,
+            )
+
             params = StereoPairParams(
                 max_parallax_fraction=sp.max_parallax_fraction,
                 eye_balance=self._values.get("df_eye_balance", 0.5),
@@ -411,8 +472,12 @@ class DepthForgeGizmo:
 
         elif mode == "HiddenImage":
             from depthforge.core.hidden_image import (
-                encode_hidden_image, shape_to_mask, text_to_mask, HiddenImageParams
+                HiddenImageParams,
+                encode_hidden_image,
+                shape_to_mask,
+                text_to_mask,
             )
+
             H, W = depth.shape
             text = self._values.get("df_hidden_text", "").strip()
             shape = self._values.get("df_hidden_shape", "none")
@@ -488,6 +553,7 @@ class DepthForgeGizmo:
 # ---------------------------------------------------------------------------
 # Nuke menu registration
 # ---------------------------------------------------------------------------
+
 
 def _register_nuke_callbacks() -> None:
     """Register the knobChanged callback for the gizmo node."""

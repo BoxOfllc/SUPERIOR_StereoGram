@@ -32,7 +32,7 @@ Usage
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum, auto
 from typing import Callable, Optional
 
@@ -41,6 +41,7 @@ from PIL import Image
 
 try:
     import cv2
+
     _CV2 = True
 except ImportError:
     _CV2 = False
@@ -50,17 +51,19 @@ except ImportError:
 # Enums
 # ---------------------------------------------------------------------------
 
+
 class InpaintMethod(Enum):
-    PATCH_BASED  = auto()   # exemplar / patch-match
-    CLEAN_PLATE  = auto()   # composite from clean plate
-    EDGE_EXTEND  = auto()   # fast: extend nearest edge pixels (low quality)
-    AI_CALLBACK  = auto()   # delegate to external AI model
-    AUTO         = auto()   # choose best available method
+    PATCH_BASED = auto()  # exemplar / patch-match
+    CLEAN_PLATE = auto()  # composite from clean plate
+    EDGE_EXTEND = auto()  # fast: extend nearest edge pixels (low quality)
+    AI_CALLBACK = auto()  # delegate to external AI model
+    AUTO = auto()  # choose best available method
 
 
 # ---------------------------------------------------------------------------
 # Parameters
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class InpaintParams:
@@ -91,23 +94,24 @@ class InpaintParams:
         this many pixels.  0 = hard composite.
     """
 
-    method:         InpaintMethod                          = InpaintMethod.AUTO
-    patch_size:     int                                    = 8
-    search_radius:  int                                    = 64
-    clean_plate:    Optional[np.ndarray]                   = None
-    ai_callback:    Optional[Callable]                     = None
-    dilate_mask_px: int                                    = 2
-    blend_px:       int                                    = 3
+    method: InpaintMethod = InpaintMethod.AUTO
+    patch_size: int = 8
+    search_radius: int = 64
+    clean_plate: Optional[np.ndarray] = None
+    ai_callback: Optional[Callable] = None
+    dilate_mask_px: int = 2
+    blend_px: int = 3
 
 
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
 
+
 def inpaint_occlusion(
-    image:   np.ndarray,
-    mask:    np.ndarray,
-    params:  InpaintParams = InpaintParams(),
+    image: np.ndarray,
+    mask: np.ndarray,
+    params: InpaintParams = InpaintParams(),
 ) -> np.ndarray:
     """Fill occluded (exposed background) regions in a stereo view.
 
@@ -125,7 +129,7 @@ def inpaint_occlusion(
         RGBA uint8 (H, W, 4) with occluded regions filled.
     """
     if mask.max() < 0.01:
-        return image   # nothing to fill
+        return image  # nothing to fill
 
     image = _ensure_rgba(image)
     bin_mask = _prepare_mask(mask, params.dilate_mask_px)
@@ -142,9 +146,7 @@ def inpaint_occlusion(
         filled = _inpaint_edge_extend(image, bin_mask)
 
     else:  # PATCH_BASED (default)
-        filled = _inpaint_patch_based(image, bin_mask,
-                                      params.patch_size,
-                                      params.search_radius)
+        filled = _inpaint_patch_based(image, bin_mask, params.patch_size, params.search_radius)
 
     if params.blend_px > 0:
         filled = _blend_boundary(image, filled, bin_mask, params.blend_px)
@@ -177,6 +179,7 @@ _GLOBAL_AI_CALLBACK: Optional[Callable] = None
 # Internal — method resolution
 # ---------------------------------------------------------------------------
 
+
 def _resolve_method(params: InpaintParams) -> InpaintMethod:
     if params.method != InpaintMethod.AUTO:
         return params.method
@@ -191,18 +194,17 @@ def _resolve_method(params: InpaintParams) -> InpaintMethod:
 # Internal — inpainting strategies
 # ---------------------------------------------------------------------------
 
+
 def _inpaint_clean_plate(
-    image:  np.ndarray,
-    mask:   np.ndarray,
-    plate:  np.ndarray,
+    image: np.ndarray,
+    mask: np.ndarray,
+    plate: np.ndarray,
 ) -> np.ndarray:
     """Composite clean plate over occluded regions."""
     plate_rgba = _ensure_rgba(plate)
     if plate_rgba.shape != image.shape:
         # Resize plate to match
-        p = Image.fromarray(plate_rgba).resize(
-            (image.shape[1], image.shape[0]), Image.LANCZOS
-        )
+        p = Image.fromarray(plate_rgba).resize((image.shape[1], image.shape[0]), Image.LANCZOS)
         plate_rgba = np.asarray(p, dtype=np.uint8)
 
     result = image.copy()
@@ -211,8 +213,8 @@ def _inpaint_clean_plate(
 
 
 def _inpaint_ai(
-    image:    np.ndarray,
-    mask:     np.ndarray,
+    image: np.ndarray,
+    mask: np.ndarray,
     callback: Optional[Callable],
 ) -> np.ndarray:
     """Delegate to AI inpainting callback."""
@@ -225,13 +227,14 @@ def _inpaint_ai(
         return _ensure_rgba(result)
     except Exception as exc:
         import warnings
+
         warnings.warn(f"AI inpaint callback failed ({exc}), falling back to patch-based.")
         return _inpaint_patch_based(image, mask, patch_size=8, search_radius=64)
 
 
 def _inpaint_edge_extend(
     image: np.ndarray,
-    mask:  np.ndarray,
+    mask: np.ndarray,
 ) -> np.ndarray:
     """Fast edge-extension: propagate nearest non-masked pixel left→right."""
     result = image.copy()
@@ -258,9 +261,9 @@ def _inpaint_edge_extend(
 
 
 def _inpaint_patch_based(
-    image:         np.ndarray,
-    mask:          np.ndarray,
-    patch_size:    int,
+    image: np.ndarray,
+    mask: np.ndarray,
+    patch_size: int,
     search_radius: int,
 ) -> np.ndarray:
     """Exemplar-based patch inpainting.
@@ -272,9 +275,8 @@ def _inpaint_patch_based(
     if _CV2:
         # OpenCV Telea or Navier-Stokes inpaint — excellent quality, fast
         mask8 = (mask * 255).astype(np.uint8)
-        rgb   = image[:, :, :3]
-        filled_rgb = cv2.inpaint(rgb, mask8, inpaintRadius=patch_size,
-                                 flags=cv2.INPAINT_TELEA)
+        rgb = image[:, :, :3]
+        filled_rgb = cv2.inpaint(rgb, mask8, inpaintRadius=patch_size, flags=cv2.INPAINT_TELEA)
         result = image.copy()
         result[:, :, :3] = filled_rgb
         result[:, :, 3][mask] = 255
@@ -285,9 +287,9 @@ def _inpaint_patch_based(
 
 
 def _numpy_patch_inpaint(
-    image:         np.ndarray,
-    mask:          np.ndarray,
-    patch_size:    int,
+    image: np.ndarray,
+    mask: np.ndarray,
+    patch_size: int,
     search_radius: int,
 ) -> np.ndarray:
     """Simple NumPy patch-match inpainting.
@@ -297,9 +299,9 @@ def _numpy_patch_inpaint(
     This is O(holes × search_area × patch²) — fine for small holes.
     """
     result = image.copy().astype(np.float32)
-    H, W   = image.shape[:2]
-    ph     = patch_size // 2
-    src    = image.astype(np.float32)
+    H, W = image.shape[:2]
+    ph = patch_size // 2
+    src = image.astype(np.float32)
 
     # Get all hole pixels sorted by distance to boundary (onion-peel order)
     hole_ys, hole_xs = np.where(mask)
@@ -310,8 +312,8 @@ def _numpy_patch_inpaint(
         py, px = int(hole_ys[idx]), int(hole_xs[idx])
 
         # Extract query patch around (py, px) — known pixels only
-        best_ssd  = np.inf
-        best_val  = result[py, px].copy()
+        best_ssd = np.inf
+        best_val = result[py, px].copy()
 
         # Search neighbourhood
         y0 = max(ph, py - search_radius)
@@ -322,7 +324,7 @@ def _numpy_patch_inpaint(
         for sy in range(y0, y1, patch_size):
             for sx in range(x0, x1, patch_size):
                 if mask[sy, sx]:
-                    continue   # candidate centre must not be in hole
+                    continue  # candidate centre must not be in hole
 
                 # Compare patch overlap (known pixels only)
                 # Query patch
@@ -333,27 +335,30 @@ def _numpy_patch_inpaint(
                 cx0, cx1 = sx - ph, sx + ph + 1
 
                 # Clamp
-                qy0 = max(0, qy0); qy1 = min(H, qy1)
-                qx0 = max(0, qx0); qx1 = min(W, qx1)
-                cy0 = max(0, cy0); cy1 = min(H, cy1)
-                cx0 = max(0, cx0); cx1 = min(W, cx1)
+                qy0 = max(0, qy0)
+                qy1 = min(H, qy1)
+                qx0 = max(0, qx0)
+                qx1 = min(W, qx1)
+                cy0 = max(0, cy0)
+                cy1 = min(H, cy1)
+                cx0 = max(0, cx0)
+                cx1 = min(W, cx1)
 
                 h = min(qy1 - qy0, cy1 - cy0)
                 w = min(qx1 - qx0, cx1 - cx0)
                 if h <= 0 or w <= 0:
                     continue
 
-                q_patch = result[qy0:qy0+h, qx0:qx0+w]
-                c_patch = src  [cy0:cy0+h, cx0:cx0+w]
-                q_mask  = mask [qy0:qy0+h, qx0:qx0+w]
+                q_patch = result[qy0 : qy0 + h, qx0 : qx0 + w]
+                c_patch = src[cy0 : cy0 + h, cx0 : cx0 + w]
+                q_mask = mask[qy0 : qy0 + h, qx0 : qx0 + w]
 
                 # SSD on known pixels only
-                known   = ~q_mask[:h, :w]
+                known = ~q_mask[:h, :w]
                 if not known.any():
                     continue
-                diff    = (q_patch[known].astype(np.float32) -
-                           c_patch[known].astype(np.float32))
-                ssd     = (diff ** 2).mean()
+                diff = q_patch[known].astype(np.float32) - c_patch[known].astype(np.float32)
+                ssd = (diff**2).mean()
 
                 if ssd < best_ssd:
                     best_ssd = ssd
@@ -369,46 +374,46 @@ def _numpy_patch_inpaint(
 # Internal — mask preparation and blending
 # ---------------------------------------------------------------------------
 
+
 def _prepare_mask(mask: np.ndarray, dilate_px: int) -> np.ndarray:
     """Convert float mask → bool, optionally dilated."""
     bin_mask = mask > 0.5
     if dilate_px > 0 and bin_mask.any():
         if _CV2:
-            k    = dilate_px * 2 + 1
+            k = dilate_px * 2 + 1
             kern = np.ones((k, k), np.uint8)
-            m8   = bin_mask.astype(np.uint8) * 255
-            m8   = cv2.dilate(m8, kern)
+            m8 = bin_mask.astype(np.uint8) * 255
+            m8 = cv2.dilate(m8, kern)
             bin_mask = m8 > 127
         else:
             try:
                 from scipy.ndimage import binary_dilation
-                bin_mask = binary_dilation(bin_mask,
-                                           iterations=dilate_px)
+
+                bin_mask = binary_dilation(bin_mask, iterations=dilate_px)
             except ImportError:
-                pass   # Skip dilation if neither available
+                pass  # Skip dilation if neither available
     return bin_mask
 
 
 def _blend_boundary(
     original: np.ndarray,
-    filled:   np.ndarray,
-    mask:     np.ndarray,
+    filled: np.ndarray,
+    mask: np.ndarray,
     blend_px: int,
 ) -> np.ndarray:
     """Feather the inpainted region boundary back into the original."""
     if not _CV2:
-        return filled   # Skip feathering without CV2 (hard composite is fine)
+        return filled  # Skip feathering without CV2 (hard composite is fine)
 
     # Create a smooth alpha ramp at the mask boundary
-    mask8   = mask.astype(np.uint8) * 255
-    k       = blend_px * 2 + 1
-    alpha   = cv2.GaussianBlur(mask8.astype(np.float32), (k, k),
-                               blend_px * 0.5) / 255.0
-    alpha4  = alpha[:, :, None]   # (H, W, 1)
+    mask8 = mask.astype(np.uint8) * 255
+    k = blend_px * 2 + 1
+    alpha = cv2.GaussianBlur(mask8.astype(np.float32), (k, k), blend_px * 0.5) / 255.0
+    alpha4 = alpha[:, :, None]  # (H, W, 1)
 
-    orig_f  = original.astype(np.float32)
-    fill_f  = filled.astype(np.float32)
-    result  = orig_f * (1.0 - alpha4) + fill_f * alpha4
+    orig_f = original.astype(np.float32)
+    fill_f = filled.astype(np.float32)
+    result = orig_f * (1.0 - alpha4) + fill_f * alpha4
     return result.clip(0, 255).astype(np.uint8)
 
 
@@ -419,5 +424,5 @@ def _ensure_rgba(arr: np.ndarray) -> np.ndarray:
         arr = np.stack([arr, arr, arr, np.full_like(arr, 255)], axis=-1)
     elif arr.shape[2] == 3:
         alpha = np.full((*arr.shape[:2], 1), 255, dtype=np.uint8)
-        arr   = np.concatenate([arr, alpha], axis=-1)
+        arr = np.concatenate([arr, alpha], axis=-1)
     return arr

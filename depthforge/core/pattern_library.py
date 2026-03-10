@@ -26,23 +26,23 @@ Categories
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable, Optional
 
 import numpy as np
-
 
 # ---------------------------------------------------------------------------
 # Registry
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class PatternEntry:
-    name:        str
-    category:    str
+    name: str
+    category: str
     description: str
-    fn:          Callable
-    safe_mode:   bool = True      # False = high contrast, not epilepsy-safe
+    fn: Callable
+    safe_mode: bool = True  # False = high contrast, not epilepsy-safe
 
 
 _LIBRARY: dict[str, PatternEntry] = {}
@@ -50,11 +50,13 @@ _LIBRARY: dict[str, PatternEntry] = {}
 
 def _register(name: str, category: str, description: str, safe_mode: bool = True):
     """Decorator to register a pattern generator function."""
+
     def decorator(fn):
-        _LIBRARY[name] = PatternEntry(name=name, category=category,
-                                       description=description, fn=fn,
-                                       safe_mode=safe_mode)
+        _LIBRARY[name] = PatternEntry(
+            name=name, category=category, description=description, fn=fn, safe_mode=safe_mode
+        )
         return fn
+
     return decorator
 
 
@@ -72,10 +74,10 @@ def list_categories() -> list[str]:
 
 def get_pattern(
     name: str,
-    width:  int = 128,
+    width: int = 128,
     height: int = 128,
-    seed:   int = 42,
-    scale:  float = 1.0,
+    seed: int = 42,
+    scale: float = 1.0,
 ) -> np.ndarray:
     """Generate a named pattern tile.
 
@@ -114,6 +116,7 @@ def get_pattern_info(name: str) -> PatternEntry:
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _rgba(r, g, b, H, W) -> np.ndarray:
     """Combine float32 RGB channels (0–1) into RGBA uint8."""
     out = np.zeros((H, W, 4), dtype=np.uint8)
@@ -133,17 +136,26 @@ def _grey(v, H, W) -> np.ndarray:
 def _hsv_to_rgb(h, s, v):
     """Vectorised HSV→RGB. All inputs float32 [0,1]."""
     h6 = h * 6.0
-    i  = np.floor(h6).astype(int) % 6
-    f  = h6 - np.floor(h6)
-    p  = v * (1 - s)
-    q  = v * (1 - f * s)
-    t  = v * (1 - (1 - f) * s)
-    r = np.where(i == 0, v, np.where(i == 1, q, np.where(i == 2, p,
-        np.where(i == 3, p, np.where(i == 4, t, v)))))
-    g = np.where(i == 0, t, np.where(i == 1, v, np.where(i == 2, v,
-        np.where(i == 3, q, np.where(i == 4, p, p)))))
-    b = np.where(i == 0, p, np.where(i == 1, p, np.where(i == 2, t,
-        np.where(i == 3, v, np.where(i == 4, v, q)))))
+    i = np.floor(h6).astype(int) % 6
+    f = h6 - np.floor(h6)
+    p = v * (1 - s)
+    q = v * (1 - f * s)
+    t = v * (1 - (1 - f) * s)
+    r = np.where(
+        i == 0,
+        v,
+        np.where(i == 1, q, np.where(i == 2, p, np.where(i == 3, p, np.where(i == 4, t, v)))),
+    )
+    g = np.where(
+        i == 0,
+        t,
+        np.where(i == 1, v, np.where(i == 2, v, np.where(i == 3, q, np.where(i == 4, p, p)))),
+    )
+    b = np.where(
+        i == 0,
+        p,
+        np.where(i == 1, p, np.where(i == 2, t, np.where(i == 3, v, np.where(i == 4, v, q)))),
+    )
     return r.astype(np.float32), g.astype(np.float32), b.astype(np.float32)
 
 
@@ -158,12 +170,19 @@ def _smooth_noise(H, W, rng, scale, octaves=4) -> np.ndarray:
         ny = max(2, int(H * freq))
         coarse = rng.random((ny, nx), dtype=np.float32)
         from PIL import Image as _PILImage
-        out += amp * np.array(
-            _PILImage.fromarray((coarse * 255).astype(np.uint8)).resize((W, H), _PILImage.BILINEAR),
-            dtype=np.float32
-        ) / 255.0
+
+        out += (
+            amp
+            * np.array(
+                _PILImage.fromarray((coarse * 255).astype(np.uint8)).resize(
+                    (W, H), _PILImage.BILINEAR
+                ),
+                dtype=np.float32,
+            )
+            / 255.0
+        )
         total_amp += amp
-        amp  *= 0.5
+        amp *= 0.5
         freq *= 2.0
     return (out / total_amp).astype(np.float32)
 
@@ -171,6 +190,7 @@ def _smooth_noise(H, W, rng, scale, octaves=4) -> np.ndarray:
 # ===========================================================================
 # ORGANIC patterns
 # ===========================================================================
+
 
 @_register("perlin_noise", "organic", "Classic multi-octave smooth noise")
 def _perlin_noise(W, H, rng, scale):
@@ -190,9 +210,9 @@ def _northern_lights(W, H, rng, scale):
     y = np.linspace(0, 1, H)[:, None]
     x = np.linspace(0, 1, W)[None, :]
     n = _smooth_noise(H, W, rng, scale * 3)
-    hue   = np.mod(n * 2.5 + y * 0.5, 1.0)
-    sat   = np.clip(0.7 + n * 0.3, 0, 1)
-    val   = np.clip(n * 1.2, 0, 1)
+    hue = np.mod(n * 2.5 + y * 0.5, 1.0)
+    sat = np.clip(0.7 + n * 0.3, 0, 1)
+    val = np.clip(n * 1.2, 0, 1)
     r, g, b = _hsv_to_rgb(hue, sat, val)
     return _rgba(r, g, b, H, W)
 
@@ -203,10 +223,10 @@ def _water_ripples(W, H, rng, scale):
     x = np.linspace(-1, 1, W)[None, :]
     off_x = rng.uniform(-0.5, 0.5)
     off_y = rng.uniform(-0.5, 0.5)
-    r1 = np.sqrt((x - off_x)**2 + (y - off_y)**2)
-    r2 = np.sqrt((x + off_x)**2 + (y + off_y)**2)
-    v  = np.sin(r1 * 20 / scale) * 0.5 + np.sin(r2 * 15 / scale) * 0.5
-    v  = (v + 1) / 2
+    r1 = np.sqrt((x - off_x) ** 2 + (y - off_y) ** 2)
+    r2 = np.sqrt((x + off_x) ** 2 + (y + off_y) ** 2)
+    v = np.sin(r1 * 20 / scale) * 0.5 + np.sin(r2 * 15 / scale) * 0.5
+    v = (v + 1) / 2
     return _grey(v, H, W)
 
 
@@ -236,9 +256,9 @@ def _wood_grain(W, H, rng, scale):
 @_register("lava", "organic", "Glowing lava / molten rock", safe_mode=False)
 def _lava(W, H, rng, scale):
     n = _smooth_noise(H, W, rng, scale * 2)
-    hue   = np.clip(n * 0.15, 0, 0.12)      # red→orange range
-    sat   = np.ones_like(n) * 0.95
-    val   = np.clip(0.4 + n * 0.6, 0, 1)
+    hue = np.clip(n * 0.15, 0, 0.12)  # red→orange range
+    sat = np.ones_like(n) * 0.95
+    val = np.clip(0.4 + n * 0.6, 0, 1)
     r, g, b = _hsv_to_rgb(hue, sat, val)
     return _rgba(r, g, b, H, W)
 
@@ -258,6 +278,7 @@ def _clouds(W, H, rng, scale):
 # GEOMETRIC patterns
 # ===========================================================================
 
+
 @_register("hexgrid", "geometric", "Regular hexagonal grid")
 def _hexgrid(W, H, rng, scale):
     y = np.linspace(0, H / scale, H)
@@ -271,7 +292,8 @@ def _hexgrid(W, H, rng, scale):
     row = np.floor((yy + row_off) / hex_h).astype(int)
     cx = col * hex_w * 0.75 + hex_w / 2
     cy = row * hex_h + hex_h / 2 - row_off
-    dx = xx - cx;  dy = yy - cy
+    dx = xx - cx
+    dy = yy - cy
     dist = np.sqrt(dx**2 + dy**2)
     v = np.clip(1 - dist / 0.9, 0, 1)
     return _grey(v, H, W)
@@ -283,8 +305,9 @@ def _dotgrid(W, H, rng, scale):
     y = np.arange(H) % spacing
     x = np.arange(W) % spacing
     yy, xx = np.meshgrid(y, x, indexing="ij")
-    cx = spacing / 2;  cy = spacing / 2
-    r = np.sqrt((xx - cx)**2 + (yy - cy)**2)
+    cx = spacing / 2
+    cy = spacing / 2
+    r = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
     v = (r < spacing * 0.35).astype(np.float32)
     return _grey(v, H, W)
 
@@ -297,14 +320,16 @@ def _circuit_board(W, H, rng, scale):
         for gx in range(0, W, cell):
             # Horizontal or vertical trace
             if rng.random() > 0.5:
-                img[gy:gy+2, gx:gx+cell] = 0.9
+                img[gy : gy + 2, gx : gx + cell] = 0.9
             else:
-                img[gy:gy+cell, gx:gx+2] = 0.9
+                img[gy : gy + cell, gx : gx + 2] = 0.9
             # Solder pad
-            cy, cx = gy + cell//2, gx + cell//2
-            yy, xx = np.ogrid[max(0,cy-3):min(H,cy+3), max(0,cx-3):min(W,cx+3)]
-            dist = np.sqrt((yy-cy)**2 + (xx-cx)**2)
-            img[max(0,cy-3):min(H,cy+3), max(0,cx-3):min(W,cx+3)] = np.where(dist < 3, 1.0, img[max(0,cy-3):min(H,cy+3), max(0,cx-3):min(W,cx+3)])
+            cy, cx = gy + cell // 2, gx + cell // 2
+            yy, xx = np.ogrid[max(0, cy - 3) : min(H, cy + 3), max(0, cx - 3) : min(W, cx + 3)]
+            dist = np.sqrt((yy - cy) ** 2 + (xx - cx) ** 2)
+            img[max(0, cy - 3) : min(H, cy + 3), max(0, cx - 3) : min(W, cx + 3)] = np.where(
+                dist < 3, 1.0, img[max(0, cy - 3) : min(H, cy + 3), max(0, cx - 3) : min(W, cx + 3)]
+            )
     # Green tint
     r = img * 0.1
     g = img * 0.8
@@ -342,7 +367,7 @@ def _crystalline(W, H, rng, scale):
     dx = xx[:, :, None].astype(np.float32) - pts_x[None, None, :]
     dy = yy[:, :, None].astype(np.float32) - pts_y[None, None, :]
     dist = dx**2 + dy**2
-    idx  = dist.argmin(axis=2)
+    idx = dist.argmin(axis=2)
 
     r = colors[idx, 0]
     g = colors[idx, 1]
@@ -357,8 +382,8 @@ def _triangles(W, H, rng, scale):
     x = np.arange(W)[None, :]
     row = y // size
     col = x // size
-    fy  = (y % size) / size
-    fx  = (x % size) / size
+    fy = (y % size) / size
+    fx = (x % size) / size
     upper = (fx + fy < 1).astype(int)
     cell_id = (row * 100 + col * 3 + upper) % 360
     hue = cell_id.astype(np.float32) / 360.0
@@ -376,9 +401,9 @@ def _isometric(W, H, rng, scale):
     col = xx // size
     face = (row + col) % 3
     faces = [
-        (0.7, 0.7, 0.7),   # top
-        (0.4, 0.4, 0.8),   # left
-        (0.2, 0.2, 0.5),   # right
+        (0.7, 0.7, 0.7),  # top
+        (0.4, 0.4, 0.8),  # left
+        (0.2, 0.2, 0.5),  # right
     ]
     r = np.where(face == 0, 0.7, np.where(face == 1, 0.4, 0.2)).astype(np.float32)
     g = np.where(face == 0, 0.7, np.where(face == 1, 0.4, 0.2)).astype(np.float32)
@@ -390,13 +415,18 @@ def _isometric(W, H, rng, scale):
 # PSYCHEDELIC patterns
 # ===========================================================================
 
+
 @_register("plasma_wave", "psychedelic", "Classic demoscene plasma effect", safe_mode=False)
 def _plasma_wave(W, H, rng, scale):
     y = np.linspace(0, 4 * np.pi, H)[:, None] / scale
     x = np.linspace(0, 4 * np.pi, W)[None, :] / scale
     off = rng.uniform(0, np.pi * 2)
-    v = (np.sin(x + off) + np.sin(y + off) +
-         np.sin((x + y) / 2) + np.sin(np.sqrt(x**2 + y**2) / 2 + off))
+    v = (
+        np.sin(x + off)
+        + np.sin(y + off)
+        + np.sin((x + y) / 2)
+        + np.sin(np.sqrt(x**2 + y**2) / 2 + off)
+    )
     v = (v + 4) / 8
     r, g, b = _hsv_to_rgb(v, np.ones_like(v) * 0.9, np.ones_like(v) * 0.95)
     return _rgba(r, g, b, H, W)
@@ -426,7 +456,9 @@ def _kaleidoscope(W, H, rng, scale):
     return _rgba(r, g, b, H, W)
 
 
-@_register("neon_grid", "psychedelic", "Glowing neon grid lines on dark background", safe_mode=False)
+@_register(
+    "neon_grid", "psychedelic", "Glowing neon grid lines on dark background", safe_mode=False
+)
 def _neon_grid(W, H, rng, scale):
     spacing = max(8, int(24 / scale))
     yy = np.arange(H)[:, None]
@@ -490,6 +522,7 @@ def _electric(W, H, rng, scale):
 # MINIMAL patterns
 # ===========================================================================
 
+
 @_register("fine_grain", "minimal", "Ultra-fine photographic grain — subtle, SIRDS-safe")
 def _fine_grain(W, H, rng, scale):
     v = rng.random((H, W), dtype=np.float32)
@@ -503,8 +536,8 @@ def _linen(W, H, rng, scale):
     n = _smooth_noise(H, W, rng, scale * 0.5, octaves=2)
     yy = np.arange(H)[:, None]
     xx = np.arange(W)[None, :]
-    thread_h = (np.sin(xx * 0.8 / scale) * 0.05 + 0.5)
-    thread_v = (np.sin(yy * 0.8 / scale) * 0.05 + 0.5)
+    thread_h = np.sin(xx * 0.8 / scale) * 0.05 + 0.5
+    thread_v = np.sin(yy * 0.8 / scale) * 0.05 + 0.5
     v = thread_h * 0.5 + thread_v * 0.5 + n * 0.08
     return _grey(v, H, W)
 
@@ -513,7 +546,7 @@ def _linen(W, H, rng, scale):
 def _paper(W, H, rng, scale):
     n1 = _smooth_noise(H, W, rng, scale * 4, octaves=3) * 0.12
     n2 = rng.random((H, W), dtype=np.float32) * 0.04
-    v  = np.clip(0.88 + n1 + n2, 0, 1)
+    v = np.clip(0.88 + n1 + n2, 0, 1)
     return _grey(v, H, W)
 
 
@@ -522,9 +555,10 @@ def _subtle_dots(W, H, rng, scale):
     spacing = max(6, int(14 / scale))
     yy = np.arange(H)[:, None] % spacing
     xx = np.arange(W)[None, :] % spacing
-    cy = spacing // 2;  cx = spacing // 2
-    r  = np.sqrt((yy - cy)**2 + (xx - cx)**2)
-    v  = np.where(r < spacing * 0.25, 0.35, 0.65).astype(np.float32)
+    cy = spacing // 2
+    cx = spacing // 2
+    r = np.sqrt((yy - cy) ** 2 + (xx - cx) ** 2)
+    v = np.where(r < spacing * 0.25, 0.35, 0.65).astype(np.float32)
     return _grey(v, H, W)
 
 
@@ -535,7 +569,7 @@ def _crosshatch(W, H, rng, scale):
     xx = np.arange(W)[None, :]
     on_h = ((xx + yy) % spacing < 1).astype(np.float32)
     on_v = ((xx - yy) % spacing < 1).astype(np.float32)
-    v    = np.clip(0.7 - (on_h + on_v) * 0.35, 0, 1)
+    v = np.clip(0.7 - (on_h + on_v) * 0.35, 0, 1)
     return _grey(v, H, W)
 
 
@@ -555,10 +589,7 @@ def _brushed_metal(W, H, rng, scale):
     # Horizontal streaks
     streak = _smooth_noise(H, W, rng, scale * 0.3, octaves=2)
     yy = np.arange(H)[:, None]
-    horizontal = np.tile(
-        np.sin(yy * 0.5 / scale) * 0.03,
-        (1, W)
-    )
+    horizontal = np.tile(np.sin(yy * 0.5 / scale) * 0.03, (1, W))
     v = np.clip(0.65 + streak * 0.15 + horizontal, 0, 1)
     return _grey(v, H, W)
 
@@ -568,7 +599,7 @@ def _soft_gradient(W, H, rng, scale):
     y = np.linspace(0, 1, H)[:, None]
     x = np.linspace(0, 1, W)[None, :]
     cx, cy = rng.uniform(0.3, 0.7), rng.uniform(0.3, 0.7)
-    r = np.sqrt((x - cx)**2 + (y - cy)**2)
+    r = np.sqrt((x - cx) ** 2 + (y - cy) ** 2)
     v = np.clip(1.0 - r * 1.2 / scale, 0.2, 0.9).astype(np.float32)
     return _grey(v, H, W)
 
@@ -576,6 +607,7 @@ def _soft_gradient(W, H, rng, scale):
 # ===========================================================================
 # Convenience alias for the full pattern_gen generator (by library name)
 # ===========================================================================
+
 
 def available_count() -> int:
     """Return the total number of registered patterns."""

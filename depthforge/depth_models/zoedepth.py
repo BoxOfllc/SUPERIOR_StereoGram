@@ -16,8 +16,7 @@ from __future__ import annotations
 
 import numpy as np
 
-from depthforge.depth_models import DepthEstimator, DepthEstimationError, _REGISTRY
-
+from depthforge.depth_models import _REGISTRY, DepthEstimationError, DepthEstimator
 
 # ---------------------------------------------------------------------------
 # Availability
@@ -25,6 +24,7 @@ from depthforge.depth_models import DepthEstimator, DepthEstimationError, _REGIS
 
 try:
     import torch
+
     _TORCH_OK = True
 except ImportError:
     _TORCH_OK = False
@@ -33,6 +33,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # ZoeDepth estimator
 # ---------------------------------------------------------------------------
+
 
 class ZoeDepthEstimator(DepthEstimator):
     """ZoeDepth N (indoor/outdoor) metric depth estimator.
@@ -44,12 +45,12 @@ class ZoeDepthEstimator(DepthEstimator):
     handles better scene-type transitions).
     """
 
-    _HUB_REPO   = "isl-org/ZoeDepth"
+    _HUB_REPO = "isl-org/ZoeDepth"
     _MODEL_NAME = "ZoeD_N"
 
     def __init__(self):
         self._torch_model = None
-        self._device      = None
+        self._device = None
         super().__init__()
 
     @property
@@ -60,7 +61,7 @@ class ZoeDepthEstimator(DepthEstimator):
         if not _TORCH_OK:
             raise DepthEstimationError(
                 "ZoeDepth requires PyTorch. Install it with:\n"
-                "  pip install \"depthforge[ai]\"\n"
+                '  pip install "depthforge[ai]"\n'
                 "or: pip install torch torchvision timm"
             )
 
@@ -101,6 +102,7 @@ class ZoeDepthEstimator(DepthEstimator):
 # Mock for testing
 # ---------------------------------------------------------------------------
 
+
 class _MockZoeDepthEstimator(DepthEstimator):
     """Synthetic estimator for testing without PyTorch.
 
@@ -127,5 +129,5 @@ class _MockZoeDepthEstimator(DepthEstimator):
 # Register
 # ---------------------------------------------------------------------------
 
-_REGISTRY["zoedepth"]      = ZoeDepthEstimator
+_REGISTRY["zoedepth"] = ZoeDepthEstimator
 _REGISTRY["zoedepth_mock"] = _MockZoeDepthEstimator

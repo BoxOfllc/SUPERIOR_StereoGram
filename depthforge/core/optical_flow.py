@@ -32,13 +32,14 @@ API
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import List, Optional, Tuple
+from dataclasses import dataclass
+from typing import List, Optional
 
 import numpy as np
 
 try:
     import cv2
+
     _HAS_CV2 = True
 except ImportError:
     _HAS_CV2 = False
@@ -47,6 +48,7 @@ except ImportError:
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class FlowDepthConfig:
@@ -84,23 +86,24 @@ class FlowDepthConfig:
         proxy instead of raising an error.
     """
 
-    pyr_scale:          float   = 0.5
-    levels:             int     = 3
-    winsize:            int     = 15
-    iterations:         int     = 3
-    poly_n:             int     = 5
-    poly_sigma:         float   = 1.1
-    motion_scale:       float   = 1.0
-    blur_sigma:         float   = 3.0
-    invert:             bool    = False
-    min_motion:         float   = 0.1
-    max_motion:         float   = 0.0      # 0 = auto
-    fallback_gradient:  bool    = True
+    pyr_scale: float = 0.5
+    levels: int = 3
+    winsize: int = 15
+    iterations: int = 3
+    poly_n: int = 5
+    poly_sigma: float = 1.1
+    motion_scale: float = 1.0
+    blur_sigma: float = 3.0
+    invert: bool = False
+    min_motion: float = 0.1
+    max_motion: float = 0.0  # 0 = auto
+    fallback_gradient: bool = True
 
 
 # ---------------------------------------------------------------------------
 # Low-level flow functions
 # ---------------------------------------------------------------------------
+
 
 def _to_grey_u8(frame: np.ndarray) -> np.ndarray:
     """Convert any frame format to uint8 greyscale (H, W)."""
@@ -108,20 +111,30 @@ def _to_grey_u8(frame: np.ndarray) -> np.ndarray:
         if frame.shape[2] == 4:
             frame = frame[:, :, :3]
         if frame.dtype != np.uint8:
-            frame = (np.clip(frame, 0, 1) * 255).astype(np.uint8) if frame.max() <= 1.0 else frame.astype(np.uint8)
+            frame = (
+                (np.clip(frame, 0, 1) * 255).astype(np.uint8)
+                if frame.max() <= 1.0
+                else frame.astype(np.uint8)
+            )
         if _HAS_CV2:
             return cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         else:
-            return (frame[:, :, 0] * 0.299 + frame[:, :, 1] * 0.587 + frame[:, :, 2] * 0.114).astype(np.uint8)
+            return (
+                frame[:, :, 0] * 0.299 + frame[:, :, 1] * 0.587 + frame[:, :, 2] * 0.114
+            ).astype(np.uint8)
     if frame.dtype != np.uint8:
-        return (np.clip(frame, 0, 1) * 255).astype(np.uint8) if frame.max() <= 1.0 else frame.astype(np.uint8)
+        return (
+            (np.clip(frame, 0, 1) * 255).astype(np.uint8)
+            if frame.max() <= 1.0
+            else frame.astype(np.uint8)
+        )
     return frame
 
 
 def compute_flow(
     frame_a: np.ndarray,
     frame_b: np.ndarray,
-    config:  FlowDepthConfig,
+    config: FlowDepthConfig,
 ) -> np.ndarray:
     """Compute dense optical flow from frame_a to frame_b.
 
@@ -156,20 +169,22 @@ def compute_flow(
     gb = _to_grey_u8(frame_b)
 
     flow = cv2.calcOpticalFlowFarneback(
-        ga, gb, None,
+        ga,
+        gb,
+        None,
         config.pyr_scale,
         config.levels,
         config.winsize,
         config.iterations,
         config.poly_n,
         config.poly_sigma,
-        0,   # flags
+        0,  # flags
     )
     return flow.astype(np.float32)
 
 
 def flow_to_depth(
-    flow:   np.ndarray,
+    flow: np.ndarray,
     config: FlowDepthConfig,
 ) -> np.ndarray:
     """Convert a dense flow field to a normalised depth proxy.
@@ -187,7 +202,7 @@ def flow_to_depth(
         Inverted if ``config.invert == True``.
     """
     # Motion magnitude
-    mag = np.sqrt(flow[:, :, 0]**2 + flow[:, :, 1]**2).astype(np.float32)
+    mag = np.sqrt(flow[:, :, 0] ** 2 + flow[:, :, 1] ** 2).astype(np.float32)
 
     # Min-motion threshold — suppress background noise
     mag = np.where(mag < config.min_motion, 0.0, mag)
@@ -199,6 +214,7 @@ def flow_to_depth(
     if config.blur_sigma > 0:
         try:
             from scipy.ndimage import gaussian_filter
+
             mag = gaussian_filter(mag, sigma=config.blur_sigma).astype(np.float32)
         except ImportError:
             if _HAS_CV2:
@@ -225,7 +241,7 @@ def flow_to_depth(
 
 def flow_warp(
     frame: np.ndarray,
-    flow:  np.ndarray,
+    flow: np.ndarray,
 ) -> np.ndarray:
     """Warp a frame forward by a flow field.
 
@@ -248,8 +264,9 @@ def flow_warp(
     map_y = (ys + flow[:, :, 1]).astype(np.float32)
 
     if _HAS_CV2:
-        return cv2.remap(frame.astype(np.uint8), map_x, map_y,
-                         cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE)
+        return cv2.remap(
+            frame.astype(np.uint8), map_x, map_y, cv2.INTER_LINEAR, borderMode=cv2.BORDER_REPLICATE
+        )
 
     # Pure-numpy fallback: nearest-neighbour
     map_xi = np.clip(np.round(map_x).astype(np.int32), 0, W - 1)
@@ -260,6 +277,7 @@ def flow_warp(
 # ---------------------------------------------------------------------------
 # FlowDepthEstimator
 # ---------------------------------------------------------------------------
+
 
 class FlowDepthEstimator:
     """Stateful estimator that tracks the previous frame for streaming use.
@@ -276,13 +294,13 @@ class FlowDepthEstimator:
     """
 
     def __init__(self, config: Optional[FlowDepthConfig] = None):
-        self.config    = config or FlowDepthConfig()
+        self.config = config or FlowDepthConfig()
         self._prev_grey: Optional[np.ndarray] = None
         self._prev_depth: Optional[np.ndarray] = None
 
     def reset(self) -> None:
         """Clear the previous-frame state."""
-        self._prev_grey  = None
+        self._prev_grey = None
         self._prev_depth = None
 
     def feed(self, frame: np.ndarray) -> Optional[np.ndarray]:
@@ -302,10 +320,10 @@ class FlowDepthEstimator:
             self._prev_grey = grey
             return None
 
-        flow  = compute_flow(self._prev_grey, grey, self.config)
+        flow = compute_flow(self._prev_grey, grey, self.config)
         depth = flow_to_depth(flow, self.config)
 
-        self._prev_grey  = grey
+        self._prev_grey = grey
         self._prev_depth = depth
         return depth
 
@@ -366,6 +384,7 @@ class FlowDepthEstimator:
 # ---------------------------------------------------------------------------
 # Scene-cut detector (used by temporal.py)
 # ---------------------------------------------------------------------------
+
 
 def detect_scene_cut(
     frame_a: np.ndarray,
