@@ -2133,6 +2133,661 @@ class DF_QRStereogram(_DFNodeBase):
 
 
 # ===========================================================================
+# Video ControlNet helpers
+# ===========================================================================
+
+
+def _blur_depth_map(depth: np.ndarray, radius: float) -> np.ndarray:
+    """Blur a (H, W) float32 depth map with PIL GaussianBlur (always available)."""
+    if radius < 0.5:
+        return depth
+    try:
+        from PIL import Image as _PILB, ImageFilter as _IF
+
+        d8 = (np.clip(depth, 0.0, 1.0) * 255).astype(np.uint8)
+        return (
+            np.array(_PILB.fromarray(d8).filter(_IF.GaussianBlur(radius=radius))).astype(
+                np.float32
+            )
+            / 255.0
+        )
+    except Exception:
+        return depth
+
+
+def _resize_to(arr: np.ndarray, out_h: int, out_w: int) -> np.ndarray:
+    """Bilinear resize of a (H, W) float32 or uint8 array via PIL."""
+    try:
+        from PIL import Image as _PILR
+
+        if arr.dtype != np.uint8:
+            src = (np.clip(arr, 0, 1) * 255).astype(np.uint8)
+            return (
+                np.array(_PILR.fromarray(src).resize((out_w, out_h), _PILR.BILINEAR)).astype(
+                    np.float32
+                )
+                / 255.0
+            )
+        return np.array(_PILR.fromarray(arr).resize((out_w, out_h), _PILR.BILINEAR))
+    except Exception:
+        # tile-and-crop fallback
+        rh = max(1, out_h // arr.shape[0] + 1)
+        rw = max(1, out_w // arr.shape[1] + 1)
+        return np.tile(arr, (rh, rw))[:out_h, :out_w]
+
+
+def _sirds_frame(
+    pattern_rgba: np.ndarray,
+    depth_2d: np.ndarray,
+    max_shift_px: int,
+    out_w: int,
+    out_h: int,
+) -> np.ndarray:
+    """Single-frame SIRDS: returns (out_h, out_w, 4) uint8.
+
+    Uses the pattern as the repeating tile and applies per-pixel horizontal
+    shifts from depth_2d using the standard recursive SIRDS lookup.
+    """
+    P_h, P_w = pattern_rgba.shape[:2]
+
+    # Resize depth to output dimensions
+    depth_out = _resize_to(depth_2d, out_h, out_w)
+
+    shifts = np.clip((depth_out * max_shift_px).astype(np.int32), 0, max_shift_px)
+
+    # Tile pattern across full output to seed column 0..P_w
+    rh = out_h // P_h + 2
+    rw = out_w // P_w + 2
+    tiled = np.tile(pattern_rgba, (rh, rw, 1))[:out_h, :out_w]
+
+    output = np.zeros((out_h, out_w, 4), dtype=np.uint8)
+    output[:, :P_w] = tiled[:, :P_w]
+
+    row_idx = np.arange(out_h)
+    for x in range(P_w, out_w):
+        src_x = np.clip(x - P_w + shifts[:, x], 0, x - 1)
+        output[:, x] = output[row_idx, src_x]
+
+    return output
+
+
+def _nested_sirds_frame(
+    pattern_rgba: np.ndarray,
+    depth_2d: np.ndarray,
+    max_parallax_px: int,
+    nest_levels: int,
+    out_w: int,
+    out_h: int,
+) -> np.ndarray:
+    """Multi-scale SIRDS: blend stereograms at coarse-to-fine depth layers.
+
+    Level 0 (outermost): full depth, full parallax — encodes the global 3D shape.
+    Level 1: depth blurred at radius 4, half parallax — mid-scale nested structure.
+    Level 2: depth blurred at radius 8, quarter parallax — finer nested layer.
+    Level 3: depth blurred at radius 16, eighth parallax — innermost detail layer.
+
+    Weights: 1, 0.5, 0.25, 0.125 — outer layer always dominates.
+    The result is a stereogram-within-a-stereogram: cross-fusing at different
+    distances reveals different depth layers, like a fractal depth stack.
+    """
+    accumulated = np.zeros((out_h, out_w, 4), dtype=np.float64)
+    total_weight = 0.0
+
+    for level in range(nest_levels):
+        blur_radius = float(2 ** level)  # 1, 2, 4, 8 px per level
+        level_depth = _blur_depth_map(depth_2d, blur_radius)
+        level_max_px = max(1, max_parallax_px >> level)  # halve per level
+
+        level_stereo = _sirds_frame(pattern_rgba, level_depth, level_max_px, out_w, out_h)
+
+        weight = 1.0 / (2**level)  # 1, 0.5, 0.25, 0.125
+        accumulated += level_stereo.astype(np.float64) * weight
+        total_weight += weight
+
+    if total_weight > 0:
+        accumulated /= total_weight
+
+    return accumulated.clip(0, 255).astype(np.uint8)
+
+
+def _make_wipe_mask(
+    H: int,
+    W: int,
+    frame_idx: int,
+    n_frames: int,
+    mode: str,
+    static_mask: np.ndarray | None,
+    feather: float,
+) -> np.ndarray:
+    """Compute a (H, W) float32 wipe mask for one frame.
+
+    0.0 = flat pattern (no stereogram effect).
+    1.0 = full stereogram effect applied.
+
+    Modes
+    -----
+    static     Use alpha_wipe_map directly — same mask every frame.
+    scan_right Wipe sweeps left → right across the frame sequence.
+    scan_left  Wipe sweeps right → left.
+    radial     Wipe expands from the frame centre outward (the
+               "Seven Nation Army" reveal — concentric growth).
+    custom     Same as static: alpha_wipe_map controls the spatial
+               shape; it does not animate across frames.
+    """
+    t = frame_idx / max(n_frames - 1, 1)  # 0.0 at first frame, 1.0 at last
+
+    if mode in ("static", "custom"):
+        mask = (
+            static_mask.copy()
+            if static_mask is not None
+            else np.ones((H, W), dtype=np.float32)
+        )
+
+    elif mode == "scan_right":
+        xs = np.linspace(0.0, 1.0, W, dtype=np.float32)
+        edge = max(feather / max(W, 1), 0.02)
+        mask = np.clip((xs - (t - edge)) / edge, 0.0, 1.0)
+        mask = np.broadcast_to(mask, (H, W)).copy()
+
+    elif mode == "scan_left":
+        xs = np.linspace(1.0, 0.0, W, dtype=np.float32)
+        edge = max(feather / max(W, 1), 0.02)
+        mask = np.clip((xs - (t - edge)) / edge, 0.0, 1.0)
+        mask = np.broadcast_to(mask, (H, W)).copy()
+
+    elif mode == "radial":
+        # Expand from centre — concentric reveal
+        cy, cx = H / 2.0, W / 2.0
+        ys = (np.arange(H, dtype=np.float32) - cy) / max(cy, 1)
+        xs = (np.arange(W, dtype=np.float32) - cx) / max(cx, 1)
+        xx, yy = np.meshgrid(xs, ys)
+        # Normalise to [0, 1]: centre=0, corners≈1
+        r = np.sqrt(xx**2 + yy**2) / np.sqrt(2.0)
+        edge = max(feather / max(H, W), 0.03)
+        mask = np.clip((t - r) / edge + 1.0, 0.0, 1.0).astype(np.float32)
+
+    else:
+        mask = np.ones((H, W), dtype=np.float32)
+
+    # When a static alpha_wipe_map is provided alongside an animated mode,
+    # use it as a spatial multiplier (e.g. limit the reveal to a specific region).
+    if static_mask is not None and mode not in ("static", "custom"):
+        mask = mask * static_mask
+
+    return mask.astype(np.float32)
+
+
+def _optical_flow_warp(
+    prev_depth: np.ndarray,
+    curr_gray: np.ndarray,
+    prev_gray: np.ndarray,
+) -> np.ndarray | None:
+    """Warp prev_depth using Farneback optical flow curr←prev.
+
+    Returns warped depth array, or None if cv2 is unavailable.
+    The warp compensates for camera/subject motion so that temporal
+    depth blending does not smear depth across moving edges.
+    """
+    try:
+        import cv2
+
+        flow = cv2.calcOpticalFlowFarneback(
+            prev_gray,
+            curr_gray,
+            None,
+            pyr_scale=0.5,
+            levels=3,
+            winsize=15,
+            iterations=3,
+            poly_n=5,
+            poly_sigma=1.2,
+            flags=0,
+        )
+        h, w = flow.shape[:2]
+        map_x = (np.arange(w, dtype=np.float32) + flow[..., 0]).clip(0, w - 1)
+        map_y = (
+            np.arange(h, dtype=np.float32).reshape(-1, 1) + flow[..., 1]
+        ).clip(0, h - 1)
+        return cv2.remap(
+            prev_depth.astype(np.float32),
+            map_x,
+            map_y,
+            cv2.INTER_LINEAR,
+            borderMode=cv2.BORDER_REPLICATE,
+        )
+    except Exception:
+        return None
+
+
+def _rgba_to_gray(rgba: np.ndarray) -> np.ndarray:
+    """Convert (H, W, ≥3) uint8 RGBA to (H, W) uint8 grayscale."""
+    return (
+        rgba[..., 0].astype(np.float32) * 0.299
+        + rgba[..., 1].astype(np.float32) * 0.587
+        + rgba[..., 2].astype(np.float32) * 0.114
+    ).astype(np.uint8)
+
+
+# ===========================================================================
+# Node 12 — DF_VideoControlNet
+# ===========================================================================
+
+
+class DF_VideoControlNet(_DFNodeBase):
+    """ControlNet-guided video stereogram with nested depth layers and wipe reveal."""
+
+    DESCRIPTION = (
+        "Process a video sequence into a multi-layer nested stereogram with an "
+        "animated wipe that reveals the 3D effect across frames — depth maps "
+        "are expected from a ControlNet depth preprocessor (MiDaS, ZoeDepth, etc.) "
+        "and temporal optical flow is used to keep depth consistent between frames."
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "image_sequence": (
+                    "IMAGE",
+                    {
+                        "tooltip": (
+                            "Batch of RGB source frames as a ComfyUI IMAGE tensor (B, H, W, C). "
+                            "Connect a video loader node. Frame order must be sequential — "
+                            "temporal smoothing and optical flow depend on frame continuity."
+                        )
+                    },
+                ),
+            },
+            "optional": {
+                "depth_sequence": (
+                    "IMAGE",
+                    {
+                        "tooltip": (
+                            "Batch of depth maps (B, H, W, C), one per source frame. "
+                            "Connect the output of a ControlNet depth preprocessor "
+                            "(e.g. MiDaS, ZoeDepth, Depth Anything). "
+                            "White = near, black = far. "
+                            "If omitted, a flat centre-radial gradient is used."
+                        )
+                    },
+                ),
+                "pattern": (
+                    "PATTERN",
+                    {
+                        "tooltip": (
+                            "Pattern tile for the stereogram dot field. "
+                            "Connect DF_PatternGen or DF_PatternLibrary. "
+                            "If not connected, random noise is generated from seed. "
+                            "Keep the same pattern across the whole sequence."
+                        )
+                    },
+                ),
+                "alpha_wipe_map": (
+                    "IMAGE",
+                    {
+                        "tooltip": (
+                            "Single grayscale mask (H, W) controlling where/how strongly "
+                            "the stereogram effect appears. White = full stereogram, "
+                            "black = flat pattern. Used as a spatial multiplier on animated "
+                            "wipe modes, or as the full mask in static/custom modes."
+                        )
+                    },
+                ),
+                "wipe_mode": (
+                    ["radial", "scan_right", "scan_left", "static", "custom"],
+                    {
+                        "tooltip": (
+                            "How the stereogram effect is revealed across the frame sequence. "
+                            "'radial' = grows outward from centre (like Seven Nation Army). "
+                            "'scan_right' = sweeps left to right. "
+                            "'scan_left' = sweeps right to left. "
+                            "'static' = uses alpha_wipe_map unchanged every frame. "
+                            "'custom' = same as static; alpha_wipe_map defines the spatial shape."
+                        )
+                    },
+                ),
+                "wipe_feather": (
+                    "FLOAT",
+                    {
+                        "default": 0.08,
+                        "min": 0.0,
+                        "max": 0.5,
+                        "step": 0.01,
+                        "tooltip": (
+                            "Softness of the wipe transition edge as a fraction of frame size. "
+                            "0.0 = hard edge (sharp reveal line). "
+                            "0.08 = soft feathered edge (recommended). "
+                            "0.3 = very gradual fade across the whole frame."
+                        ),
+                    },
+                ),
+                "nest_depth_levels": (
+                    "INT",
+                    {
+                        "default": 2,
+                        "min": 1,
+                        "max": 4,
+                        "tooltip": (
+                            "Number of nested stereogram depth layers. "
+                            "1 = standard single-layer SIRDS (fastest). "
+                            "2 = global shape + mid-scale nested structure (recommended). "
+                            "3 = adds fine-detail inner layer. "
+                            "4 = maximum fractal depth — each layer is half the parallax "
+                            "of the previous. Processing time scales linearly."
+                        ),
+                    },
+                ),
+                "depth_factor": (
+                    "FLOAT",
+                    {
+                        "default": 0.35,
+                        "min": 0.0,
+                        "max": 0.6,
+                        "step": 0.01,
+                        "tooltip": (
+                            "Stereogram depth strength for the outermost level. "
+                            "0.35 = comfortable pop for most viewers. "
+                            "0.5 = dramatic. Above 0.5 risks eye strain in video. "
+                            "Inner nested levels are automatically scaled down. "
+                            "Safe range for video: 0.15–0.4."
+                        ),
+                    },
+                ),
+                "max_parallax": (
+                    "FLOAT",
+                    {
+                        "default": 0.033,
+                        "min": 0.005,
+                        "max": 0.08,
+                        "step": 0.001,
+                        "tooltip": (
+                            "Maximum pixel shift as a fraction of frame width for level 0. "
+                            "0.033 = comfortable (1/30 of width). "
+                            "Above 0.05 not recommended for sustained video viewing. "
+                            "Inner levels are capped at half this value per level."
+                        ),
+                    },
+                ),
+                "temporal_smooth": (
+                    "FLOAT",
+                    {
+                        "default": 0.35,
+                        "min": 0.0,
+                        "max": 1.0,
+                        "step": 0.05,
+                        "tooltip": (
+                            "Temporal depth blending weight with the previous frame. "
+                            "0.0 = no smoothing (depth changes cut sharply between frames). "
+                            "0.35 = gentle smoothing (recommended for most footage). "
+                            "0.7 = heavy blur — good for slow-moving scenes, "
+                            "but lags behind fast motion. "
+                            "When cv2 is available, optical flow warps the previous depth "
+                            "to the current camera position before blending."
+                        ),
+                    },
+                ),
+                "use_optical_flow": (
+                    "BOOLEAN",
+                    {
+                        "default": True,
+                        "tooltip": (
+                            "Use Farneback optical flow (requires OpenCV / cv2) to warp "
+                            "the previous frame's depth map to the current camera position "
+                            "before temporal blending. Prevents depth smearing at moving edges. "
+                            "Falls back to simple blending if cv2 is not installed."
+                        ),
+                    },
+                ),
+                "safe_mode": (
+                    "BOOLEAN",
+                    {
+                        "default": True,
+                        "tooltip": (
+                            "Enable PSE flash safety checking on the output sequence. "
+                            "Warns if any frame-to-frame luminance change exceeds the "
+                            "3 Hz photosensitive epilepsy threshold. "
+                            "Also clamps depth_factor to 0.5 maximum. "
+                            "Always leave enabled for broadcast or public display."
+                        ),
+                    },
+                ),
+                "seed": (
+                    "INT",
+                    {
+                        "default": 42,
+                        "min": 0,
+                        "max": 99999,
+                        "tooltip": (
+                            "Random seed for generating the fallback pattern when no "
+                            "pattern input is connected. Same seed = same dot field. "
+                            "Has no effect when a pattern is connected."
+                        ),
+                    },
+                ),
+                "fps": (
+                    "FLOAT",
+                    {
+                        "default": 24.0,
+                        "min": 1.0,
+                        "max": 120.0,
+                        "step": 1.0,
+                        "tooltip": (
+                            "Playback frame rate — used for PSE flash safety check only. "
+                            "Match to your actual output fps: 24 = cinema, 25 = PAL, "
+                            "29.97/30 = NTSC, 60 = high frame rate."
+                        ),
+                    },
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE", "IMAGE", "STRING")
+    RETURN_NAMES = ("frame_sequence", "wipe_preview", "flash_report")
+    OUTPUT_NODE = True
+
+    def execute(
+        self,
+        image_sequence,
+        depth_sequence=None,
+        pattern=None,
+        alpha_wipe_map=None,
+        wipe_mode="radial",
+        wipe_feather=0.08,
+        nest_depth_levels=2,
+        depth_factor=0.35,
+        max_parallax=0.033,
+        temporal_smooth=0.35,
+        use_optical_flow=True,
+        safe_mode=True,
+        seed=42,
+        fps=24.0,
+    ):
+        import warnings
+
+        # ── safe_mode depth cap ──────────────────────────────────────────────
+        if safe_mode and depth_factor > 0.5:
+            warnings.warn(
+                "DF_VideoControlNet safe_mode: depth_factor clamped from "
+                f"{depth_factor:.2f} to 0.5.",
+                UserWarning,
+                stacklevel=2,
+            )
+            depth_factor = 0.5
+
+        # ── unpack image_sequence → (B, H, W, C) float32 numpy ───────────────
+        try:
+            import torch
+
+            if isinstance(image_sequence, torch.Tensor):
+                img_np = image_sequence.cpu().numpy()
+            else:
+                img_np = np.array(image_sequence, dtype=np.float32)
+        except ImportError:
+            img_np = np.array(image_sequence, dtype=np.float32)
+
+        if img_np.ndim == 3:
+            img_np = img_np[None]  # (1, H, W, C)
+
+        n_frames, H, W, C = img_np.shape
+        # Convert to uint8 RGBA for processing
+        img_uint8 = (np.clip(img_np, 0, 1) * 255).astype(np.uint8)
+        if img_uint8.shape[-1] == 3:
+            alpha_ch = np.full((*img_uint8.shape[:3], 1), 255, dtype=np.uint8)
+            img_uint8 = np.concatenate([img_uint8, alpha_ch], axis=-1)
+
+        # ── unpack depth_sequence → list of (H_d, W_d) float32 ──────────────
+        if depth_sequence is not None:
+            try:
+                import torch as _t
+
+                if isinstance(depth_sequence, _t.Tensor):
+                    dep_np = depth_sequence.cpu().numpy()
+                else:
+                    dep_np = np.array(depth_sequence, dtype=np.float32)
+            except ImportError:
+                dep_np = np.array(depth_sequence, dtype=np.float32)
+
+            if dep_np.ndim == 3:
+                dep_np = dep_np[None]
+            # Normalise to float32 [0, 1]
+            if dep_np.max() > 1.0:
+                dep_np = dep_np / 255.0
+            dep_np = dep_np.astype(np.float32)
+        else:
+            dep_np = None
+
+        # ── build fallback pattern (random noise) if none connected ──────────
+        if pattern is None:
+            rng = np.random.default_rng(seed)
+            tile_sz = max(32, min(128, W // 8))
+            pat_gray = rng.integers(0, 256, (tile_sz, tile_sz), dtype=np.uint8)
+            alpha_pat = np.full((tile_sz, tile_sz, 1), 255, dtype=np.uint8)
+            pattern = np.stack([pat_gray, pat_gray, pat_gray], axis=-1)
+            pattern = np.concatenate([pattern, alpha_pat], axis=-1)
+
+        P_h, P_w = pattern.shape[:2]
+
+        # ── unpack static alpha_wipe_map → (H, W) float32 or None ───────────
+        static_wipe: np.ndarray | None = None
+        if alpha_wipe_map is not None:
+            wm = _tensor_to_numpy(alpha_wipe_map)          # (H_w, W_w, 4) uint8
+            wm_gray = wm[..., :3].mean(axis=-1).astype(np.float32) / 255.0
+            static_wipe = _resize_to(wm_gray, H, W)
+
+        # ── compute max parallax in pixels ───────────────────────────────────
+        max_px = max(1, int(W * max_parallax))
+
+        # ── frame loop ───────────────────────────────────────────────────────
+        results = []           # list of (H, W, 4) uint8 stereogram frames
+        prev_depth: np.ndarray | None = None
+        prev_gray: np.ndarray | None = None
+
+        for i in range(n_frames):
+            # --- get raw depth for this frame --------------------------------
+            if dep_np is not None:
+                dep_frame = dep_np[min(i, dep_np.shape[0] - 1)]
+                # Average channels → grayscale depth
+                if dep_frame.ndim == 3:
+                    raw_depth = dep_frame.mean(axis=-1)
+                else:
+                    raw_depth = dep_frame.astype(np.float32)
+            else:
+                # Fallback: centred radial gradient
+                ys = np.linspace(-1.0, 1.0, H, dtype=np.float32)
+                xs = np.linspace(-1.0, 1.0, W, dtype=np.float32)
+                xx, yy = np.meshgrid(xs, ys)
+                raw_depth = np.clip(1.0 - (xx**2 + yy**2), 0.0, 1.0)
+
+            raw_depth = raw_depth.astype(np.float32)
+
+            # --- temporal depth consistency ----------------------------------
+            if prev_depth is not None and temporal_smooth > 0.0:
+                if use_optical_flow and prev_gray is not None:
+                    curr_gray_frame = _rgba_to_gray(img_uint8[i])
+                    warped = _optical_flow_warp(prev_depth, curr_gray_frame, prev_gray)
+                    reference_depth = warped if warped is not None else prev_depth
+                    if warped is not None:
+                        prev_gray = curr_gray_frame
+                else:
+                    reference_depth = prev_depth
+
+                raw_depth = (
+                    raw_depth * (1.0 - temporal_smooth)
+                    + reference_depth * temporal_smooth
+                )
+            else:
+                prev_gray = _rgba_to_gray(img_uint8[i])
+
+            prev_depth = raw_depth.copy()
+
+            # --- resize depth to frame dimensions ----------------------------
+            depth_frame = _resize_to(raw_depth, H, W)
+
+            # --- nested SIRDS for this frame ---------------------------------
+            stereo = _nested_sirds_frame(
+                pattern, depth_frame, max_px, nest_depth_levels, W, H
+            )
+
+            # --- compute wipe mask for this frame ----------------------------
+            wipe_mask = _make_wipe_mask(
+                H, W, i, n_frames, wipe_mode, static_wipe, wipe_feather
+            )
+
+            # --- blend: flat tile ↔ stereogram via wipe ─────────────────────
+            # Flat: tile the pattern across the frame
+            rh = H // P_h + 2
+            rw = W // P_w + 2
+            flat = np.tile(pattern, (rh, rw, 1))[:H, :W]
+
+            wipe_3d = wipe_mask[:, :, np.newaxis]  # (H, W, 1)
+            blended = (
+                stereo.astype(np.float32) * wipe_3d
+                + flat.astype(np.float32) * (1.0 - wipe_3d)
+            ).clip(0, 255).astype(np.uint8)
+
+            results.append(blended)
+
+        # ── wipe_preview: last frame's wipe mask as a grey IMAGE ─────────────
+        last_wipe = _make_wipe_mask(
+            H, W, n_frames - 1, n_frames, wipe_mode, static_wipe, wipe_feather
+        )
+        wipe_vis = (last_wipe * 255).astype(np.uint8)
+        wipe_rgba = np.stack(
+            [wipe_vis, wipe_vis, wipe_vis, np.full_like(wipe_vis, 255)], axis=-1
+        )
+
+        # ── stack results → batch tensor ─────────────────────────────────────
+        batch = np.stack(results, axis=0).astype(np.float32) / 255.0  # (B,H,W,4)
+
+        # ── PSE flash safety check ───────────────────────────────────────────
+        from depthforge.core.flash_safety import EPILEPSY_WARNING_SHORT, check_frame_sequence
+
+        flash_check = check_frame_sequence(results, fps=float(fps))
+        flash_summary = (
+            f"DF_VideoControlNet — PSE Flash Safety Report\n"
+            f"Frames: {n_frames}  ·  FPS: {fps:.1f}  ·  "
+            f"Nest levels: {nest_depth_levels}  ·  Wipe: {wipe_mode}\n"
+            f"{flash_check.summary()}\n\n"
+            f"{EPILEPSY_WARNING_SHORT}"
+        )
+
+        if safe_mode and not flash_check.passed:
+            warnings.warn(
+                f"DF_VideoControlNet: {flash_check.risk.value} flash risk at {fps:.0f} fps.\n"
+                + "\n".join(f"  · {v}" for v in flash_check.violations),
+                UserWarning,
+                stacklevel=2,
+            )
+
+        try:
+            import torch
+
+            return (torch.from_numpy(batch), _numpy_to_tensor(wipe_rgba), flash_summary)
+        except ImportError:
+            return (batch, _numpy_to_tensor(wipe_rgba), flash_summary)
+
+
+# ===========================================================================
 # ComfyUI registration
 # ===========================================================================
 
@@ -2148,6 +2803,7 @@ NODE_CLASS_MAPPINGS = {
     "DF_QCOverlay": DF_QCOverlay,
     "DF_VideoSequence": DF_VideoSequence,
     "DF_QRStereogram": DF_QRStereogram,
+    "DF_VideoControlNet": DF_VideoControlNet,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -2162,6 +2818,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DF_QCOverlay": "DepthForge QC Overlay",
     "DF_VideoSequence": "DepthForge Video Sequence",
     "DF_QRStereogram": "DepthForge QR Stereogram",
+    "DF_VideoControlNet": "DepthForge Video ControlNet",
 }
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]
