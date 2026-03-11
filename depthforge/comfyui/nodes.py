@@ -1820,6 +1820,319 @@ class DF_VideoSequence(_DFNodeBase):
 
 
 # ===========================================================================
+# QR Stereogram helpers
+# ===========================================================================
+
+
+def _make_qr_stereogram_image(
+    pattern_rgba: np.ndarray,
+    depth_2d: np.ndarray,
+    max_shift_px: int,
+    n_copies: int = 4,
+) -> np.ndarray:
+    """SIRDS-style QR stereogram.
+
+    The first ``pattern_width`` columns of the output are the unmodified QR
+    code (directly scannable).  Each subsequent column references a pixel
+    ~one pattern-period to its left, offset forward by ``depth * max_shift_px``
+    pixels, exactly as in a classic SIRDS algorithm.
+
+    Parameters
+    ----------
+    pattern_rgba : (H, W, 4) uint8
+        The QR code rendered as RGBA.
+    depth_2d : (H_d, W_d) float32
+        Depth map in [0, 1].  Values are bilinearly resampled to the output
+        dimensions before the shift map is computed.
+    max_shift_px : int
+        Maximum horizontal shift in pixels at depth=1.0.
+    n_copies : int
+        How many QR-width columns to produce (first is always the clean QR).
+    """
+    H, P, _ = pattern_rgba.shape
+    W_out = P * n_copies
+
+    # Resize depth map to output dimensions
+    try:
+        from PIL import Image as _PILImg
+
+        depth_uint8 = (np.clip(depth_2d, 0.0, 1.0) * 255).astype(np.uint8)
+        depth_resized = (
+            np.array(_PILImg.fromarray(depth_uint8).resize((W_out, H), _PILImg.BILINEAR)).astype(
+                np.float32
+            )
+            / 255.0
+        )
+    except ImportError:
+        # Fallback: tile-and-crop resize
+        reps_h = max(1, H // depth_2d.shape[0] + 1)
+        reps_w = max(1, W_out // depth_2d.shape[1] + 1)
+        depth_resized = np.tile(depth_2d, (reps_h, reps_w))[:H, :W_out].astype(np.float32)
+
+    shifts = np.clip(
+        (depth_resized * max_shift_px).astype(np.int32), 0, max_shift_px
+    )  # (H, W_out)
+
+    output = np.zeros((H, W_out, 4), dtype=np.uint8)
+    output[:, :P] = pattern_rgba  # seed: clean QR in first copy
+
+    row_idx = np.arange(H)
+    for x in range(P, W_out):
+        # Each pixel looks back one period, shifted forward by depth offset
+        src_x = np.clip(x - P + shifts[:, x], 0, x - 1)  # (H,) row-wise source
+        output[:, x] = output[row_idx, src_x]
+
+    return output
+
+
+# ===========================================================================
+# Node 11 — DF_QRStereogram
+# ===========================================================================
+
+
+class DF_QRStereogram(_DFNodeBase):
+    """QR code that is simultaneously a viewable stereogram."""
+
+    DESCRIPTION = (
+        "Generate a QR code whose module grid becomes the dot pattern of a SIRDS stereogram — "
+        "the output is scannable by a standard QR reader and reveals 3D depth when cross-fused."
+    )
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "url_or_text": (
+                    "STRING",
+                    {
+                        "default": "https://github.com/BoxOfllc/SUPERIOR_StereoGram",
+                        "tooltip": (
+                            "Text or URL to encode. Shorter strings produce smaller, "
+                            "lower-version QR codes — fewer modules means wider depth offsets "
+                            "are safe, giving a stronger 3D effect."
+                        ),
+                    },
+                ),
+            },
+            "optional": {
+                "depth_map": (
+                    "DEPTH_MAP",
+                    {
+                        "tooltip": (
+                            "Optional depth map controlling the 3D shape. "
+                            "White = near (pops forward), black = far. "
+                            "If not connected, a centred radial gradient is used "
+                            "(sphere appearing to float forward)."
+                        )
+                    },
+                ),
+                "error_correction": (
+                    ["L", "M", "Q", "H"],
+                    {
+                        "tooltip": (
+                            "QR error-correction level. Higher levels recover more data "
+                            "if depth offsets distort the pattern. "
+                            "'H' (30% recoverable) recommended when depth_factor > 0.10. "
+                            "'M' (15%) is the minimum safe level for subtle depth. "
+                            "Note: higher levels add more modules, increasing image size."
+                        )
+                    },
+                ),
+                "module_size": (
+                    "INT",
+                    {
+                        "default": 10,
+                        "min": 4,
+                        "max": 32,
+                        "tooltip": (
+                            "Size of each QR module (square) in pixels. "
+                            "Larger modules allow bigger depth shifts while staying scannable — "
+                            "safe_mode caps shifts at module_size/4. "
+                            "Safe range: 8–16 px. 10 px balances scan reliability and depth."
+                        ),
+                    },
+                ),
+                "border_modules": (
+                    "INT",
+                    {
+                        "default": 4,
+                        "min": 1,
+                        "max": 10,
+                        "tooltip": (
+                            "Quiet-zone width around the QR in modules. "
+                            "The QR spec requires at least 4 for reliable scanning. "
+                            "Reduce to 2 only when space is critical and you can test the scanner."
+                        ),
+                    },
+                ),
+                "depth_factor": (
+                    "FLOAT",
+                    {
+                        "default": 0.15,
+                        "min": 0.0,
+                        "max": 0.40,
+                        "step": 0.01,
+                        "tooltip": (
+                            "Stereogram depth strength as a fraction of the QR tile width. "
+                            "0.05 = very subtle; 0.15 = visible safe depth; "
+                            "0.25 = strong (test scannability); above 0.3 = artistic only. "
+                            "With safe_mode on, this is automatically clamped to module_size/4 ÷ QR_width."
+                        ),
+                    },
+                ),
+                "n_copies": (
+                    "INT",
+                    {
+                        "default": 4,
+                        "min": 2,
+                        "max": 8,
+                        "tooltip": (
+                            "Number of QR-width columns placed side by side. "
+                            "The leftmost copy is always the clean, unshifted QR (point your scanner here). "
+                            "Minimum 3 for comfortable stereogram cross-fusion. "
+                            "4 is ideal — more copies widen the image."
+                        ),
+                    },
+                ),
+                "safe_mode": (
+                    "BOOLEAN",
+                    {
+                        "default": True,
+                        "tooltip": (
+                            "Clamp depth_factor so pixel shifts stay ≤ module_size/4, "
+                            "maximising QR scan reliability at the cost of shallower depth. "
+                            "A console warning is always printed when shifts risk reducing scan rate. "
+                            "Disable only after confirming the output scans reliably."
+                        ),
+                    },
+                ),
+                "invert_depth": (
+                    "BOOLEAN",
+                    {
+                        "default": False,
+                        "tooltip": (
+                            "Flip the depth map (black = near, white = far). "
+                            "Enable if the 3D shape appears to recede into the page "
+                            "instead of floating forward when cross-fusing."
+                        ),
+                    },
+                ),
+            },
+        }
+
+    RETURN_TYPES = ("IMAGE", "IMAGE", "STRING")
+    RETURN_NAMES = ("qr_stereogram", "qr_only", "scan_info")
+    OUTPUT_NODE = True
+
+    def execute(
+        self,
+        url_or_text,
+        depth_map=None,
+        error_correction="H",
+        module_size=10,
+        border_modules=4,
+        depth_factor=0.15,
+        n_copies=4,
+        safe_mode=True,
+        invert_depth=False,
+    ):
+        try:
+            import qrcode
+            import qrcode.constants
+        except ImportError:
+            raise ImportError(
+                "DF_QRStereogram requires the qrcode package.\n"
+                "Install with:  pip install qrcode[pil]"
+            )
+
+        ec_map = {
+            "L": qrcode.constants.ERROR_CORRECT_L,
+            "M": qrcode.constants.ERROR_CORRECT_M,
+            "Q": qrcode.constants.ERROR_CORRECT_Q,
+            "H": qrcode.constants.ERROR_CORRECT_H,
+        }
+        ec_pct = {"L": "7%", "M": "15%", "Q": "25%", "H": "30%"}
+
+        # --- 1. Generate QR code ---
+        qr = qrcode.QRCode(
+            error_correction=ec_map[error_correction],
+            box_size=module_size,
+            border=border_modules,
+        )
+        qr.add_data(url_or_text)
+        qr.make(fit=True)
+
+        # Render to PIL → numpy RGBA
+        from PIL import Image as _PIL
+
+        qr_raw = qr.make_image(fill_color="black", back_color="white")
+        pil_img = qr_raw.get_image() if hasattr(qr_raw, "get_image") else qr_raw
+        qr_arr = np.array(pil_img.convert("RGBA"), dtype=np.uint8)  # (H, W, 4)
+        QH, QW = qr_arr.shape[:2]
+
+        # --- 2. Prepare depth map ---
+        if depth_map is not None:
+            raw_depth = _depth_to_numpy(depth_map)
+            # Resize depth to match QR tile dimensions
+            depth_uint8 = (np.clip(raw_depth, 0, 1) * 255).astype(np.uint8)
+            depth = (
+                np.array(_PIL.fromarray(depth_uint8).resize((QW, QH), _PIL.BILINEAR)).astype(
+                    np.float32
+                )
+                / 255.0
+            )
+        else:
+            # Default: centred radial gradient — sphere floating forward
+            ys = np.linspace(-1.0, 1.0, QH)
+            xs = np.linspace(-1.0, 1.0, QW)
+            xx, yy = np.meshgrid(xs, ys)
+            depth = np.clip(1.0 - (xx**2 + yy**2), 0.0, 1.0).astype(np.float32)
+
+        if invert_depth:
+            depth = 1.0 - depth
+
+        # --- 3. Compute shift budget and apply safe_mode ---
+        max_shift_px = max(1, int(QW * depth_factor))
+        effective_depth_factor = depth_factor
+
+        if safe_mode:
+            safe_max = max(1, module_size // 4)
+            if max_shift_px > safe_max:
+                import warnings
+
+                effective_depth_factor = safe_max / QW
+                warnings.warn(
+                    f"DF_QRStereogram safe_mode: depth_factor {depth_factor:.3f} → "
+                    f"{effective_depth_factor:.4f} "
+                    f"(shift capped at {safe_max} px = module_size/4). "
+                    f"Use error_correction='H' and disable safe_mode for stronger depth.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+                max_shift_px = safe_max
+
+        # --- 4. Build stereogram ---
+        stereo = _make_qr_stereogram_image(qr_arr, depth, max_shift_px, n_copies)
+
+        # --- 5. Build scan_info ---
+        scan_info = (
+            f"QR Version {qr.version}  ·  "
+            f"{qr.modules_count}×{qr.modules_count} modules  ·  "
+            f"Module size: {module_size} px  ·  "
+            f"Error correction: {error_correction} ({ec_pct[error_correction]} recoverable)\n"
+            f"QR tile: {QW}×{QH} px  ·  "
+            f"Stereogram: {stereo.shape[1]}×{stereo.shape[0]} px  ·  "
+            f"Max depth shift: {max_shift_px} px  ·  "
+            f"depth_factor used: {effective_depth_factor:.4f}\n"
+            f"Scan tip: Point your QR reader at the leftmost {QW}×{QH} px region.\n"
+            f"View tip: Cross-fuse or diverge until the {n_copies} copies merge — "
+            f"a 3D shape will emerge from the dot pattern."
+        )
+
+        return (_numpy_to_tensor(stereo), _numpy_to_tensor(qr_arr), scan_info)
+
+
+# ===========================================================================
 # ComfyUI registration
 # ===========================================================================
 
@@ -1834,6 +2147,7 @@ NODE_CLASS_MAPPINGS = {
     "DF_SafetyLimiter": DF_SafetyLimiter,
     "DF_QCOverlay": DF_QCOverlay,
     "DF_VideoSequence": DF_VideoSequence,
+    "DF_QRStereogram": DF_QRStereogram,
 }
 
 NODE_DISPLAY_NAME_MAPPINGS = {
@@ -1847,6 +2161,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "DF_SafetyLimiter": "DepthForge Safety Limiter",
     "DF_QCOverlay": "DepthForge QC Overlay",
     "DF_VideoSequence": "DepthForge Video Sequence",
+    "DF_QRStereogram": "DepthForge QR Stereogram",
 }
 
 __all__ = ["NODE_CLASS_MAPPINGS", "NODE_DISPLAY_NAME_MAPPINGS"]

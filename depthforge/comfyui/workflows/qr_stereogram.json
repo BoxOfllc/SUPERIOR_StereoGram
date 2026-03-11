@@ -1,0 +1,189 @@
+{
+  "last_node_id": 9,
+  "last_link_id": 5,
+  "nodes": [
+    {
+      "id": 1,
+      "type": "Note",
+      "pos": [30, 20],
+      "size": {"0": 880, "1": 70},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "QR Stereogram Workflow — DepthForge v0.5\nGenerates a scannable QR code that is simultaneously a viewable stereogram.\nScan the LEFT portion of the output with any QR reader. Cross-fuse all copies to see 3D depth."},
+      "widgets_values": ["QR Stereogram Workflow — DepthForge v0.5\nGenerates a scannable QR code that is simultaneously a viewable stereogram.\nScan the LEFT portion of the output with any QR reader. Cross-fuse all copies to see 3D depth."]
+    },
+    {
+      "id": 2,
+      "type": "DF_QRStereogram",
+      "pos": [30, 130],
+      "size": {"0": 340, "1": 310},
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [
+        {"name": "depth_map", "type": "DEPTH_MAP", "link": null}
+      ],
+      "outputs": [
+        {"name": "qr_stereogram", "type": "IMAGE",  "links": [1], "slot_index": 0},
+        {"name": "qr_only",       "type": "IMAGE",  "links": [2], "slot_index": 1},
+        {"name": "scan_info",     "type": "STRING", "links": [],  "slot_index": 2}
+      ],
+      "title": "DF QR Stereogram",
+      "properties": {"Node name for S&R": "DF_QRStereogram"},
+      "widgets_values": [
+        "https://github.com/BoxOfllc/SUPERIOR_StereoGram",
+        "H",
+        10,
+        4,
+        0.15,
+        4,
+        true,
+        false
+      ]
+    },
+    {
+      "id": 3,
+      "type": "Note",
+      "pos": [30, 470],
+      "size": {"0": 340, "1": 160},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "Tips for best results:\n• Use error_correction=H for depth_factor > 0.10\n• module_size 10 px = good balance of scan + depth\n• safe_mode ON caps shifts at module_size/4\n• Shorter URLs → smaller QR → more depth headroom\n• Connect DF_DepthPrep → depth_map for custom 3D shapes"},
+      "widgets_values": ["Tips for best results:\n• Use error_correction=H for depth_factor > 0.10\n• module_size 10 px = good balance of scan + depth\n• safe_mode ON caps shifts at module_size/4\n• Shorter URLs → smaller QR → more depth headroom\n• Connect DF_DepthPrep → depth_map for custom 3D shapes"]
+    },
+    {
+      "id": 4,
+      "type": "PreviewImage",
+      "pos": [430, 130],
+      "size": {"0": 280, "1": 246},
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 1}
+      ],
+      "outputs": [],
+      "title": "QR Stereogram Output",
+      "properties": {"Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    },
+    {
+      "id": 5,
+      "type": "PreviewImage",
+      "pos": [430, 420],
+      "size": {"0": 280, "1": 246},
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {"name": "images", "type": "IMAGE", "link": 2}
+      ],
+      "outputs": [],
+      "title": "QR Code Only (reference tile)",
+      "properties": {"Node name for S&R": "PreviewImage"},
+      "widgets_values": []
+    },
+    {
+      "id": 6,
+      "type": "Note",
+      "pos": [430, 700],
+      "size": {"0": 280, "1": 130},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "Scan tip:\nPoint your phone camera at the\nQR Code Only preview (left tile).\nThis is the clean, unshifted copy.\n\nView tip:\nCross-fuse or parallel-fuse all 4 copies\ntill they merge — a 3D shape emerges."},
+      "widgets_values": ["Scan tip:\nPoint your phone camera at the\nQR Code Only preview (left tile).\nThis is the clean, unshifted copy.\n\nView tip:\nCross-fuse or parallel-fuse all 4 copies\ntill they merge — a 3D shape emerges."]
+    },
+    {
+      "id": 7,
+      "type": "LoadImage",
+      "pos": [780, 130],
+      "size": {"0": 220, "1": 314},
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {"name": "IMAGE", "type": "IMAGE", "links": [3], "slot_index": 0},
+        {"name": "MASK",  "type": "MASK",  "links": [],  "slot_index": 1}
+      ],
+      "title": "Optional: Load Custom Depth Map",
+      "properties": {"Node name for S&R": "LoadImage"},
+      "widgets_values": ["depth_test.png", "image"]
+    },
+    {
+      "id": 8,
+      "type": "DF_DepthPrep",
+      "pos": [780, 480],
+      "size": {"0": 245, "1": 272},
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {"name": "depth_image", "type": "IMAGE", "link": 3}
+      ],
+      "outputs": [
+        {"name": "depth_map",     "type": "DEPTH_MAP", "links": [4], "slot_index": 0},
+        {"name": "depth_preview", "type": "IMAGE",     "links": [5], "slot_index": 1}
+      ],
+      "title": "DF Depth Prep (optional)",
+      "properties": {"Node name for S&R": "DF_DepthPrep"},
+      "widgets_values": [false, 5.0, 0.1, 3, "linear", 0.0, 1.0]
+    },
+    {
+      "id": 9,
+      "type": "Note",
+      "pos": [780, 790],
+      "size": {"0": 245, "1": 110},
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note",
+      "properties": {"text": "Optional depth path:\nLoadImage → DF_DepthPrep → DF_QRStereogram depth_map\n\nConnect the depth_map output from DF_DepthPrep\nto the depth_map input on DF_QRStereogram\nto encode a custom 3D shape."},
+      "widgets_values": ["Optional depth path:\nLoadImage → DF_DepthPrep → DF_QRStereogram depth_map\n\nConnect the depth_map output from DF_DepthPrep\nto the depth_map input on DF_QRStereogram\nto encode a custom 3D shape."]
+    }
+  ],
+  "links": [
+    [1, 2, 0, 4, 0, "IMAGE"],
+    [2, 2, 1, 5, 0, "IMAGE"],
+    [3, 7, 0, 8, 0, "IMAGE"],
+    [4, 8, 0, 2, 0, "DEPTH_MAP"],
+    [5, 8, 1, 5, 0, "IMAGE"]
+  ],
+  "groups": [
+    {
+      "title": "1 — QR Stereogram Generator",
+      "bounding": [10, 110, 380, 540],
+      "color": "#3f789e",
+      "font_size": 24
+    },
+    {
+      "title": "2 — Preview",
+      "bounding": [410, 110, 320, 700],
+      "color": "#4a6a4a",
+      "font_size": 24
+    },
+    {
+      "title": "3 — Optional Custom Depth (connect to node 1 depth_map input)",
+      "bounding": [760, 110, 285, 810],
+      "color": "#6f5a32",
+      "font_size": 24
+    }
+  ],
+  "config": {},
+  "extra": {"ds": {"scale": 0.85, "offset": [0, 0]}},
+  "version": 0.4
+}
