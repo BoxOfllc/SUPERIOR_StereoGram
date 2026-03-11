@@ -42,16 +42,18 @@ from pathlib import Path
 # ---------------------------------------------------------------------------
 
 try:
-    from depthforge.comfyui.nodes import (
+    from .nodes import (
         DF_AnaglyphOut,
         DF_DepthPrep,
         DF_HiddenImage,
         DF_PatternGen,
         DF_PatternLibrary,
         DF_QCOverlay,
+        DF_QRStereogram,
         DF_SafetyLimiter,
         DF_Stereogram,
         DF_StereoPair,
+        DF_VideoControlNet,
         DF_VideoSequence,
     )
 
@@ -60,6 +62,18 @@ except ImportError as e:
     _NODES_LOADED = False
     _NODES_ERROR = str(e)
 
+try:
+    from .swirls_nodes import (
+        NODE_CLASS_MAPPINGS as _SWIRLS_CLASS,
+        NODE_DISPLAY_NAME_MAPPINGS as _SWIRLS_DISPLAY,
+    )
+
+    _SWIRLS_LOADED = True
+except ImportError:
+    _SWIRLS_LOADED = False
+    _SWIRLS_CLASS = {}
+    _SWIRLS_DISPLAY = {}
+
 
 # ---------------------------------------------------------------------------
 # ComfyUI registration mappings
@@ -67,33 +81,40 @@ except ImportError as e:
 
 if _NODES_LOADED:
     NODE_CLASS_MAPPINGS = {
-        "DF_DepthPrep": DF_DepthPrep,
-        "DF_PatternGen": DF_PatternGen,
-        "DF_PatternLibrary": DF_PatternLibrary,
-        "DF_Stereogram": DF_Stereogram,
-        "DF_AnaglyphOut": DF_AnaglyphOut,
-        "DF_StereoPair": DF_StereoPair,
-        "DF_HiddenImage": DF_HiddenImage,
-        "DF_SafetyLimiter": DF_SafetyLimiter,
-        "DF_QCOverlay": DF_QCOverlay,
-        "DF_VideoSequence": DF_VideoSequence,
+        # ── Core DepthForge nodes ──────────────────────────────────────────
+        "DF_DepthPrep":        DF_DepthPrep,
+        "DF_PatternGen":       DF_PatternGen,
+        "DF_PatternLibrary":   DF_PatternLibrary,
+        "DF_Stereogram":       DF_Stereogram,
+        "DF_AnaglyphOut":      DF_AnaglyphOut,
+        "DF_StereoPair":       DF_StereoPair,
+        "DF_HiddenImage":      DF_HiddenImage,
+        "DF_SafetyLimiter":    DF_SafetyLimiter,
+        "DF_QCOverlay":        DF_QCOverlay,
+        "DF_VideoSequence":    DF_VideoSequence,
+        "DF_QRStereogram":     DF_QRStereogram,
+        "DF_VideoControlNet":  DF_VideoControlNet,
     }
+    NODE_CLASS_MAPPINGS.update(_SWIRLS_CLASS)
 
     NODE_DISPLAY_NAME_MAPPINGS = {
-        "DF_DepthPrep": "DF Depth Prep",
-        "DF_PatternGen": "DF Pattern Gen",
-        "DF_PatternLibrary": "DF Pattern Library",
-        "DF_Stereogram": "DF Stereogram",
-        "DF_AnaglyphOut": "DF Anaglyph Out",
-        "DF_StereoPair": "DF Stereo Pair",
-        "DF_HiddenImage": "DF Hidden Image",
-        "DF_SafetyLimiter": "DF Safety Limiter",
-        "DF_QCOverlay": "DF QC Overlay",
-        "DF_VideoSequence": "DF Video Sequence",
+        "DF_DepthPrep":        "DF Depth Prep",
+        "DF_PatternGen":       "DF Pattern Gen",
+        "DF_PatternLibrary":   "DF Pattern Library",
+        "DF_Stereogram":       "DF Stereogram",
+        "DF_AnaglyphOut":      "DF Anaglyph Out",
+        "DF_StereoPair":       "DF Stereo Pair",
+        "DF_HiddenImage":      "DF Hidden Image",
+        "DF_SafetyLimiter":    "DF Safety Limiter",
+        "DF_QCOverlay":        "DF QC Overlay",
+        "DF_VideoSequence":    "DF Video Sequence",
+        "DF_QRStereogram":     "DF QR Stereogram",
+        "DF_VideoControlNet":  "DF Video ControlNet",
     }
+    NODE_DISPLAY_NAME_MAPPINGS.update(_SWIRLS_DISPLAY)
 else:
-    NODE_CLASS_MAPPINGS = {}
-    NODE_DISPLAY_NAME_MAPPINGS = {}
+    NODE_CLASS_MAPPINGS = _SWIRLS_CLASS.copy()
+    NODE_DISPLAY_NAME_MAPPINGS = _SWIRLS_DISPLAY.copy()
     import warnings
 
     warnings.warn(
