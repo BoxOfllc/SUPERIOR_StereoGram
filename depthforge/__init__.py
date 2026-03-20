@@ -79,3 +79,14 @@ from depthforge.core.qc import (
     window_violation_overlay,
 )
 from depthforge.core.synthesizer import StereoParams, synthesize
+
+# GPU synthesis (requires torch; graceful no-op if unavailable)
+if HAS_TORCH:
+    from depthforge.core.gpu_synthesizer import best_device, synthesize_gpu
+else:
+    def synthesize_gpu(depth, pattern, params=None, device="auto"):  # type: ignore[misc]
+        """GPU synthesis unavailable — torch not installed. Using NumPy."""
+        return synthesize(depth, pattern, params or StereoParams())
+
+    def best_device() -> str:  # type: ignore[misc]
+        return "cpu"

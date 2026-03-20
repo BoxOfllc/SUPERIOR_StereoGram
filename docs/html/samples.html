@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Preset Samples — SUPERIOR StereoGram</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161b24;
+    --surface2: #1e2535;
+    --border: #2a3347;
+    --accent: #4f8ef7;
+    --accent3: #22d3ee;
+    --text: #e2e8f0;
+    --text-muted: #8899b0;
+    --success: #22c55e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 28px 40px; }
+  .header-title { font-size: 20px; font-weight: 700; }
+  .header-sub { color: var(--text-muted); font-size: 14px; margin-top: 2px; }
+
+  nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 40px; display: flex; gap: 2px; flex-wrap: wrap; }
+  nav a { color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 14px 16px; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  nav a:hover { color: var(--text); }
+  nav a.active { color: var(--accent3); border-bottom-color: var(--accent3); }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 50px 40px; }
+  h1 { font-size: 34px; font-weight: 800; margin-bottom: 8px; }
+  h2 { font-size: 22px; font-weight: 700; margin-top: 52px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  p { font-size: 15px; color: var(--text-muted); margin-bottom: 14px; }
+
+  .callout { border-radius: 10px; padding: 16px 20px; margin: 20px 0 32px; border-left: 3px solid var(--accent); background: rgba(79,142,247,0.08); }
+  .callout strong { display: block; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--accent); margin-bottom: 5px; }
+  .callout p { color: var(--text); margin: 0; font-size: 14px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 24px; margin-top: 24px; }
+  .sample-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: all 0.2s; }
+  .sample-card:hover { border-color: var(--accent); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+  .sample-card img { width: 100%; display: block; }
+  .sample-info { padding: 18px 20px; }
+  .sample-name { font-size: 16px; font-weight: 700; margin-bottom: 6px; font-family: 'Cascadia Code', Consolas, monospace; }
+  .sample-params { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .param { background: var(--surface2); border: 1px solid var(--border); padding: 3px 9px; border-radius: 4px; font-size: 12px; font-family: 'Cascadia Code', Consolas, monospace; }
+  .sample-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+  .sample-cmd { background: #0a0d12; border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; margin-top: 12px; font-family: 'Cascadia Code', Consolas, monospace; font-size: 12px; color: #86efac; overflow-x: auto; white-space: nowrap; }
+
+  .accent-shallow  { border-top: 2px solid #22d3ee; }
+  .accent-medium   { border-top: 2px solid #4f8ef7; }
+  .accent-deep     { border-top: 2px solid #a855f7; }
+  .accent-cinema   { border-top: 2px solid #f59e0b; }
+  .accent-print    { border-top: 2px solid #22c55e; }
+  .accent-broadcast{ border-top: 2px solid #ef4444; }
+
+  .name-shallow  { color: #22d3ee; }
+  .name-medium   { color: #4f8ef7; }
+  .name-deep     { color: #a855f7; }
+  .name-cinema   { color: #f59e0b; }
+  .name-print    { color: #22c55e; }
+  .name-broadcast{ color: #ef4444; }
+
+  .comparison { margin-top: 40px; }
+  .comparison img { width: 100%; border-radius: 12px; border: 1px solid var(--border); }
+
+  .depth-source { display: flex; gap: 30px; align-items: flex-start; margin-top: 24px; flex-wrap: wrap; }
+  .depth-source img { border-radius: 10px; border: 1px solid var(--border); max-width: 400px; }
+  .depth-info { flex: 1; min-width: 260px; }
+  .depth-info h3 { font-size: 18px; margin-bottom: 12px; color: var(--accent3); }
+
+  code { background: #0a0d12; border: 1px solid var(--border); padding: 2px 7px; border-radius: 4px; font-family: 'Cascadia Code', Consolas, monospace; font-size: 12px; color: var(--accent3); }
+  pre { background: #0a0d12; border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; overflow-x: auto; margin: 12px 0; }
+  pre code { background: none; border: none; padding: 0; font-size: 13px; color: #c8d8f0; line-height: 1.8; }
+
+  footer { border-top: 1px solid var(--border); padding: 24px 40px; text-align: center; color: var(--text-muted); font-size: 13px; margin-top: 80px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">🖼️ Preset Comparison Samples</div>
+  <div class="header-sub">SUPERIOR StereoGram / DepthForge v0.5.0 — All 6 presets on the same synthetic depth map</div>
+</header>
+
+<nav>
+  <a href="index.html">Home</a>
+  <a href="installation.html">Installation</a>
+  <a href="cli-workflow.html">CLI</a>
+  <a href="comfyui-workflow.html">ComfyUI</a>
+  <a href="nuke-workflow.html">Nuke</a>
+  <a href="samples.html" class="active">Samples</a>
+  <a href="reference.html">Reference</a>
+</nav>
+
+<div class="container">
+
+  <h1>Preset Comparison Samples</h1>
+  <p>All 6 presets rendered against the same synthetic depth map — a central sphere with background hills and foreground bumps. The Perlin greyscale pattern is used consistently so depth differences are visible rather than colour differences.</p>
+
+  <div class="callout">
+    <strong>How to view</strong>
+    <p>To see the 3D effect: relax your focus as if looking through the screen (parallel fusion / "Magic Eye" technique) until the pattern doubles and then locks into a 3D image. Or cross your eyes slightly until the two copies merge. Notice how deeper presets produce more dramatic pop-out depth.</p>
+  </div>
+
+  <h2>Source Depth Map</h2>
+  <div class="depth-source">
+    <img src="samples/depth_source.png" alt="Synthetic depth map — white=near, black=far" style="width:400px">
+    <div class="depth-info">
+      <h3>Synthetic depth map — 800 × 600</h3>
+      <p>Generated with a central sphere (white = nearest), rolling hills in the background (mid-grey), and three smaller foreground bumps. No AI model required — built from NumPy math.</p>
+      <p>This is the depth map fed into all 6 presets below. The only thing changing between presets is <code>depth_factor</code>, <code>max_parallax_fraction</code>, and <code>output_dpi</code>.</p>
+      <p style="margin-top: 16px; font-size: 13px; color: var(--text-muted);">Reproduce it:</p>
+      <pre><code>python docs/html/samples/generate_samples.py</code></pre>
+    </div>
+  </div>
+
+  <h2>Side-by-Side Comparison Grid</h2>
+  <div class="comparison">
+    <img src="samples/preset_comparison_grid.png" alt="All 6 presets in a 2x3 comparison grid">
+  </div>
+
+  <h2>Individual Presets</h2>
+
+  <div class="grid">
+
+    <div class="sample-card accent-shallow">
+      <img src="samples/preset_shallow.png" alt="Shallow preset stereogram">
+      <div class="sample-info">
+        <div class="sample-name name-shallow">shallow</div>
+        <div class="sample-params">
+          <span class="param">df=0.20</span>
+          <span class="param">parallax&lt;=0.025</span>
+          <span class="param">dpi=72</span>
+        </div>
+        <div class="sample-desc">Subtle depth — very comfortable for all audiences including first-time viewers, children, and those prone to eye strain. Minimal vergence demand. Good for long viewing sessions and public displays.</div>
+        <div class="sample-cmd">python -m depthforge.cli.main sirds --preset shallow --depth depth.png --output out.png</div>
+      </div>
+    </div>
+
+    <div class="sample-card accent-medium">
+      <img src="samples/preset_medium.png" alt="Medium preset stereogram">
+      <div class="sample-info">
+        <div class="sample-name name-medium">medium</div>
+        <div class="sample-params">
+          <span class="param">df=0.35</span>
+          <span class="param">parallax&lt;=0.033</span>
+          <span class="param">dpi=72</span>
+        </div>
+        <div class="sample-desc">The ergonomic default. Balances visible 3D pop with viewer comfort. max_parallax at exactly the 1/30 comfortable-fusion limit. Good for most content and most audiences.</div>
+        <div class="sample-cmd">python -m depthforge.cli.main sirds --preset medium --depth depth.png --output out.png</div>
+      </div>
+    </div>
+
+    <div class="sample-card accent-deep">
+      <img src="samples/preset_deep.png" alt="Deep preset stereogram">
+      <div class="sample-info">
+        <div class="sample-name name-deep">deep</div>
+        <div class="sample-params">
+          <span class="param">df=0.55</span>
+          <span class="param">parallax&lt;=0.050</span>
+          <span class="param">dpi=72</span>
+        </div>
+        <div class="sample-desc">Maximum 3D depth — the sphere and bumps should appear dramatically raised above the background. For experienced stereo viewers and short viewing sessions. Not recommended for public distribution without safe-mode.</div>
+        <div class="sample-cmd">python -m depthforge.cli.main sirds --preset deep --depth depth.png --output out.png</div>
+      </div>
+    </div>
+
+    <div class="sample-card accent-cinema">
+      <img src="samples/preset_cinema.png" alt="Cinema preset stereogram">
+      <div class="sample-info">
+        <div class="sample-name name-cinema">cinema</div>
+        <div class="sample-params">
+          <span class="param">df=0.30</span>
+          <span class="param">parallax&lt;=0.022</span>
+          <span class="param">dpi=72</span>
+        </div>
+        <div class="sample-desc">Conservative parallax limits for large-screen projection. At cinema distances the angular vergence demand is higher, so lower parallax fractions are used. DCI / SMPTE ST 2098-1 compliant. Comfortable for 2+ hour screening sessions.</div>
+        <div class="sample-cmd">python -m depthforge.cli.main sirds --preset cinema --depth depth.png --output out.png</div>
+      </div>
+    </div>
+
+    <div class="sample-card accent-print">
+      <img src="samples/preset_print.png" alt="Print preset stereogram">
+      <div class="sample-info">
+        <div class="sample-name name-print">print</div>
+        <div class="sample-params">
+          <span class="param">df=0.28</span>
+          <span class="param">parallax&lt;=0.025</span>
+          <span class="param">dpi=300</span>
+        </div>
+        <div class="sample-desc">Optimised for printed output. 300 DPI metadata, conservative parallax for arm's-length viewing distance (~60 cm). The key difference is the DPI setting — use with <code>--oversample 2</code> for best print quality.</div>
+        <div class="sample-cmd">python -m depthforge.cli.main sirds --preset print --oversample 2 --depth depth.png --output out.tiff</div>
+      </div>
+    </div>
+
+    <div class="sample-card accent-broadcast">
+      <img src="samples/preset_broadcast.png" alt="Broadcast preset stereogram">
+      <div class="sample-info">
+        <div class="sample-name name-broadcast">broadcast</div>
+        <div class="sample-params">
+          <span class="param">df=0.22</span>
+          <span class="param">parallax&lt;=0.020</span>
+          <span class="param">dpi=72</span>
+        </div>
+        <div class="sample-desc">Most conservative preset — designed for TV and streaming where screen size, viewing distance, and audience age/health are unknown. EBU R95 compliant parallax limits. Flattest depth but widest audience compatibility.</div>
+        <div class="sample-cmd">python -m depthforge.cli.main sirds --preset broadcast --depth depth.png --output out.png</div>
+      </div>
+    </div>
+
+  </div>
+
+  <h2>Regenerate These Samples</h2>
+  <p>The generation script is included in the repo. Run it any time to regenerate all samples:</p>
+  <pre><code><span style="color:#5a6e8a"># Activate venv first (Windows)</span>
+.venv\Scripts\Activate.ps1
+
+<span style="color:#5a6e8a"># Generate all 8 images (depth source + 6 presets + comparison grid)</span>
+python docs/html/samples/generate_samples.py</code></pre>
+
+  <p>The script creates a synthetic depth map in NumPy, runs all 6 presets through the DepthForge synthesis engine, and saves them to <code>docs/html/samples/</code>. No external depth map or photo needed.</p>
+
+</div>
+
+<footer>SUPERIOR StereoGram v0.5.0 — Superior Studios / BoxOf LLC</footer>
+</body>
+</html>

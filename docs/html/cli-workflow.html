@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CLI Workflow — SUPERIOR StereoGram</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161b24;
+    --surface2: #1e2535;
+    --border: #2a3347;
+    --accent: #4f8ef7;
+    --accent2: #a855f7;
+    --accent3: #22d3ee;
+    --text: #e2e8f0;
+    --text-muted: #8899b0;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --code-bg: #0a0d12;
+    --token-cmd: #22d3ee;
+    --token-flag: #a78bfa;
+    --token-val: #86efac;
+    --token-comment: #5a6e8a;
+    --token-path: #fbbf24;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 28px 40px; }
+  .header-title { font-size: 20px; font-weight: 700; }
+  .header-sub { color: var(--text-muted); font-size: 14px; margin-top: 2px; }
+
+  nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 40px; display: flex; gap: 2px; }
+  nav a { color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 14px 16px; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  nav a:hover { color: var(--text); }
+  nav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .layout { display: flex; max-width: 1200px; margin: 0 auto; }
+
+  aside { width: 240px; min-width: 240px; padding: 40px 20px; border-right: 1px solid var(--border); position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  aside h4 { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; margin-top: 24px; }
+  aside h4:first-child { margin-top: 0; }
+  aside a { display: block; color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 5px 10px; border-radius: 6px; transition: all 0.15s; }
+  aside a:hover { color: var(--text); background: var(--surface2); }
+
+  main { flex: 1; padding: 50px 60px; max-width: 860px; }
+
+  h1 { font-size: 36px; font-weight: 800; margin-bottom: 8px; }
+  h2 { font-size: 24px; font-weight: 700; margin-top: 56px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 18px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: var(--accent); }
+  h4 { font-size: 14px; font-weight: 600; margin-top: 20px; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  p { margin-bottom: 14px; font-size: 15px; }
+  ul, ol { margin: 12px 0 16px 20px; }
+  li { margin-bottom: 6px; font-size: 15px; }
+
+  code { background: var(--code-bg); border: 1px solid var(--border); padding: 2px 7px; border-radius: 4px; font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; font-size: 13px; color: var(--accent3); }
+
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 16px 0 24px;
+    position: relative;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: 13.5px; color: #c8d8f0; line-height: 1.8; }
+  .lang-label { position: absolute; top: 10px; right: 16px; font-size: 10px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+
+  .c { color: var(--token-comment); }    /* comment */
+  .cmd { color: var(--token-cmd); }      /* command name */
+  .fl { color: var(--token-flag); }      /* --flag */
+  .vl { color: var(--token-val); }       /* value */
+  .pt { color: var(--token-path); }      /* path */
+
+  .callout { border-radius: 10px; padding: 16px 20px; margin: 20px 0; border-left: 3px solid; }
+  .callout-info { background: rgba(79,142,247,0.08); border-color: var(--accent); }
+  .callout-warn { background: rgba(245,158,11,0.08); border-color: var(--warn); }
+  .callout-tip { background: rgba(34,197,94,0.08); border-color: var(--success); }
+  .callout strong { display: block; margin-bottom: 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .callout-info strong { color: var(--accent); }
+  .callout-warn strong { color: var(--warn); }
+  .callout-tip strong { color: var(--success); }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; }
+  th { text-align: left; padding: 10px 14px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); border-bottom: 1px solid var(--border); background: var(--surface); }
+  td { padding: 10px 14px; border-bottom: 1px solid rgba(42,51,71,0.5); font-size: 14px; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td code { font-size: 12px; }
+
+  .cmd-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 24px; margin-bottom: 28px; }
+  .cmd-card .cmd-name { font-family: 'Cascadia Code', Consolas, monospace; font-size: 16px; color: var(--accent3); font-weight: 700; margin-bottom: 8px; }
+  .cmd-card .cmd-desc { color: var(--text-muted); font-size: 14px; margin-bottom: 16px; }
+
+  .workflow-step { display: flex; gap: 16px; margin-bottom: 32px; }
+  .ws-num { min-width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; margin-top: 4px; }
+  .ws-body h3 { margin-top: 0; color: var(--text); }
+
+  footer { border-top: 1px solid var(--border); padding: 24px 40px; text-align: center; color: var(--text-muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">💻 CLI Workflow Guide</div>
+  <div class="header-sub">SUPERIOR StereoGram / DepthForge v0.5.0 — 9-command Click CLI</div>
+</header>
+
+<nav>
+  <a href="index.html">Home</a>
+  <a href="installation.html">Installation</a>
+  <a href="cli-workflow.html" class="active">CLI</a>
+  <a href="comfyui-workflow.html">ComfyUI</a>
+  <a href="nuke-workflow.html">Nuke</a>
+  <a href="samples.html">Samples</a>
+  <a href="reference.html">Reference</a>
+</nav>
+
+<div class="layout">
+  <aside>
+    <h4>Overview</h4>
+    <a href="#invoke">How to Invoke</a>
+    <a href="#commands">Command Reference</a>
+    <h4>Commands</h4>
+    <a href="#cmd-sirds">sirds</a>
+    <a href="#cmd-texture">texture</a>
+    <a href="#cmd-anaglyph">anaglyph</a>
+    <a href="#cmd-stereo-pair">stereo-pair</a>
+    <a href="#cmd-hidden">hidden</a>
+    <a href="#cmd-batch">batch</a>
+    <a href="#cmd-analyze">analyze</a>
+    <a href="#cmd-presets">presets</a>
+    <a href="#cmd-estimate-depth">estimate-depth</a>
+    <h4>Workflows</h4>
+    <a href="#workflow-quickstart">Quickstart</a>
+    <a href="#workflow-batch">Batch Processing</a>
+    <a href="#workflow-ai-depth">AI Depth → Stereogram</a>
+    <a href="#workflow-video">Video Sequence</a>
+    <a href="#workflow-print">Print Delivery</a>
+  </aside>
+
+  <main>
+    <h1>CLI Workflow Guide</h1>
+    <p>DepthForge ships a 9-command Click CLI. All commands read a depth map (or image for AI estimation) and write an output image. Commands accept presets, patterns, safety limits, and batch inputs.</p>
+
+    <h2 id="invoke">How to Invoke</h2>
+    <pre><code><span class="c"># Activate venv first (Windows)</span>
+.venv\Scripts\Activate.ps1
+
+<span class="c"># All commands use this entry point:</span>
+python -m depthforge.cli.main &lt;command&gt; [options]
+
+<span class="c"># Short alias if installed as package:</span>
+depthforge &lt;command&gt; [options]
+
+<span class="c"># Built-in help</span>
+python -m depthforge.cli.main --help
+python -m depthforge.cli.main sirds --help</code></pre>
+
+    <div class="callout callout-info">
+      <strong>Depth Map Convention</strong>
+      All commands expect depth maps where <strong>white = near (close to camera)</strong> and <strong>black = far (background)</strong>. This matches the standard MiDaS/ZoeDepth output convention. Use <code>--invert-depth</code> if your depth map is reversed.
+    </div>
+
+    <h2 id="commands">Command Reference</h2>
+
+    <table>
+      <thead><tr><th>Command</th><th>Output Mode</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>sirds</code></td><td>SIRDS / random-dot</td><td>Classic Magic Eye random-dot stereogram</td></tr>
+        <tr><td><code>texture</code></td><td>Texture pattern</td><td>Custom or procedural tiled-pattern stereogram</td></tr>
+        <tr><td><code>anaglyph</code></td><td>Anaglyph</td><td>Red/cyan (or variant) glasses-based 3D</td></tr>
+        <tr><td><code>stereo-pair</code></td><td>Stereo pair</td><td>Left/right side-by-side or top/bottom</td></tr>
+        <tr><td><code>hidden</code></td><td>Hidden image</td><td>Shape or text encoded invisibly in dot noise</td></tr>
+        <tr><td><code>batch</code></td><td>Any</td><td>Process a folder of depth maps</td></tr>
+        <tr><td><code>analyze</code></td><td>QC report</td><td>Comfort analysis + flash safety report</td></tr>
+        <tr><td><code>presets</code></td><td>List</td><td>List all built-in presets and their parameters</td></tr>
+        <tr><td><code>estimate-depth</code></td><td>Depth map</td><td>Run MiDaS or ZoeDepth on a photo to generate a depth map</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ─── SIRDS ─── -->
+    <h2 id="cmd-sirds">sirds — Classic Magic Eye Stereogram</h2>
+    <div class="cmd-card">
+      <div class="cmd-name">depthforge sirds [OPTIONS] DEPTH_MAP OUTPUT</div>
+      <div class="cmd-desc">Generate a random-dot SIRDS from a depth map. The output image encodes 3D depth — cross your eyes or use the "magic eye" parallel-focus technique to see it.</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>--preset</code></td><td>medium</td><td>Use a named preset: shallow, medium, deep, cinema, print, broadcast</td></tr>
+        <tr><td><code>--depth-factor</code></td><td>0.4</td><td>Parallax multiplier −1.0 to 1.0. Higher = more 3D depth.</td></tr>
+        <tr><td><code>--max-parallax</code></td><td>0.033</td><td>Max shift as fraction of image width (1/30 = ergonomic limit)</td></tr>
+        <tr><td><code>--convergence</code></td><td>0.5</td><td>Depth value at zero parallax (screen plane). 0.5 = mid-scene.</td></tr>
+        <tr><td><code>--oversample</code></td><td>1</td><td>Internal render scale (1–4). 2 = 2× resolution, Lanczos downsample.</td></tr>
+        <tr><td><code>--seed</code></td><td>None</td><td>Random seed for reproducible output</td></tr>
+        <tr><td><code>--bilateral</code></td><td>True</td><td>Apply bilateral filter to depth map before synthesis</td></tr>
+        <tr><td><code>--bilateral-d</code></td><td>9</td><td>Bilateral filter diameter</td></tr>
+        <tr><td><code>--dilation</code></td><td>0</td><td>Depth dilation kernel size (fills small holes)</td></tr>
+        <tr><td><code>--falloff</code></td><td>linear</td><td>Depth falloff curve: linear, gamma, s_curve, log, exp</td></tr>
+        <tr><td><code>--invert-depth</code></td><td>False</td><td>Flip near/far before synthesis</td></tr>
+        <tr><td><code>--safe-mode</code></td><td>False</td><td>Hard-clamp to ergonomic limits</td></tr>
+        <tr><td><code>--width</code></td><td>source width</td><td>Output width in pixels</td></tr>
+        <tr><td><code>--height</code></td><td>source height</td><td>Output height in pixels</td></tr>
+      </tbody>
+    </table>
+
+    <pre><code><span class="c"># Basic SIRDS with default settings</span>
+python -m depthforge.cli.main <span class="cmd">sirds</span> <span class="pt">depth.png</span> <span class="pt">out_sirds.png</span>
+
+<span class="c"># Cinema preset with more depth</span>
+python -m depthforge.cli.main <span class="cmd">sirds</span> <span class="fl">--preset</span> <span class="vl">cinema</span> <span class="pt">depth.png</span> <span class="pt">cinema.png</span>
+
+<span class="c"># Strong depth, reproducible seed, 2× oversampled quality</span>
+python -m depthforge.cli.main <span class="cmd">sirds</span> <span class="fl">--depth-factor</span> <span class="vl">0.7</span> <span class="fl">--seed</span> <span class="vl">42</span> <span class="fl">--oversample</span> <span class="vl">2</span> \
+    <span class="pt">depth.png</span> <span class="pt">high_quality.png</span></code><span class="lang-label">bash</span></pre>
+
+    <!-- ─── TEXTURE ─── -->
+    <h2 id="cmd-texture">texture — Tiled-Pattern Stereogram</h2>
+    <div class="cmd-card">
+      <div class="cmd-name">depthforge texture [OPTIONS] DEPTH_MAP OUTPUT</div>
+      <div class="cmd-desc">Like SIRDS but uses a tileable image (custom or procedural) as the pattern layer instead of random dots.</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>--pattern-file</code></td><td>None</td><td>Path to a custom tileable image (PNG/JPEG)</td></tr>
+        <tr><td><code>--pattern-name</code></td><td>None</td><td>Use a built-in pattern from the library (e.g. <code>bubbles</code>, <code>circuit</code>, <code>plasma</code>)</td></tr>
+        <tr><td><code>--pattern-type</code></td><td>random_noise</td><td>Procedural generator: random_noise, perlin, plasma, voronoi, geometric_grid, mandelbrot</td></tr>
+        <tr><td><code>--tile-size</code></td><td>128</td><td>Pattern tile width/height in pixels</td></tr>
+        <tr><td><code>--depth-factor</code></td><td>0.4</td><td>Parallax depth multiplier</td></tr>
+        <tr><td><code>--preset</code></td><td>medium</td><td>Named preset</td></tr>
+      </tbody>
+    </table>
+
+    <pre><code><span class="c"># Use a custom tileable image as the pattern</span>
+python -m depthforge.cli.main <span class="cmd">texture</span> <span class="fl">--pattern-file</span> <span class="pt">my_tile.png</span> <span class="pt">depth.png</span> <span class="pt">out.png</span>
+
+<span class="c"># Use a named built-in pattern</span>
+python -m depthforge.cli.main <span class="cmd">texture</span> <span class="fl">--pattern-name</span> <span class="vl">circuit</span> <span class="pt">depth.png</span> <span class="pt">circuit_stereo.png</span>
+
+<span class="c"># Plasma procedural pattern</span>
+python -m depthforge.cli.main <span class="cmd">texture</span> <span class="fl">--pattern-type</span> <span class="vl">plasma</span> <span class="fl">--tile-size</span> <span class="vl">256</span> \
+    <span class="pt">depth.png</span> <span class="pt">plasma_stereo.png</span></code><span class="lang-label">bash</span></pre>
+
+    <!-- ─── ANAGLYPH ─── -->
+    <h2 id="cmd-anaglyph">anaglyph — Red/Cyan 3D</h2>
+    <div class="cmd-card">
+      <div class="cmd-name">depthforge anaglyph [OPTIONS] SOURCE_IMAGE DEPTH_MAP OUTPUT</div>
+      <div class="cmd-desc">Generate an anaglyph image for viewing with red/cyan glasses. Takes both a colour source image and a depth map.</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>--mode</code></td><td>colour_anaglyph</td><td>true_anaglyph, grey_anaglyph, colour_anaglyph, half_colour, optimised (Dubois)</td></tr>
+        <tr><td><code>--parallax-px</code></td><td>20</td><td>Eye separation offset in pixels</td></tr>
+        <tr><td><code>--invert-depth</code></td><td>False</td><td>Flip depth convention</td></tr>
+      </tbody>
+    </table>
+
+    <pre><code><span class="c"># Best quality — Dubois optimised mode</span>
+python -m depthforge.cli.main <span class="cmd">anaglyph</span> <span class="fl">--mode</span> <span class="vl">optimised</span> \
+    <span class="pt">photo.jpg</span> <span class="pt">depth.png</span> <span class="pt">anaglyph_out.png</span>
+
+<span class="c"># Grey anaglyph (stronger 3D effect, less colour)</span>
+python -m depthforge.cli.main <span class="cmd">anaglyph</span> <span class="fl">--mode</span> <span class="vl">grey_anaglyph</span> <span class="fl">--parallax-px</span> <span class="vl">30</span> \
+    <span class="pt">photo.jpg</span> <span class="pt">depth.png</span> <span class="pt">grey_anaglyph.png</span></code><span class="lang-label">bash</span></pre>
+
+    <!-- ─── STEREO PAIR ─── -->
+    <h2 id="cmd-stereo-pair">stereo-pair — Side-by-Side Stereo</h2>
+    <div class="cmd-card">
+      <div class="cmd-name">depthforge stereo-pair [OPTIONS] SOURCE_IMAGE DEPTH_MAP OUTPUT</div>
+      <div class="cmd-desc">Generate a left/right stereo pair for VR headsets, 3D monitors, or cross-eye/wall-eye free fusion.</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>--layout</code></td><td>side_by_side</td><td>side_by_side, top_bottom, separate</td></tr>
+        <tr><td><code>--eye-balance</code></td><td>0.5</td><td>Left/right eye weight (0.0 = all left, 1.0 = all right)</td></tr>
+        <tr><td><code>--background-fill</code></td><td>edge</td><td>Fill mode for occlusion gaps: edge, black, mirror</td></tr>
+        <tr><td><code>--depth-factor</code></td><td>0.4</td><td>Stereo depth strength</td></tr>
+      </tbody>
+    </table>
+
+    <pre><code><span class="c"># Side-by-side (VR / cross-eye)</span>
+python -m depthforge.cli.main <span class="cmd">stereo-pair</span> <span class="fl">--layout</span> <span class="vl">side_by_side</span> \
+    <span class="pt">photo.jpg</span> <span class="pt">depth.png</span> <span class="pt">sbs.png</span>
+
+<span class="c"># Top-bottom for some 3D displays</span>
+python -m depthforge.cli.main <span class="cmd">stereo-pair</span> <span class="fl">--layout</span> <span class="vl">top_bottom</span> \
+    <span class="pt">photo.jpg</span> <span class="pt">depth.png</span> <span class="pt">tb.png</span></code><span class="lang-label">bash</span></pre>
+
+    <!-- ─── HIDDEN ─── -->
+    <h2 id="cmd-hidden">hidden — Hidden Image Stereogram</h2>
+    <div class="cmd-card">
+      <div class="cmd-name">depthforge hidden [OPTIONS] DEPTH_MAP OUTPUT</div>
+      <div class="cmd-desc">Encode a shape or text invisibly into dot noise. The hidden content only reveals when the viewer cross-eye or parallel-fuses the image.</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>--shape</code></td><td>None</td><td>Built-in shape: circle, star, heart, arrow, diamond</td></tr>
+        <tr><td><code>--text</code></td><td>None</td><td>Text string to encode as hidden image</td></tr>
+        <tr><td><code>--mask-file</code></td><td>None</td><td>Custom black/white mask image to encode</td></tr>
+        <tr><td><code>--fg-depth</code></td><td>0.7</td><td>Depth value for foreground (visible) shape region</td></tr>
+        <tr><td><code>--bg-depth</code></td><td>0.3</td><td>Depth value for background region</td></tr>
+        <tr><td><code>--edge-softness</code></td><td>2.0</td><td>Gaussian blur radius on mask edges</td></tr>
+      </tbody>
+    </table>
+
+    <pre><code><span class="c"># Hidden star shape</span>
+python -m depthforge.cli.main <span class="cmd">hidden</span> <span class="fl">--shape</span> <span class="vl">star</span> <span class="pt">depth.png</span> <span class="pt">hidden_star.png</span>
+
+<span class="c"># Hidden text message</span>
+python -m depthforge.cli.main <span class="cmd">hidden</span> <span class="fl">--text</span> <span class="vl">"HELLO"</span> <span class="fl">--fg-depth</span> <span class="vl">0.8</span> \
+    <span class="pt">depth.png</span> <span class="pt">hidden_text.png</span>
+
+<span class="c"># Custom mask (white = hidden shape region)</span>
+python -m depthforge.cli.main <span class="cmd">hidden</span> <span class="fl">--mask-file</span> <span class="pt">logo_mask.png</span> \
+    <span class="pt">depth.png</span> <span class="pt">hidden_logo.png</span></code><span class="lang-label">bash</span></pre>
+
+    <!-- ─── BATCH ─── -->
+    <h2 id="cmd-batch">batch — Batch Processing</h2>
+    <div class="cmd-card">
+      <div class="cmd-name">depthforge batch [OPTIONS] INPUT_DIR OUTPUT_DIR</div>
+      <div class="cmd-desc">Process an entire folder of depth maps with consistent settings. Supports all output modes.</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>--mode</code></td><td>sirds</td><td>Output mode: sirds, texture, anaglyph, stereo_pair, hidden</td></tr>
+        <tr><td><code>--preset</code></td><td>medium</td><td>Named preset applied to all files</td></tr>
+        <tr><td><code>--format</code></td><td>png</td><td>Output format: png, jpeg, tiff, webp</td></tr>
+        <tr><td><code>--workers</code></td><td>4</td><td>Parallel worker threads</td></tr>
+        <tr><td><code>--pattern-name</code></td><td>None</td><td>Pattern library name (for texture mode)</td></tr>
+      </tbody>
+    </table>
+
+    <pre><code><span class="c"># Batch SIRDS — all PNGs in a folder</span>
+python -m depthforge.cli.main <span class="cmd">batch</span> <span class="fl">--mode</span> <span class="vl">sirds</span> <span class="fl">--preset</span> <span class="vl">cinema</span> \
+    <span class="pt">./depth_maps/</span> <span class="pt">./output/sirds/</span>
+
+<span class="c"># Batch anaglyph with 8 parallel workers</span>
+python -m depthforge.cli.main <span class="cmd">batch</span> <span class="fl">--mode</span> <span class="vl">anaglyph</span> <span class="fl">--workers</span> <span class="vl">8</span> \
+    <span class="pt">./depth_maps/</span> <span class="pt">./output/anaglyph/</span>
+
+<span class="c"># Batch texture with circuit pattern, output JPEG</span>
+python -m depthforge.cli.main <span class="cmd">batch</span> <span class="fl">--mode</span> <span class="vl">texture</span> <span class="fl">--pattern-name</span> <span class="vl">circuit</span> \
+    <span class="fl">--format</span> <span class="vl">jpeg</span> <span class="pt">./depth_maps/</span> <span class="pt">./output/</span></code><span class="lang-label">bash</span></pre>
+
+    <!-- ─── ANALYZE ─── -->
+    <h2 id="cmd-analyze">analyze — QC & Safety Analysis</h2>
+    <div class="cmd-card">
+      <div class="cmd-name">depthforge analyze [OPTIONS] DEPTH_MAP</div>
+      <div class="cmd-desc">Run comfort analysis, window violation detection, and photosensitive epilepsy (PSE/flash) safety checks. Outputs a JSON report and optional overlay images.</div>
+    </div>
+
+    <pre><code><span class="c"># Print comfort report to terminal</span>
+python -m depthforge.cli.main <span class="cmd">analyze</span> <span class="pt">depth.png</span>
+
+<span class="c"># Save QC overlays (heatmap, histogram, window violations)</span>
+python -m depthforge.cli.main <span class="cmd">analyze</span> <span class="fl">--save-overlays</span> <span class="pt">depth.png</span>
+
+<span class="c"># JSON report to file</span>
+python -m depthforge.cli.main <span class="cmd">analyze</span> <span class="fl">--json-out</span> <span class="pt">report.json</span> <span class="pt">depth.png</span></code><span class="lang-label">bash</span></pre>
+
+    <!-- ─── PRESETS ─── -->
+    <h2 id="cmd-presets">presets — List Built-in Presets</h2>
+    <pre><code>python -m depthforge.cli.main <span class="cmd">presets</span>
+<span class="c"># Lists: shallow, medium, deep, cinema, print, broadcast
+# Shows depth_factor, max_parallax_fraction, convergence for each</span></code><span class="lang-label">bash</span></pre>
+
+    <!-- ─── ESTIMATE-DEPTH ─── -->
+    <h2 id="cmd-estimate-depth">estimate-depth — AI Depth from Photo</h2>
+    <div class="cmd-card">
+      <div class="cmd-name">depthforge estimate-depth [OPTIONS] IMAGE OUTPUT_DEPTH</div>
+      <div class="cmd-desc">Run MiDaS or ZoeDepth on any photograph to generate a depth map. Requires PyTorch (see Installation guide). Model downloads ~400 MB on first use.</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>--model</code></td><td>midas</td><td>midas (faster) or zoedepth (more accurate metric depth)</td></tr>
+        <tr><td><code>--device</code></td><td>auto</td><td>cuda, cpu, or auto (uses CUDA if available)</td></tr>
+      </tbody>
+    </table>
+
+    <pre><code>python -m depthforge.cli.main <span class="cmd">estimate-depth</span> <span class="pt">photo.jpg</span> <span class="pt">depth_out.png</span>
+
+<span class="c"># ZoeDepth for better metric accuracy</span>
+python -m depthforge.cli.main <span class="cmd">estimate-depth</span> <span class="fl">--model</span> <span class="vl">zoedepth</span> <span class="pt">photo.jpg</span> <span class="pt">depth.png</span></code><span class="lang-label">bash</span></pre>
+
+    <!-- ─── WORKFLOWS ─── -->
+    <h2 id="workflow-quickstart">Workflow: Quickstart (5 minutes)</h2>
+    <p>Get a stereogram from any photo in three commands.</p>
+
+    <div class="workflow-step">
+      <div class="ws-num">1</div>
+      <div class="ws-body">
+        <h3>Generate a depth map from your photo</h3>
+        <pre><code>python -m depthforge.cli.main <span class="cmd">estimate-depth</span> <span class="pt">my_photo.jpg</span> <span class="pt">depth.png</span></code><span class="lang-label">bash</span></pre>
+      </div>
+    </div>
+
+    <div class="workflow-step">
+      <div class="ws-num">2</div>
+      <div class="ws-body">
+        <h3>Check the depth looks good</h3>
+        <pre><code>python -m depthforge.cli.main <span class="cmd">analyze</span> <span class="pt">depth.png</span></code><span class="lang-label">bash</span></pre>
+        <p>Review the comfort report. Look for <code>SAFE</code> or <code>LOW</code> risk rating.</p>
+      </div>
+    </div>
+
+    <div class="workflow-step">
+      <div class="ws-num">3</div>
+      <div class="ws-body">
+        <h3>Generate the stereogram</h3>
+        <pre><code>python -m depthforge.cli.main <span class="cmd">sirds</span> <span class="fl">--preset</span> <span class="vl">medium</span> <span class="pt">depth.png</span> <span class="pt">stereogram.png</span></code><span class="lang-label">bash</span></pre>
+      </div>
+    </div>
+
+    <h2 id="workflow-batch">Workflow: Batch Folder Processing</h2>
+    <p>Process an entire shoot — estimate depth for all photos, then batch synthesize stereograms.</p>
+
+    <pre><code><span class="c"># Step 1: Estimate depth for all photos in a folder (run in a loop)</span>
+mkdir -p depths outputs
+
+for f in photos/*.jpg; do
+  base=$(basename "$f" .jpg)
+  python -m depthforge.cli.main <span class="cmd">estimate-depth</span> "$f" "depths/${base}_depth.png"
+done
+
+<span class="c"># Step 2: Batch synthesize all depth maps</span>
+python -m depthforge.cli.main <span class="cmd">batch</span> <span class="fl">--mode</span> <span class="vl">sirds</span> <span class="fl">--preset</span> <span class="vl">cinema</span> \
+    <span class="fl">--workers</span> <span class="vl">8</span> depths/ outputs/</code><span class="lang-label">bash</span></pre>
+
+    <h2 id="workflow-ai-depth">Workflow: Full AI Depth → Anaglyph Pipeline</h2>
+    <pre><code><span class="c"># Photo → AI depth → Dubois optimised anaglyph in one pipeline</span>
+
+python -m depthforge.cli.main <span class="cmd">estimate-depth</span> <span class="fl">--model</span> <span class="vl">zoedepth</span> \
+    <span class="pt">portrait.jpg</span> <span class="pt">depth_portrait.png</span>
+
+python -m depthforge.cli.main <span class="cmd">analyze</span> <span class="pt">depth_portrait.png</span>
+
+python -m depthforge.cli.main <span class="cmd">anaglyph</span> \
+    <span class="fl">--mode</span> <span class="vl">optimised</span> \
+    <span class="fl">--parallax-px</span> <span class="vl">25</span> \
+    <span class="pt">portrait.jpg</span> <span class="pt">depth_portrait.png</span> <span class="pt">anaglyph_portrait.png</span></code><span class="lang-label">bash</span></pre>
+
+    <h2 id="workflow-video">Workflow: Video Sequence</h2>
+    <p>For temporally stable stereogram video, use the web server or Python API — the CLI handles per-frame synthesis. Use batch mode with pre-computed depth maps per frame.</p>
+
+    <pre><code><span class="c"># Extract frames and depths (external tool, e.g. ffmpeg + depth model)</span>
+<span class="c"># Then batch synthesize all frames</span>
+python -m depthforge.cli.main <span class="cmd">batch</span> \
+    <span class="fl">--mode</span> <span class="vl">sirds</span> \
+    <span class="fl">--preset</span> <span class="vl">broadcast</span> \
+    <span class="fl">--workers</span> <span class="vl">8</span> \
+    <span class="pt">./frame_depths/</span> <span class="pt">./frame_stereo/</span>
+
+<span class="c"># Reassemble to video (ffmpeg)</span>
+ffmpeg -framerate 24 -i <span class="pt">./frame_stereo/frame_%04d.png</span> \
+    -c:v libx264 -crf 18 <span class="pt">stereogram_video.mp4</span></code><span class="lang-label">bash</span></pre>
+
+    <h2 id="workflow-print">Workflow: Print Delivery</h2>
+    <p>For print output, use the <code>print</code> preset (300 DPI, TIFF, wide-gamut) and oversample for maximum quality.</p>
+
+    <pre><code><span class="c"># High-quality print SIRDS — 2× oversampled, print preset</span>
+python -m depthforge.cli.main <span class="cmd">sirds</span> \
+    <span class="fl">--preset</span> <span class="vl">print</span> \
+    <span class="fl">--oversample</span> <span class="vl">2</span> \
+    <span class="fl">--width</span> <span class="vl">3600</span> <span class="fl">--height</span> <span class="vl">2400</span> \
+    <span class="fl">--seed</span> <span class="vl">42</span> \
+    <span class="pt">depth_hires.tiff</span> <span class="pt">print_ready.tiff</span></code><span class="lang-label">bash</span></pre>
+
+    <div class="callout callout-tip">
+      <strong>Tip — Pattern Library</strong>
+      Run <code>python -m depthforge.cli.main presets</code> to list presets. To see all 31 built-in patterns:
+      <pre style="margin-top: 10px;"><code>python -c "from depthforge.core.pattern_library import list_patterns; [print(p) for p in list_patterns()]"</code></pre>
+    </div>
+
+  </main>
+</div>
+
+<footer>SUPERIOR StereoGram v0.5.0 — Superior Studios / BoxOf LLC</footer>
+</body>
+</html>

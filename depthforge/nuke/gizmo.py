@@ -72,7 +72,10 @@ STEREOGRAM_KNOBS = [
         "Enumeration_Knob",
         "df_mode",
         "Mode",
-        ["SIRDS", "Texture", "Anaglyph", "StereoPair", "HiddenImage"],
+        # EstimateDepth: run AI depth on source, output depth map only (preview)
+        # EstimateDepth+SIRDS: run AI depth then synthesize stereogram in one node
+        ["SIRDS", "Texture", "Anaglyph", "StereoPair", "HiddenImage",
+         "EstimateDepth", "EstimateDepth+SIRDS"],
         {},
     ),
     # --- Preset ---
@@ -171,6 +174,24 @@ STEREOGRAM_KNOBS = [
         ["conservative", "standard", "relaxed", "cinema"],
         {},
     ),
+    # --- GPU / AI ---
+    ("Tab_Knob", "_tab_gpu", "GPU & AI Depth", None, {}),
+    ("Boolean_Knob", "df_use_gpu", "GPU Accelerated Synthesis", True, {}),
+    (
+        "Enumeration_Knob",
+        "df_gpu_device",
+        "GPU Device",
+        ["auto", "cuda", "mps", "cpu"],
+        {},
+    ),
+    (
+        "Enumeration_Knob",
+        "df_depth_model",
+        "AI Depth Model",
+        ["midas", "zoedepth"],
+        {},
+    ),
+    ("Boolean_Knob", "df_depth_invert_ai", "Invert AI Depth Output", False, {}),
 ]
 
 
@@ -412,9 +433,37 @@ class DepthForgeGizmo:
                 )
             )
 
+        # ── Choose synthesis function (GPU or NumPy) ────────────────────
+        use_gpu = self._values.get("df_use_gpu", True)
+        gpu_device = self._values.get("df_gpu_device", "auto")
+
+        def _synth(d, pat, stereo_p):
+            if use_gpu:
+                try:
+                    from depthforge.core.gpu_synthesizer import synthesize_gpu
+                    return synthesize_gpu(d, pat, stereo_p, device=gpu_device)
+                except Exception:
+                    pass  # fall through to NumPy
+            return synthesize(d, pat, stereo_p)
+
+        # ── AI depth estimation modes ────────────────────────────────────
+        if mode in ("EstimateDepth", "EstimateDepth+SIRDS"):
+            if source is None:
+                raise ValueError(
+                    f"Mode '{mode}' requires a source image connected to the "
+                    "'source' input."
+                )
+            depth = self._estimate_depth_from_source(source)
+            if mode == "EstimateDepth":
+                # Output the depth map as a greyscale RGBA image for preview
+                d8 = (depth * 255).astype(np.uint8)
+                return np.stack([d8, d8, d8, np.full_like(d8, 255)], axis=-1)
+            # EstimateDepth+SIRDS: fall through to normal synthesis with the
+            # freshly-estimated depth already stored in `depth`.
+
         # Dispatch by mode
-        if mode == "SIRDS" or mode == "Texture":
-            return synthesize(depth, pattern, sp)
+        if mode in ("SIRDS", "Texture", "EstimateDepth+SIRDS"):
+            return _synth(depth, pattern, sp)
 
         elif mode == "Anaglyph":
             if source is None:
@@ -496,6 +545,45 @@ class DepthForgeGizmo:
 
         else:
             return synthesize(depth, pattern, sp)
+
+    # ------------------------------------------------------------------
+    # AI depth estimation
+    # ------------------------------------------------------------------
+
+    def _estimate_depth_from_source(self, source: "np.ndarray") -> "np.ndarray":
+        """Run MiDaS or ZoeDepth on a source RGB image.
+
+        Parameters
+        ----------
+        source : uint8 (H, W, 4) RGBA — the source plate from the Nuke input.
+
+        Returns
+        -------
+        float32 (H, W) depth map, values in [0, 1], white = near.
+        """
+        import numpy as np
+        from depthforge.depth_models import get_depth_estimator, DepthEstimationError
+
+        model_name = self._values.get("df_depth_model", "midas")
+        invert_ai  = self._values.get("df_depth_invert_ai", False)
+
+        # Convert RGBA → RGB for the estimator
+        rgb = source[..., :3].astype(np.uint8)
+
+        try:
+            estimator = get_depth_estimator(model_name)
+            depth = estimator.estimate(rgb)          # float32 (H, W) in [0,1]
+        except DepthEstimationError as exc:
+            raise RuntimeError(
+                f"AI depth estimation failed: {exc}\n"
+                "Ensure torch is installed in this Python environment:\n"
+                "  pip install torch torchvision timm"
+            ) from exc
+
+        if invert_ai:
+            depth = 1.0 - depth
+
+        return depth
 
     # ------------------------------------------------------------------
     # Nuke-specific: create the actual node in the graph

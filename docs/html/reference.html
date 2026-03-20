@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Full Reference & Glossary — SUPERIOR StereoGram</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161b24;
+    --surface2: #1e2535;
+    --border: #2a3347;
+    --accent: #4f8ef7;
+    --accent2: #a855f7;
+    --accent3: #22d3ee;
+    --text: #e2e8f0;
+    --text-muted: #8899b0;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --code-bg: #0a0d12;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 28px 40px; }
+  .header-title { font-size: 20px; font-weight: 700; }
+  .header-sub { color: var(--text-muted); font-size: 14px; margin-top: 2px; }
+
+  nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 40px; display: flex; gap: 2px; flex-wrap: wrap; }
+  nav a { color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 14px 16px; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  nav a:hover { color: var(--text); }
+  nav a.active { color: var(--accent3); border-bottom-color: var(--accent3); }
+
+  .layout { display: flex; max-width: 1300px; margin: 0 auto; }
+
+  aside { width: 240px; min-width: 240px; padding: 32px 16px; border-right: 1px solid var(--border); position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  aside h4 { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px; margin-top: 20px; padding-left: 10px; }
+  aside h4:first-child { margin-top: 0; }
+  aside a { display: block; color: var(--text-muted); text-decoration: none; font-size: 12px; padding: 4px 10px; border-radius: 5px; transition: all 0.15s; }
+  aside a:hover { color: var(--text); background: var(--surface2); }
+
+  main { flex: 1; padding: 48px 56px; min-width: 0; }
+
+  h1 { font-size: 34px; font-weight: 800; margin-bottom: 8px; }
+  h2 { font-size: 22px; font-weight: 700; margin-top: 56px; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  h2 .anchor { color: var(--text-muted); font-size: 16px; text-decoration: none; }
+  h3 { font-size: 16px; font-weight: 600; margin-top: 28px; margin-bottom: 10px; color: var(--accent3); font-family: 'Cascadia Code', Consolas, monospace; }
+  h4 { font-size: 13px; font-weight: 600; margin-top: 18px; margin-bottom: 6px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  p { margin-bottom: 12px; font-size: 14px; }
+  ul, ol { margin: 10px 0 14px 18px; }
+  li { margin-bottom: 5px; font-size: 14px; }
+
+  code { background: var(--code-bg); border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px; font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; font-size: 12px; color: var(--accent3); }
+
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px; padding: 18px 22px; overflow-x: auto; margin: 14px 0 20px; position: relative; }
+  pre code { background: none; border: none; padding: 0; font-size: 13px; color: #c8d8f0; line-height: 1.75; }
+  .lang-label { position: absolute; top: 8px; right: 14px; font-size: 10px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+
+  .callout { border-radius: 8px; padding: 14px 18px; margin: 16px 0; border-left: 3px solid; }
+  .callout-info { background: rgba(79,142,247,0.08); border-color: var(--accent); }
+  .callout-warn { background: rgba(245,158,11,0.08); border-color: var(--warn); }
+  .callout-tip  { background: rgba(34,197,94,0.08); border-color: var(--success); }
+  .callout strong { display: block; margin-bottom: 5px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .callout-info strong { color: var(--accent); }
+  .callout-warn strong { color: var(--warn); }
+  .callout-tip  strong { color: var(--success); }
+
+  table { width: 100%; border-collapse: collapse; margin: 12px 0 20px; font-size: 13px; }
+  th { text-align: left; padding: 9px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); border-bottom: 1px solid var(--border); background: var(--surface); white-space: nowrap; }
+  td { padding: 9px 12px; border-bottom: 1px solid rgba(42,51,71,0.5); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td code { font-size: 11.5px; }
+  td:first-child { white-space: nowrap; }
+
+  .cmd-block { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent3); border-radius: 8px; padding: 20px 22px; margin: 20px 0; }
+  .cmd-block .cmd-sig { font-family: 'Cascadia Code', Consolas, monospace; font-size: 14px; color: var(--accent3); font-weight: 700; margin-bottom: 8px; }
+  .cmd-block .cmd-desc { color: var(--text-muted); font-size: 13px; margin-bottom: 0; }
+
+  .flag { font-family: 'Cascadia Code', Consolas, monospace; font-size: 12px; color: #a78bfa; }
+  .val  { font-family: 'Cascadia Code', Consolas, monospace; font-size: 12px; color: #86efac; }
+  .def  { font-size: 12px; color: var(--text-muted); font-style: italic; }
+
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge-req { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .badge-opt { background: rgba(245,158,11,0.12); color: #f59e0b; }
+  .badge-flag { background: rgba(79,142,247,0.12); color: #4f8ef7; }
+
+  .term { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; margin: 12px 0; }
+  .term dt { font-size: 15px; font-weight: 700; color: var(--accent3); font-family: 'Cascadia Code', Consolas, monospace; margin-bottom: 6px; }
+  .term dd { color: var(--text); font-size: 13px; line-height: 1.7; }
+  .term .also { color: var(--text-muted); font-size: 12px; margin-top: 6px; }
+
+  footer { border-top: 1px solid var(--border); padding: 22px 40px; text-align: center; color: var(--text-muted); font-size: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">📖 Full Reference & Glossary</div>
+  <div class="header-sub">SUPERIOR StereoGram / DepthForge v0.5.0 — Every command, flag, parameter, and term</div>
+</header>
+
+<nav>
+  <a href="index.html">Home</a>
+  <a href="installation.html">Installation</a>
+  <a href="cli-workflow.html">CLI</a>
+  <a href="comfyui-workflow.html">ComfyUI</a>
+  <a href="nuke-workflow.html">Nuke</a>
+  <a href="samples.html">Samples</a>
+  <a href="reference.html" class="active">Reference</a>
+</nav>
+
+<div class="layout">
+  <aside>
+    <h4>CLI Commands</h4>
+    <a href="#cmd-sirds">sirds</a>
+    <a href="#cmd-texture">texture</a>
+    <a href="#cmd-anaglyph">anaglyph</a>
+    <a href="#cmd-hidden">hidden</a>
+    <a href="#cmd-stereo-pair">stereo-pair</a>
+    <a href="#cmd-batch">batch</a>
+    <a href="#cmd-analyze">analyze</a>
+    <a href="#cmd-presets">presets</a>
+    <a href="#cmd-estimate-depth">estimate-depth</a>
+    <h4>Shared Flags</h4>
+    <a href="#shared-depth-flags">Depth/Stereo flags</a>
+    <a href="#shared-pattern-flags">Pattern flags</a>
+    <h4>Presets</h4>
+    <a href="#presets-ref">All 6 presets</a>
+    <h4>Enumerations</h4>
+    <a href="#enum-falloff">FalloffCurve</a>
+    <a href="#enum-anaglyph">AnaglyphMode</a>
+    <a href="#enum-pattern">PatternType</a>
+    <a href="#enum-color">ColorMode</a>
+    <a href="#enum-layout">StereoLayout</a>
+    <a href="#enum-fill">BackgroundFill</a>
+    <a href="#enum-temporal">TemporalStrategy</a>
+    <h4>Pattern Library</h4>
+    <a href="#patterns-organic">Organic (8)</a>
+    <a href="#patterns-geometric">Geometric (8)</a>
+    <a href="#patterns-psychedelic">Psychedelic (7)</a>
+    <a href="#patterns-minimal">Minimal (5)</a>
+    <a href="#patterns-animated">Animated (3+)</a>
+    <h4>GPU Synthesis</h4>
+    <a href="#gpu-synthesizer">gpu_synthesizer API</a>
+    <h4>Glossary</h4>
+    <a href="#gloss-stereo">Stereogram terms</a>
+    <a href="#gloss-depth">Depth map terms</a>
+    <a href="#gloss-safety">Safety terms</a>
+    <a href="#gloss-tech">Technical terms</a>
+  </aside>
+
+  <main>
+    <h1>Full Reference & Glossary</h1>
+    <p>Complete reference for every CLI command, flag, enumeration, pattern name, and technical term in DepthForge. Use Ctrl+F to search this page.</p>
+
+    <div class="callout callout-info">
+      <strong>How to invoke the CLI</strong>
+      All commands use: <code>python -m depthforge.cli.main &lt;command&gt; [options]</code><br>
+      Get help on any command: <code>python -m depthforge.cli.main &lt;command&gt; --help</code>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <h2 id="shared-depth-flags">Shared Depth &amp; Stereo Flags</h2>
+    <p>These flags appear on <code>sirds</code>, <code>texture</code>, and most other synthesis commands:</p>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="flag">--depth / -d</span></td><td>PATH</td><td><span class="badge badge-req">required</span></td><td>Path to depth map image (PNG, TIFF, EXR, JPEG). White=near, black=far.</td></tr>
+        <tr><td><span class="flag">--output / -o</span></td><td>PATH</td><td><span class="badge badge-req">required</span></td><td>Output file path. Extension determines format (.png, .jpg, .tiff).</td></tr>
+        <tr><td><span class="flag">--preset</span></td><td>STRING</td><td>None</td><td>Apply a named preset. Overrides depth-factor, max-parallax, oversample, dpi, and depth prep settings. Values: <code>shallow</code> <code>medium</code> <code>deep</code> <code>cinema</code> <code>print</code> <code>broadcast</code></td></tr>
+        <tr><td><span class="flag">--depth-factor</span></td><td>FLOAT</td><td>0.35</td><td>Parallax strength multiplier. <span class="val">0.0</span>=flat, <span class="val">1.0</span>=maximum depth. Negative = pops toward viewer. Range: −1.0 to 1.0.</td></tr>
+        <tr><td><span class="flag">--max-parallax</span></td><td>FLOAT</td><td>0.0333</td><td>Maximum pixel shift as fraction of image width. <span class="val">1/30 ≈ 0.033</span> is the ergonomic limit. Increase to 0.05 for dramatic effect.</td></tr>
+        <tr><td><span class="flag">--safe-mode</span></td><td>FLAG</td><td>off</td><td>Hard-clamps depth_factor to ±0.5 and max-parallax to 1/30. Recommended for public content. Reduces PSE risk.</td></tr>
+        <tr><td><span class="flag">--oversample</span></td><td>INT</td><td>1</td><td>Internal render scale. <span class="val">1</span>=off, <span class="val">2</span>=2× resolution then Lanczos downsample. Dramatically improves quality; 4× slower at oversample=2.</td></tr>
+        <tr><td><span class="flag">--seed</span></td><td>INT</td><td>None</td><td>Random seed for reproducible output. <span class="val">None</span>=different every run. Set any integer for identical results across runs.</td></tr>
+        <tr><td><span class="flag">--invert-depth</span></td><td>FLAG</td><td>off</td><td>Flip near/far before synthesis. Use when your depth map has black=near, white=far (some CG Z-passes).</td></tr>
+        <tr><td><span class="flag">--bilateral-space</span></td><td>FLOAT</td><td>5.0</td><td>Spatial sigma for bilateral edge-preserving filter on depth map. Higher = more smoothing over distance.</td></tr>
+        <tr><td><span class="flag">--bilateral-color</span></td><td>FLOAT</td><td>0.1</td><td>Color/intensity sigma for bilateral filter. Higher = blends across larger depth jumps (flattens edges).</td></tr>
+        <tr><td><span class="flag">--dilation</span></td><td>INT</td><td>3</td><td>Morphological dilation radius in pixels. Expands bright (near) regions to fill depth map holes. Set 0 to disable.</td></tr>
+        <tr><td><span class="flag">--falloff</span></td><td>CHOICE</td><td>linear</td><td>Depth remapping curve. See <a href="#enum-falloff" style="color:var(--accent3)">FalloffCurve enum</a>. Values: <code>linear</code> <code>gamma</code> <code>s-curve</code> <code>logarithmic</code> <code>exponential</code></td></tr>
+        <tr><td><span class="flag">--near-plane</span></td><td>FLOAT</td><td>0.0</td><td>Clip depth values below this before synthesis. Range 0.0–1.0. Use to cut out very dark background.</td></tr>
+        <tr><td><span class="flag">--far-plane</span></td><td>FLOAT</td><td>1.0</td><td>Clip depth values above this. Use to prevent extreme foreground parallax.</td></tr>
+        <tr><td><span class="flag">--dpi</span></td><td>INT</td><td>72</td><td>Output DPI embedded in file metadata. Use 300 for print. Affects pixel dimensions only when used with print presets.</td></tr>
+        <tr><td><span class="flag">--verbose / -v</span></td><td>FLAG</td><td>off</td><td>Print detailed progress messages during synthesis.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="shared-pattern-flags">Shared Pattern Flags</h2>
+    <p>These flags appear on <code>sirds</code>, <code>texture</code>, <code>hidden</code>, and <code>batch</code>:</p>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="flag">--pattern / -p</span></td><td>CHOICE</td><td>noise</td><td>Procedural pattern generator. Values: <code>noise</code> <code>random</code> <code>perlin</code> <code>plasma</code> <code>voronoi</code> <code>grid</code> <code>mandelbrot</code> <code>dots</code>. See <a href="#enum-pattern" style="color:var(--accent3)">PatternType enum</a>.</td></tr>
+        <tr><td><span class="flag">--color / -c</span></td><td>CHOICE</td><td>greyscale</td><td>Pattern colour mode. Values: <code>greyscale</code> <code>gray</code> <code>mono</code> <code>monochrome</code> <code>psychedelic</code> <code>color</code>. See <a href="#enum-color" style="color:var(--accent3)">ColorMode enum</a>.</td></tr>
+        <tr><td><span class="flag">--tile-size</span></td><td>INT</td><td>128</td><td>Pattern tile width and height in pixels. Larger tiles = coarser texture. Range 32–512 recommended.</td></tr>
+        <tr><td><span class="flag">--tile-image</span></td><td>PATH</td><td>None</td><td>Path to custom tileable PNG/JPEG image. When provided, overrides <code>--pattern</code> and uses your image as the tile.</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <h2 id="cmd-sirds">Command: sirds</h2>
+    <div class="cmd-block">
+      <div class="cmd-sig">python -m depthforge.cli.main sirds --depth DEPTH --output OUTPUT [OPTIONS]</div>
+      <div class="cmd-desc">Generate a Single Image Random Dot Stereogram (SIRDS / "Magic Eye"). Takes only a depth map — no source image needed. Accepts all shared depth/stereo flags and pattern flags.</div>
+    </div>
+    <pre><code><span style="color:#5a6e8a"># Minimal</span>
+python -m depthforge.cli.main sirds --depth depth.png --output out.png
+
+<span style="color:#5a6e8a"># With preset</span>
+python -m depthforge.cli.main sirds --preset cinema --depth depth.png --output out.png
+
+<span style="color:#5a6e8a"># Maximum quality — 2x oversampled, reproducible</span>
+python -m depthforge.cli.main sirds --depth depth.png --output out.png \
+    --depth-factor 0.5 --oversample 2 --seed 42 --falloff s-curve
+
+<span style="color:#5a6e8a"># Custom tile image as pattern</span>
+python -m depthforge.cli.main sirds --depth depth.png --output out.png \
+    --tile-image my_texture.png</code><span class="lang-label">bash</span></pre>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <h2 id="cmd-texture">Command: texture</h2>
+    <div class="cmd-block">
+      <div class="cmd-sig">python -m depthforge.cli.main texture --depth DEPTH --output OUTPUT [OPTIONS]</div>
+      <div class="cmd-desc">Same as sirds but defaults to richer procedural patterns. Use <code>--pattern plasma --color psychedelic</code> for vivid colour stereograms. Accepts all shared flags.</div>
+    </div>
+    <pre><code>python -m depthforge.cli.main texture --depth depth.png --output out.png \
+    --pattern plasma --color psychedelic --tile-size 256
+
+python -m depthforge.cli.main texture --depth depth.png --output out.png \
+    --pattern voronoi --color color --tile-size 192 --seed 99</code><span class="lang-label">bash</span></pre>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <h2 id="cmd-anaglyph">Command: anaglyph</h2>
+    <div class="cmd-block">
+      <div class="cmd-sig">python -m depthforge.cli.main anaglyph --source SOURCE --depth DEPTH --output OUTPUT [OPTIONS]</div>
+      <div class="cmd-desc">Generate a red/cyan anaglyph for 3D glasses. Requires both a colour source image and a matched depth map.</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="flag">--source / -s</span></td><td>PATH</td><td><span class="badge badge-req">required</span></td><td>Colour source image (JPEG, PNG, EXR)</td></tr>
+        <tr><td><span class="flag">--depth / -d</span></td><td>PATH</td><td><span class="badge badge-req">required</span></td><td>Depth map image</td></tr>
+        <tr><td><span class="flag">--mode</span></td><td>CHOICE</td><td>optimised</td><td><code>true</code> <code>grey</code> <code>color</code> <code>half-color</code> <code>optimised</code> — see <a href="#enum-anaglyph" style="color:var(--accent3)">AnaglyphMode</a></td></tr>
+        <tr><td><span class="flag">--eye-separation</span></td><td>FLOAT</td><td>0.065</td><td>Normalised inter-ocular distance (fraction of image width). Default 0.065 ≈ 65mm eyes at 1m.</td></tr>
+        <tr><td><span class="flag">--depth-factor</span></td><td>FLOAT</td><td>0.35</td><td>Parallax strength</td></tr>
+        <tr><td><span class="flag">--swap-eyes</span></td><td>FLAG</td><td>off</td><td>Swap left/right eye channels — reverses depth pop/push direction</td></tr>
+        <tr><td><span class="flag">--invert-depth</span></td><td>FLAG</td><td>off</td><td>Flip depth near/far convention</td></tr>
+        <tr><td><span class="flag">--dpi</span></td><td>INT</td><td>72</td><td>Output DPI</td></tr>
+      </tbody>
+    </table>
+    <pre><code><span style="color:#5a6e8a"># Best quality — Dubois optimised</span>
+python -m depthforge.cli.main anaglyph --source photo.jpg --depth depth.png \
+    --output anaglyph.png --mode optimised
+
+<span style="color:#5a6e8a"># Grey anaglyph — maximum 3D, minimal colour</span>
+python -m depthforge.cli.main anaglyph --source photo.jpg --depth depth.png \
+    --output grey.png --mode grey --depth-factor 0.5</code><span class="lang-label">bash</span></pre>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <h2 id="cmd-hidden">Command: hidden</h2>
+    <div class="cmd-block">
+      <div class="cmd-sig">python -m depthforge.cli.main hidden --output OUTPUT [--shape SHAPE | --text TEXT | --mask MASK] [OPTIONS]</div>
+      <div class="cmd-desc">Generate a hidden-image stereogram. Encodes a shape, text string, or custom mask image invisibly into random-dot noise. Must provide one of <code>--shape</code>, <code>--text</code>, or <code>--mask</code>.</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="flag">--shape</span></td><td>STRING</td><td>None</td><td>Built-in shape: <code>circle</code> <code>square</code> <code>triangle</code> <code>star</code> <code>diamond</code> <code>arrow</code></td></tr>
+        <tr><td><span class="flag">--text</span></td><td>STRING</td><td>None</td><td>Text string to encode. Overrides <code>--shape</code>. Use quotes for spaces: <code>--text "HELLO"</code></td></tr>
+        <tr><td><span class="flag">--mask</span></td><td>PATH</td><td>None</td><td>Path to black-and-white mask image. White = hidden region, black = background.</td></tr>
+        <tr><td><span class="flag">--width / -W</span></td><td>INT</td><td>1920</td><td>Output width in pixels</td></tr>
+        <tr><td><span class="flag">--height / -H</span></td><td>INT</td><td>1080</td><td>Output height in pixels</td></tr>
+        <tr><td><span class="flag">--foreground-depth</span></td><td>FLOAT</td><td>0.75</td><td>Depth value of the hidden element (0–1). Higher = further from background = easier to see.</td></tr>
+        <tr><td><span class="flag">--background-depth</span></td><td>FLOAT</td><td>0.10</td><td>Depth value of the background. Keep this low and foreground-depth high for maximum contrast.</td></tr>
+        <tr><td><span class="flag">--edge-soften</span></td><td>INT</td><td>3</td><td>Feather radius in pixels at mask edges. Higher = softer, harder to see edges on the hidden shape.</td></tr>
+        <tr><td><span class="flag">--font-size</span></td><td>INT</td><td>auto</td><td>Font size for <code>--text</code> mode. Default auto-sizes to ~60% of image height.</td></tr>
+        <tr><td><span class="flag">--pattern / -p</span></td><td>CHOICE</td><td>noise</td><td>Pattern type for the noise background</td></tr>
+        <tr><td><span class="flag">--seed</span></td><td>INT</td><td>1</td><td>Random seed</td></tr>
+      </tbody>
+    </table>
+    <pre><code>python -m depthforge.cli.main hidden --shape star --output hidden_star.png
+python -m depthforge.cli.main hidden --text "HELLO" --output hidden_text.png \
+    --foreground-depth 0.85 --background-depth 0.05
+python -m depthforge.cli.main hidden --mask logo_mask.png --output hidden_logo.png \
+    --width 2560 --height 1440</code><span class="lang-label">bash</span></pre>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <h2 id="cmd-stereo-pair">Command: stereo-pair</h2>
+    <div class="cmd-block">
+      <div class="cmd-sig">python -m depthforge.cli.main stereo-pair --source SOURCE --depth DEPTH --output OUTPUT [OPTIONS]</div>
+      <div class="cmd-desc">Generate left/right stereo pair views for VR headsets, 3D monitors, or cross-eye/wall-eye free fusion.</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="flag">--source / -s</span></td><td>PATH</td><td><span class="badge badge-req">required</span></td><td>Colour source image</td></tr>
+        <tr><td><span class="flag">--depth / -d</span></td><td>PATH</td><td><span class="badge badge-req">required</span></td><td>Depth map</td></tr>
+        <tr><td><span class="flag">--layout</span></td><td>CHOICE</td><td>side-by-side</td><td><code>side-by-side</code> (2× width) · <code>top-bottom</code> (2× height) · <code>separate</code> (two files: stem_left.ext + stem_right.ext) · <code>anaglyph</code> (Dubois red/cyan from pair)</td></tr>
+        <tr><td><span class="flag">--eye-separation</span></td><td>FLOAT</td><td>0.065</td><td>Normalised inter-ocular distance</td></tr>
+        <tr><td><span class="flag">--depth-factor</span></td><td>FLOAT</td><td>0.35</td><td>Stereo depth strength</td></tr>
+        <tr><td><span class="flag">--gap</span></td><td>INT</td><td>0</td><td>Pixel gap between left and right views (side-by-side only)</td></tr>
+        <tr><td><span class="flag">--bg-fill</span></td><td>CHOICE</td><td>edge</td><td>Fill mode for occlusion gaps: <code>edge</code> (repeat edge pixel) · <code>mirror</code> · <code>black</code>. See <a href="#enum-fill" style="color:var(--accent3)">BackgroundFill</a>.</td></tr>
+        <tr><td><span class="flag">--invert-depth</span></td><td>FLAG</td><td>off</td><td>Flip near/far</td></tr>
+      </tbody>
+    </table>
+    <pre><code>python -m depthforge.cli.main stereo-pair --source photo.jpg --depth depth.png \
+    --output sbs.png --layout side-by-side
+
+<span style="color:#5a6e8a"># Two separate files for L/R</span>
+python -m depthforge.cli.main stereo-pair --source photo.jpg --depth depth.png \
+    --output frame.png --layout separate</code><span class="lang-label">bash</span></pre>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <h2 id="cmd-batch">Command: batch</h2>
+    <div class="cmd-block">
+      <div class="cmd-sig">python -m depthforge.cli.main batch --input-dir DIR --output-dir DIR [OPTIONS]</div>
+      <div class="cmd-desc">Process an entire folder of depth maps with consistent settings. All output modes supported.</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="flag">--input-dir / -i</span></td><td>PATH</td><td><span class="badge badge-req">required</span></td><td>Folder containing depth map images</td></tr>
+        <tr><td><span class="flag">--output-dir / -o</span></td><td>PATH</td><td><span class="badge badge-req">required</span></td><td>Folder for output images (created if absent)</td></tr>
+        <tr><td><span class="flag">--mode</span></td><td>CHOICE</td><td>texture</td><td><code>sirds</code> <code>texture</code> <code>anaglyph</code> <code>hidden</code></td></tr>
+        <tr><td><span class="flag">--preset</span></td><td>STRING</td><td>medium</td><td>Named preset applied to all files</td></tr>
+        <tr><td><span class="flag">--pattern</span></td><td>STRING</td><td>plasma</td><td>Pattern generator type</td></tr>
+        <tr><td><span class="flag">--color</span></td><td>STRING</td><td>psychedelic</td><td>Color mode</td></tr>
+        <tr><td><span class="flag">--tile-size</span></td><td>INT</td><td>128</td><td>Pattern tile size</td></tr>
+        <tr><td><span class="flag">--seed</span></td><td>INT</td><td>42</td><td>Shared random seed for all files</td></tr>
+        <tr><td><span class="flag">--jobs / -j</span></td><td>INT</td><td>1</td><td>Parallel worker count. Set to CPU core count for maximum speed.</td></tr>
+        <tr><td><span class="flag">--glob</span></td><td>STRING</td><td>*.png</td><td>Glob pattern to match input files. Examples: <code>*.png</code> <code>*.tiff</code> <code>frame_*.png</code></td></tr>
+        <tr><td><span class="flag">--format</span></td><td>CHOICE</td><td>png</td><td>Output format: <code>png</code> <code>tiff</code> <code>jpg</code></td></tr>
+        <tr><td><span class="flag">--json-log</span></td><td>PATH</td><td>None</td><td>Write a JSON log of all processed files, timings, and errors to this path</td></tr>
+      </tbody>
+    </table>
+    <pre><code>python -m depthforge.cli.main batch -i ./depths/ -o ./output/ \
+    --mode sirds --preset cinema --jobs 8
+
+<span style="color:#5a6e8a"># Match only TIFF files, output JPEG, log results</span>
+python -m depthforge.cli.main batch -i ./depths/ -o ./output/ \
+    --glob "*.tiff" --format jpg --json-log batch_log.json</code><span class="lang-label">bash</span></pre>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <h2 id="cmd-analyze">Command: analyze</h2>
+    <div class="cmd-block">
+      <div class="cmd-sig">python -m depthforge.cli.main analyze --depth DEPTH [OPTIONS]</div>
+      <div class="cmd-desc">Analyze a depth map for viewer comfort (SMPTE ST 2098-1, EBU R95) and vergence strain. Outputs a text report and optional overlay images.</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="flag">--depth / -d</span></td><td>PATH</td><td><span class="badge badge-req">required</span></td><td>Depth map to analyze</td></tr>
+        <tr><td><span class="flag">--frame-width</span></td><td>INT</td><td>1920</td><td>Target output width — affects parallax-in-pixels calculation</td></tr>
+        <tr><td><span class="flag">--frame-height</span></td><td>INT</td><td>1080</td><td>Target output height</td></tr>
+        <tr><td><span class="flag">--depth-factor</span></td><td>FLOAT</td><td>0.35</td><td>Intended depth_factor for synthesis — used to simulate final parallax</td></tr>
+        <tr><td><span class="flag">--max-parallax</span></td><td>FLOAT</td><td>0.033</td><td>Comfort limit to check against</td></tr>
+        <tr><td><span class="flag">--output-overlay</span></td><td>PATH</td><td>None</td><td>Save window-violation overlay image</td></tr>
+        <tr><td><span class="flag">--output-heatmap</span></td><td>PATH</td><td>None</td><td>Save parallax magnitude heatmap (red=max, blue=zero)</td></tr>
+        <tr><td><span class="flag">--output-bands</span></td><td>PATH</td><td>None</td><td>Save depth band segmentation preview</td></tr>
+        <tr><td><span class="flag">--json</span></td><td>PATH</td><td>None</td><td>Save full analysis as JSON report</td></tr>
+      </tbody>
+    </table>
+    <pre><code><span style="color:#5a6e8a"># Quick terminal report</span>
+python -m depthforge.cli.main analyze --depth depth.png
+
+<span style="color:#5a6e8a"># Full QC pass with all overlays and JSON report</span>
+python -m depthforge.cli.main analyze --depth depth.png \
+    --output-heatmap heatmap.png \
+    --output-overlay violations.png \
+    --output-bands bands.png \
+    --json report.json</code><span class="lang-label">bash</span></pre>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <h2 id="cmd-presets">Command: presets</h2>
+    <div class="cmd-block">
+      <div class="cmd-sig">python -m depthforge.cli.main presets [--list] [--show NAME] [--export PATH]</div>
+      <div class="cmd-desc">List, inspect, and export built-in presets.</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="flag">--list</span></td><td>Print summary table of all presets (also shown with no flags)</td></tr>
+        <tr><td><span class="flag">--show NAME</span></td><td>Print full details for a named preset including all stereo and depth params</td></tr>
+        <tr><td><span class="flag">--export PATH</span></td><td>Export a preset to a JSON file for editing or use in Python scripts</td></tr>
+      </tbody>
+    </table>
+    <pre><code>python -m depthforge.cli.main presets
+python -m depthforge.cli.main presets --show cinema
+python -m depthforge.cli.main presets --show broadcast --export broadcast.json</code><span class="lang-label">bash</span></pre>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <h2 id="cmd-estimate-depth">Command: estimate-depth</h2>
+    <div class="cmd-block">
+      <div class="cmd-sig">python -m depthforge.cli.main estimate-depth --source SOURCE --output OUTPUT [OPTIONS]</div>
+      <div class="cmd-desc">Run AI monocular depth estimation on any photograph. Produces a depth map PNG ready for use with all other commands. Requires PyTorch (<code>pip install "depthforge[ai]"</code>). Model weights (~400–700 MB) download automatically on first run.</div>
+    </div>
+
+    <table>
+      <thead><tr><th>Flag</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><span class="flag">--source / -s</span></td><td>PATH</td><td><span class="badge badge-req">required</span></td><td>Input colour photograph (JPEG, PNG)</td></tr>
+        <tr><td><span class="flag">--output / -o</span></td><td>PATH</td><td><span class="badge badge-req">required</span></td><td>Output depth map path (.png recommended)</td></tr>
+        <tr><td><span class="flag">--model</span></td><td>CHOICE</td><td>midas</td><td><code>midas</code> — MiDaS v3.1 DPT-Large, relative depth, faster, ~400 MB. <code>zoedepth</code> — ZoeDepth N, metric depth, more accurate, ~700 MB.</td></tr>
+        <tr><td><span class="flag">--invert</span></td><td>FLAG</td><td>off</td><td>Invert output depth after estimation (swap near/far)</td></tr>
+        <tr><td><span class="flag">--verbose</span></td><td>FLAG</td><td>off</td><td>Print progress messages</td></tr>
+      </tbody>
+    </table>
+    <pre><code><span style="color:#5a6e8a"># MiDaS (default — faster)</span>
+python -m depthforge.cli.main estimate-depth --source photo.jpg --output depth.png
+
+<span style="color:#5a6e8a"># ZoeDepth (more accurate metric depth)</span>
+python -m depthforge.cli.main estimate-depth --source photo.jpg --output depth.png \
+    --model zoedepth
+
+<span style="color:#5a6e8a"># Then use the depth immediately</span>
+python -m depthforge.cli.main sirds --depth depth.png --output stereo.png --preset medium</code><span class="lang-label">bash</span></pre>
+
+    <div class="callout callout-warn">
+      <strong>First-run model download</strong>
+      On first use, models download automatically via <code>torch.hub</code>. This requires internet access and may take several minutes. Cache location on Windows: <code>C:\Users\&lt;username&gt;\.cache\torch\hub\</code>. The download happens once; subsequent runs are instant.
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <h2 id="presets-ref">Presets Reference</h2>
+
+    <table>
+      <thead><tr><th>Name</th><th>depth_factor</th><th>max_parallax</th><th>oversample</th><th>DPI</th><th>Best For</th></tr></thead>
+      <tbody>
+        <tr><td><code>shallow</code></td><td>0.20</td><td>0.025 (1/40)</td><td>1</td><td>72</td><td>First-time viewers, children, elderly, long sessions, public displays</td></tr>
+        <tr><td><code>medium</code></td><td>0.35</td><td>0.033 (1/30)</td><td>1</td><td>72</td><td>General purpose — ergonomic default, good for most content</td></tr>
+        <tr><td><code>deep</code></td><td>0.55</td><td>0.050 (1/20)</td><td>1</td><td>72</td><td>Experienced viewers, bold 3D effect, short viewing sessions</td></tr>
+        <tr><td><code>cinema</code></td><td>0.30</td><td>0.022 (1/45)</td><td>1</td><td>72</td><td>Large-screen projection, DCI-compliant comfortable parallax limits</td></tr>
+        <tr><td><code>print</code></td><td>0.28</td><td>0.025 (1/40)</td><td>1</td><td>300</td><td>Printed output — arm's-length viewing, 300 DPI metadata</td></tr>
+        <tr><td><code>broadcast</code></td><td>0.22</td><td>0.020 (1/50)</td><td>1</td><td>72</td><td>TV/streaming — conservative limits for varied screen sizes and distances</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <h2 id="enum-falloff">FalloffCurve Enum</h2>
+    <p>Controls how raw depth values are remapped before synthesis. Applied in <code>--falloff</code> flag and <code>DepthPrepParams.falloff_curve</code>.</p>
+    <table>
+      <thead><tr><th>Value</th><th>CLI string</th><th>Effect</th></tr></thead>
+      <tbody>
+        <tr><td><code>FalloffCurve.LINEAR</code></td><td><code>linear</code></td><td>No remapping. Raw depth values used as-is. Good starting point.</td></tr>
+        <tr><td><code>FalloffCurve.GAMMA</code></td><td><code>gamma</code></td><td>Gamma curve (power=2.2). Boosts mid-range depth separation. Good for photos.</td></tr>
+        <tr><td><code>FalloffCurve.S_CURVE</code></td><td><code>s-curve</code></td><td>Sigmoid S-curve. Compresses extremes, expands mid-range. Best for most natural scenes.</td></tr>
+        <tr><td><code>FalloffCurve.LOGARITHMIC</code></td><td><code>logarithmic</code></td><td>Log curve. Expands near-range differences, compresses far. Good for portraits.</td></tr>
+        <tr><td><code>FalloffCurve.EXPONENTIAL</code></td><td><code>exponential</code></td><td>Exp curve. Expands far-range differences, compresses near. Good for landscapes.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="enum-anaglyph">AnaglyphMode Enum</h2>
+    <table>
+      <thead><tr><th>Value</th><th>CLI string</th><th>Description</th><th>Use When</th></tr></thead>
+      <tbody>
+        <tr><td><code>TRUE_ANAGLYPH</code></td><td><code>true</code></td><td>Pure red/cyan channel separation — red L, cyan R</td><td>Simple red/cyan glasses, monochrome-tolerant</td></tr>
+        <tr><td><code>GREY_ANAGLYPH</code></td><td><code>grey</code></td><td>Desaturated source, maximum 3D depth</td><td>Strongest 3D effect at the cost of colour</td></tr>
+        <tr><td><code>COLOUR_ANAGLYPH</code></td><td><code>color</code></td><td>Full colour with channel shift</td><td>Good colour balance, moderate ghosting</td></tr>
+        <tr><td><code>HALF_COLOUR</code></td><td><code>half-color</code></td><td>Colour for dominant eye, grey for other</td><td>Compromise between colour and 3D pop</td></tr>
+        <tr><td><code>OPTIMISED</code></td><td><code>optimised</code></td><td>Dubois matrix optimisation — minimises ghosting/crosstalk</td><td>Best overall quality, recommended default</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="enum-pattern">PatternType Enum</h2>
+    <table>
+      <thead><tr><th>Value</th><th>CLI string</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>RANDOM_NOISE</code></td><td><code>noise</code> or <code>random</code></td><td>White noise / random dots. Classic Magic Eye look. Fast.</td></tr>
+        <tr><td><code>PERLIN</code></td><td><code>perlin</code></td><td>Perlin noise. Smooth organic texture. Subtle and print-friendly.</td></tr>
+        <tr><td><code>PLASMA</code></td><td><code>plasma</code></td><td>Plasma / turbulence fractal. Rich colour, high visual complexity.</td></tr>
+        <tr><td><code>VORONOI</code></td><td><code>voronoi</code></td><td>Voronoi cell diagram. Organic cell-like pattern. Good for bespoke looks.</td></tr>
+        <tr><td><code>GEOMETRIC_GRID</code></td><td><code>grid</code></td><td>Geometric grid — dots, hexagons, checks, stripes. Clean and minimal.</td></tr>
+        <tr><td><code>MANDELBROT</code></td><td><code>mandelbrot</code></td><td>Mandelbrot fractal zoom. Extremely complex pattern. Slow to generate.</td></tr>
+        <tr><td><code>DOT_MATRIX</code></td><td><code>dots</code></td><td>Regular dot matrix. Clean, printer-friendly, low visual noise.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="enum-color">ColorMode Enum</h2>
+    <table>
+      <thead><tr><th>Value</th><th>CLI strings</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>GREYSCALE</code></td><td><code>greyscale</code> <code>gray</code></td><td>Single-channel luminance. Classic stereogram look. Print-safe. Low PSE risk.</td></tr>
+        <tr><td><code>MONOCHROME</code></td><td><code>mono</code> <code>monochrome</code></td><td>Pure black/white only. Highest contrast. Use with <code>--safe-mode</code>.</td></tr>
+        <tr><td><code>PSYCHEDELIC</code></td><td><code>psychedelic</code> <code>color</code></td><td>Full RGB colour, maximum saturation. Vivid but high PSE risk — use <code>--safe-mode</code> for public content.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="enum-layout">StereoLayout Enum (stereo-pair)</h2>
+    <table>
+      <thead><tr><th>CLI value</th><th>Output</th><th>Use For</th></tr></thead>
+      <tbody>
+        <tr><td><code>side-by-side</code></td><td>2× source width (L|R)</td><td>VR headsets, 3D monitors, cross-eye viewing</td></tr>
+        <tr><td><code>top-bottom</code></td><td>2× source height (T/B)</td><td>Some 3D TV formats, DLP 3D projectors</td></tr>
+        <tr><td><code>separate</code></td><td>Two files: stem_left + stem_right</td><td>Editorial, compositing, frame-accurate delivery</td></tr>
+        <tr><td><code>anaglyph</code></td><td>Dubois red/cyan composite</td><td>Quick anaglyph from a stereo-pair pass</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="enum-fill">BackgroundFill Enum (stereo-pair --bg-fill)</h2>
+    <table>
+      <thead><tr><th>CLI value</th><th>Behaviour</th><th>Best For</th></tr></thead>
+      <tbody>
+        <tr><td><code>edge</code></td><td>Repeats the nearest edge pixel into the occlusion gap</td><td>Most content — natural-looking fill</td></tr>
+        <tr><td><code>mirror</code></td><td>Mirrors image content into the gap</td><td>Symmetric scenes, wide occlusion zones</td></tr>
+        <tr><td><code>black</code></td><td>Fills gap with black (0,0,0)</td><td>Broadcast delivery requiring clean black edges</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="enum-temporal">TemporalStrategy Enum (DF_VideoSequence / video API)</h2>
+    <table>
+      <thead><tr><th>Value</th><th>Description</th><th>Best For</th></tr></thead>
+      <tbody>
+        <tr><td><code>ema</code></td><td>Exponential moving average. Smooth, lag-free, zero look-ahead.</td><td>Real-time or streaming; moderate motion</td></tr>
+        <tr><td><code>windowed</code></td><td>Sliding window average over N frames. Requires look-ahead.</td><td>Offline render with slow/predictable motion</td></tr>
+        <tr><td><code>flow_guided</code></td><td>Optical flow warp then blend. Best quality, slowest.</td><td>High-motion VFX, feature film delivery</td></tr>
+        <tr><td><code>adaptive</code></td><td>Auto-switches between EMA and flow_guided on scene cuts.</td><td>Mixed content — dialogue + action sequences</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <h2 id="patterns-organic">Pattern Library — Organic (8 patterns)</h2>
+    <table>
+      <thead><tr><th>Name</th><th>Description</th><th>PSE Safe</th></tr></thead>
+      <tbody>
+        <tr><td><code>static_noise</code></td><td>Classic random dot noise — the original Magic Eye texture</td><td>✓</td></tr>
+        <tr><td><code>perlin_smoke</code></td><td>Soft Perlin noise with smoky, flowing look</td><td>✓</td></tr>
+        <tr><td><code>plasma_burst</code></td><td>Vibrant plasma turbulence in full colour</td><td>⚠</td></tr>
+        <tr><td><code>northern_lights</code></td><td>Aurora-inspired colour gradients</td><td>✓</td></tr>
+        <tr><td><code>bubbles</code></td><td>Randomly packed circular bubbles</td><td>✓</td></tr>
+        <tr><td><code>foliage</code></td><td>Organic leaf-like cell pattern</td><td>✓</td></tr>
+        <tr><td><code>watercolor</code></td><td>Soft watercolour-wash texture</td><td>✓</td></tr>
+        <tr><td><code>coral</code></td><td>Coral reef branching pattern</td><td>✓</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="patterns-geometric">Pattern Library — Geometric (8 patterns)</h2>
+    <table>
+      <thead><tr><th>Name</th><th>Description</th><th>PSE Safe</th></tr></thead>
+      <tbody>
+        <tr><td><code>circuit_board</code></td><td>PCB trace pattern in green/dark</td><td>✓</td></tr>
+        <tr><td><code>hexgrid</code></td><td>Regular hexagonal grid</td><td>✓</td></tr>
+        <tr><td><code>dot_matrix</code></td><td>Clean evenly-spaced dot matrix</td><td>✓</td></tr>
+        <tr><td><code>checkerboard</code></td><td>Classic B&amp;W checkerboard — <strong>use safe-mode</strong></td><td>✗</td></tr>
+        <tr><td><code>diamonds</code></td><td>Rotated diamond grid</td><td>✓</td></tr>
+        <tr><td><code>crystalline</code></td><td>Crystal lattice / Voronoi cells</td><td>✓</td></tr>
+        <tr><td><code>weave</code></td><td>Woven fabric texture</td><td>✓</td></tr>
+        <tr><td><code>topographic</code></td><td>Contour map / topographic lines</td><td>✓</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="patterns-psychedelic">Pattern Library — Psychedelic (7 patterns)</h2>
+    <div class="callout callout-warn">
+      <strong>PSE Risk</strong>
+      All psychedelic patterns are high-contrast. Always use <code>--safe-mode</code> for publicly distributed content containing these patterns.
+    </div>
+    <table>
+      <thead><tr><th>Name</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>kaleidoscope</code></td><td>Radial kaleidoscope fractal</td></tr>
+        <tr><td><code>mandelbrot_zoom</code></td><td>Mandelbrot set detail zoom</td></tr>
+        <tr><td><code>julia_set</code></td><td>Julia set fractal at a vivid parameter</td></tr>
+        <tr><td><code>rainbow_plasma</code></td><td>Full-spectrum plasma with cycling hues</td></tr>
+        <tr><td><code>neon_voronoi</code></td><td>Neon-coloured Voronoi cells on black</td></tr>
+        <tr><td><code>lsd_grid</code></td><td>Distorted rainbow grid (maximum saturation)</td></tr>
+        <tr><td><code>acid_marble</code></td><td>Marble swirl in acid colours</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="patterns-minimal">Pattern Library — Minimal (5 patterns)</h2>
+    <table>
+      <thead><tr><th>Name</th><th>Description</th><th>Best For</th></tr></thead>
+      <tbody>
+        <tr><td><code>fine_noise</code></td><td>Very fine grain random noise at 50% grey</td><td>Print, professional presentations</td></tr>
+        <tr><td><code>subtle_perlin</code></td><td>Low-amplitude Perlin, almost invisible</td><td>Hidden image backgrounds</td></tr>
+        <tr><td><code>linen</code></td><td>Fine linen/cloth texture</td><td>Print, gallery output</td></tr>
+        <tr><td><code>parchment</code></td><td>Aged paper texture</td><td>Vintage/editorial</td></tr>
+        <tr><td><code>clean_dots</code></td><td>Sparse dot matrix on white</td><td>Print-safe, low-contrast output</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="patterns-animated">Pattern Library — Animated (3+ patterns)</h2>
+    <p>Animated patterns are designed for temporal coherence in video. They accept a <code>frame</code> parameter in the Python API to step through time.</p>
+    <table>
+      <thead><tr><th>Name</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>flowing_plasma</code></td><td>Plasma that drifts slowly — smooth video stereograms</td></tr>
+        <tr><td><code>drift_noise</code></td><td>Noise field that translates over time</td></tr>
+        <tr><td><code>pulse_dots</code></td><td>Dots that fade in/out on a cycle</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <h2 id="gpu-synthesizer">GPU Synthesis — depthforge.core.gpu_synthesizer</h2>
+    <p>GPU-accelerated SIRDS synthesis using PyTorch tensor operations. No CUDA compiler required — implemented entirely with <code>torch.scatter_reduce_</code>, <code>torch.gather</code>, and <code>torch.arange</code>. Automatically selects CUDA &gt; MPS (Apple Silicon) &gt; CPU-torch &gt; NumPy fallback.</p>
+
+    <h3>best_device()</h3>
+    <pre><code class="lang-python">from depthforge.core.gpu_synthesizer import best_device
+device = best_device()   # 'cuda' | 'mps' | 'cpu'</code><span class="lang-label">python</span></pre>
+    <p>Returns the best available torch device string. Priority: CUDA &gt; MPS &gt; CPU. Returns <code>'cpu'</code> if torch is not installed.</p>
+
+    <h3>synthesize_gpu(depth, pattern, params, device='auto')</h3>
+    <pre><code class="lang-python">from depthforge import synthesize_gpu, best_device
+import numpy as np
+
+depth   = np.random.rand(1080, 1920).astype(np.float32)  # float32 (H, W), values 0–1
+pattern = np.random.randint(0, 255, (128, 128, 4), dtype=np.uint8)  # RGBA tile
+
+result = synthesize_gpu(depth, pattern)           # auto device
+result = synthesize_gpu(depth, pattern, device='cuda')    # force CUDA
+result = synthesize_gpu(depth, pattern, device='cpu')     # force CPU-torch</code><span class="lang-label">python</span></pre>
+
+    <table>
+      <thead><tr><th>Parameter</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>depth</code></td><td>float32 (H, W)</td><td>Depth map, values in [0, 1]. White = near.</td></tr>
+        <tr><td><code>pattern</code></td><td>uint8 (tile_H, tile_W, 4)</td><td>RGBA tileable pattern.</td></tr>
+        <tr><td><code>params</code></td><td>StereoParams or None</td><td>Synthesis parameters. Uses defaults if None.</td></tr>
+        <tr><td><code>device</code></td><td>str</td><td><code>'auto'</code> | <code>'cuda'</code> | <code>'mps'</code> | <code>'cpu'</code>. <code>'auto'</code> selects best available.</td></tr>
+      </tbody>
+    </table>
+    <p><strong>Returns:</strong> uint8 (H, W, 4) RGBA stereogram array. Falls back to NumPy on any torch error.</p>
+
+    <h3>benchmark(width, height, n_runs)</h3>
+    <pre><code class="lang-python">from depthforge.core.gpu_synthesizer import benchmark
+
+print(benchmark(1920, 1080))
+# {'device': 'cuda', 'resolution': '1920x1080', 'numpy_ms': 1174.0, 'gpu_ms': 3.8, 'speedup': 309.0}
+
+print(benchmark(3840, 2160))
+# {'device': 'cuda', 'resolution': '3840x2160', 'numpy_ms': 4919.0, 'gpu_ms': 14.2, 'speedup': 346.4}</code><span class="lang-label">python — paste into Nuke Script Editor for CUDA timing</span></pre>
+    <p>Benchmarked on CPU-torch (no CUDA): <strong>57× speedup at 1080p, 53× at 4K</strong>. With Nuke 17's bundled CUDA torch, expect 100–350× depending on GPU.</p>
+
+    <h3>Algorithm — Pointer Doubling</h3>
+    <p>The serial bottleneck in the Thimbleby-Inglis algorithm is the transitive chain walk in the <code>same[]</code> array (each pixel follows a chain to its root). GPU reformulation:</p>
+    <ol style="margin:12px 0 12px 24px;line-height:2;">
+      <li>Compute all <code>(x_left, x_right)</code> constraint pairs simultaneously via vectorised shift arithmetic — zero Python loops.</li>
+      <li>Build <code>same[]</code> with a single <code>scatter_reduce_(amin)</code> call — handles multiple constraints per pixel correctly.</li>
+      <li>Resolve transitive chains with <strong>pointer doubling</strong>: <code>ceil(log₂(max_shift + 2))</code> rounds of <code>torch.gather</code> — typically 6–7 passes.</li>
+      <li>Assign color indices as <code>root_position % tile_W</code> — one modulo operation.</li>
+      <li>Gather RGBA pixels from the pattern tile in one batched index lookup.</li>
+    </ol>
+    <p>All H rows are processed simultaneously. Chains are bounded by <code>max_shift</code> (~60–100 px), so the number of pointer-doubling rounds is constant regardless of image size.</p>
+
+    <!-- ═══════════════════════════════════════════════════════════════════ -->
+    <h2 id="gloss-stereo">Glossary — Stereogram Terms</h2>
+
+    <div class="term"><dt>SIRDS</dt><dd>Single Image Random Dot Stereogram. A flat image containing hidden 3D depth information encoded in a pattern of random dots. Invented by Tyler and Clarke (1990), popularised as "Magic Eye". Viewed by relaxing focus to see through the screen plane (parallel fusion) or crossing the eyes.</dd></div>
+    <div class="term"><dt>SIS</dt><dd>Single Image Stereogram. Broader term covering SIRDS and texture-based stereograms. SIRDS is a subset of SIS where the pattern is random noise.</dd></div>
+    <div class="term"><dt>Parallax</dt><dd>The horizontal offset between corresponding points in the left and right eye views. Positive parallax = object appears behind screen. Negative parallax = object appears in front of screen. Zero parallax = object at the screen plane.</dd></div>
+    <div class="term"><dt>Screen plane / Zero parallax surface</dt><dd>The depth level at which objects have zero horizontal offset — they appear to sit exactly at the physical screen surface. Controlled by the <code>convergence</code> parameter.</dd></div>
+    <div class="term"><dt>Vergence</dt><dd>The inward rotation of the eyes to converge on a nearby point. Excessive vergence demand causes viewer fatigue. DepthForge's ComfortAnalyzer checks vergence against SMPTE ST 2098-1 limits.</dd></div>
+    <div class="term"><dt>Window violation</dt><dd>Occurs when an object with negative parallax (popping toward viewer) is clipped by the image border. Creates an impossible depth cue that breaks fusion. DepthForge detects and reports window violations in the analyze command.</dd></div>
+    <div class="term"><dt>Anaglyph</dt><dd>A stereoscopic image made by encoding left and right views in different colour channels (typically red and cyan). Viewed with matching coloured glasses. DepthForge supports 5 anaglyph algorithms including Dubois-optimised.</dd></div>
+    <div class="term"><dt>Stereo pair</dt><dd>Two separate left and right eye views of a scene, with horizontal offset proportional to depth. Can be viewed side-by-side (cross-eye or wall-eye fusion), through a VR headset, or on a 3D monitor.</dd></div>
+    <div class="term"><dt>Fusion</dt><dd>The brain's process of merging the slightly different left and right eye images into a single 3D percept. Magic Eye / SIRDS images require sustained focus control to achieve fusion — the viewer must hold their eyes at a focal distance different from the screen.</dd></div>
+    <div class="term"><dt>depth_factor</dt><dd>DepthForge's master parallax control. Scales the raw depth map values before synthesis. Higher values produce more apparent 3D depth. Values above ~0.5 can cause discomfort for many viewers.</dd></div>
+    <div class="term"><dt>max_parallax_fraction</dt><dd>A safety ceiling on parallax expressed as a fraction of image width. 1/30 ≈ 0.033 is the widely-cited ergonomic limit for comfortable stereoscopic viewing at typical screen distances.</dd></div>
+
+    <h2 id="gloss-depth">Glossary — Depth Map Terms</h2>
+
+    <div class="term"><dt>Depth map</dt><dd>A greyscale image where each pixel's brightness encodes distance from the camera. DepthForge convention: white = near (close to camera), black = far (background). This matches MiDaS, ZoeDepth, and most ComfyUI depth model outputs.</dd></div>
+    <div class="term"><dt>Relative depth</dt><dd>Depth map where values represent relative ordering (near/far) rather than metric distances. MiDaS produces relative depth. Suitable for stereogram synthesis.</dd></div>
+    <div class="term"><dt>Metric depth</dt><dd>Depth map where values encode real-world distances (in metres). ZoeDepth produces metric depth. DepthForge normalises metric depth to [0,1] before synthesis.</dd></div>
+    <div class="term"><dt>Bilateral filter</dt><dd>An edge-preserving smoothing filter. Blurs flat regions but preserves depth discontinuities at object boundaries. Applied to depth maps before synthesis to reduce noise without softening object edges. Controlled by <code>--bilateral-space</code> and <code>--bilateral-color</code>.</dd></div>
+    <div class="term"><dt>Dilation</dt><dd>A morphological operation that expands bright (near) regions in the depth map. Used to fill small holes and thin gaps in the near layer. Controlled by <code>--dilation</code>. Set to 0 to disable.</dd></div>
+    <div class="term"><dt>Falloff curve</dt><dd>A transfer function applied to depth values before synthesis. Remaps the linear [0,1] range into a different distribution to control how depth differences translate to parallax. S-curve is best for most natural scenes.</dd></div>
+    <div class="term"><dt>Near plane / Far plane</dt><dd>Clipping limits for depth values before synthesis. <code>--near-plane 0.1 --far-plane 0.9</code> would discard the darkest 10% and brightest 10% of depth values, useful for removing noisy extremes.</dd></div>
+
+    <h2 id="gloss-safety">Glossary — Safety Terms</h2>
+
+    <div class="term"><dt>PSE — Photosensitive Epilepsy</dt><dd>A condition where certain visual stimuli (flashing lights, high-contrast patterns) can trigger seizures. DepthForge includes a <code>flash_safety</code> module that implements W3C WCAG 2.3, ITU-R BT.1702-2, and the Harding PSE Test to flag high-risk content. Always use <code>--safe-mode</code> for publicly distributed content.</dd></div>
+    <div class="term"><dt>Michelson contrast</dt><dd>A measure of luminance contrast: (L_max − L_min) / (L_max + L_min). DepthForge monitors this for pattern tiles. Values above 0.5 in rapidly-changing patterns exceed recommended limits for PSE-safe content.</dd></div>
+    <div class="term"><dt>safe_mode</dt><dd>A flag that simultaneously: (1) hard-clamps depth_factor to ±0.5, (2) limits max_parallax_fraction to 1/30, (3) limits pattern contrast. Adds a brief PSE acknowledgement to stderr. Use for broadcast, public displays, and general distribution.</dd></div>
+    <div class="term"><dt>WCAG 2.3 / Success Criterion 2.3.1</dt><dd>Web Content Accessibility Guidelines rule limiting flashing content to no more than 3 flashes per second below the general flash threshold. DepthForge's flash_safety module checks against this.</dd></div>
+    <div class="term"><dt>Harding PSE Test</dt><dd>Industry-standard photosensitive epilepsy test used in broadcast. DepthForge implements a simplified version in <code>depthforge.core.flash_safety</code>.</dd></div>
+
+    <h2 id="gloss-tech">Glossary — Technical Terms</h2>
+
+    <div class="term"><dt>Thimbleby-Inglis algorithm</dt><dd>The core stereogram synthesis algorithm in DepthForge. For each scanline, builds a "same" constraint array: each depth value determines how far apart two pixels must be to appear at the same depth to the viewer. The algorithm then assigns pattern colours left-to-right while honouring those constraints. Reference: Thimbleby, Inglis &amp; Witten (1994).</dd></div>
+    <div class="term"><dt>Oversample</dt><dd>Internal render scale factor. At oversample=2, the stereogram is synthesised at 2× resolution then downsampled with Lanczos filtering. Produces sharper sub-pixel depth transitions. 4× slower at oversample=2; only use for final quality renders.</dd></div>
+    <div class="term"><dt>Tiled rendering</dt><dd>Splitting a large image into horizontal strips and synthesising each strip independently in parallel threads. Used by <code>depthforge.core.tiled_render</code> for 4K/8K output. Strips must overlap by the maximum parallax amount to avoid seam artifacts.</dd></div>
+    <div class="term"><dt>Temporal smoothing</dt><dd>Blending depth maps across adjacent video frames to prevent flickering in video stereograms. DepthForge supports EMA, windowed, flow_guided, and adaptive strategies in <code>depthforge.core.temporal</code>.</dd></div>
+    <div class="term"><dt>OFX</dt><dd>Open Effects Architecture — a plugin standard for visual effects hosts including After Effects, Premiere Pro, DaVinci Resolve, and Nuke. DepthForge's OFX plugin (<code>depthforge/ofx/plugin.cpp</code>) implements this standard, bridging C++ host calls to the Python synthesis engine.</dd></div>
+    <div class="term"><dt>HAS_CV2 / HAS_SCIPY / HAS_TORCH</dt><dd>Package-level boolean flags in DepthForge indicating which optional packages are available at runtime. All synthesis code checks these flags and falls back to pure NumPy/Pillow implementations when optional packages are absent.</dd></div>
+    <div class="term"><dt>GPU synthesis / gpu_synthesizer</dt><dd>DepthForge's PyTorch-based SIRDS synthesizer (<code>depthforge.core.gpu_synthesizer</code>). Replaces the two serial Python for-loops in the Thimbleby-Inglis algorithm with vectorised tensor operations over all H rows simultaneously. Achieves 50–350× speedup over NumPy depending on hardware. No CUDA compiler required — uses standard PyTorch tensor ops.</dd></div>
+    <div class="term"><dt>Pointer doubling</dt><dd>A parallel algorithm technique that resolves transitive chains in O(log N) passes instead of O(N) serial steps. In GPU synthesis, each pixel's <code>same[]</code> chain may point through multiple hops to reach its root. Pointer doubling applies <code>ceil(log₂(max_shift + 2))</code> rounds of <code>torch.gather(same, 1, same)</code> — each round doubles the number of hops resolved. Typically 6–7 rounds for standard parameters.</dd></div>
+    <div class="term"><dt>scatter_reduce_ (amin)</dt><dd>PyTorch operation used to build the <code>same[]</code> constraint array. For each valid <code>(x_left, x_right)</code> pair, atomically sets <code>same[row, x_right] = min(same[row, x_right], x_left)</code>. The <code>amin</code> reduction correctly handles multiple constraints targeting the same pixel — the leftmost root wins, ensuring correct stereogram colour propagation. Requires PyTorch ≥ 1.12; falls back to plain <code>scatter_</code> on older versions.</dd></div>
+    <div class="term"><dt>MiDaS / ZoeDepth</dt><dd>AI monocular depth estimation models available in DepthForge. MiDaS v3.1 DPT_Large (~400 MB) produces relative depth suitable for stereograms. ZoeDepth N (~700 MB) produces metric depth in metres, normalised to [0,1] by DepthForge. Both auto-download on first use via <code>torch.hub</code>; cached at <code>~/.cache/torch/hub/</code>. Accessible via <code>depthforge estimate-depth</code> CLI, the Nuke gizmo's EstimateDepth modes, and <code>depthforge.depth_models.get_depth_estimator()</code>.</dd></div>
+  </main>
+</div>
+
+<footer>SUPERIOR StereoGram v0.5.0 — Superior Studios / BoxOf LLC</footer>
+</body>
+</html>

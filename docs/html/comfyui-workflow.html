@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ComfyUI Workflow — SUPERIOR StereoGram</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161b24;
+    --surface2: #1e2535;
+    --border: #2a3347;
+    --accent: #a855f7;
+    --accent2: #4f8ef7;
+    --accent3: #22d3ee;
+    --text: #e2e8f0;
+    --text-muted: #8899b0;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --code-bg: #0a0d12;
+    --node-bg: #1a1140;
+    --node-border: #6d28d9;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 28px 40px; }
+  .header-title { font-size: 20px; font-weight: 700; }
+  .header-sub { color: var(--text-muted); font-size: 14px; margin-top: 2px; }
+
+  nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 40px; display: flex; gap: 2px; }
+  nav a { color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 14px 16px; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  nav a:hover { color: var(--text); }
+  nav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .layout { display: flex; max-width: 1200px; margin: 0 auto; }
+
+  aside { width: 240px; min-width: 240px; padding: 40px 20px; border-right: 1px solid var(--border); position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  aside h4 { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; margin-top: 24px; }
+  aside h4:first-child { margin-top: 0; }
+  aside a { display: block; color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 5px 10px; border-radius: 6px; transition: all 0.15s; }
+  aside a:hover { color: var(--text); background: var(--surface2); }
+
+  main { flex: 1; padding: 50px 60px; max-width: 860px; }
+
+  h1 { font-size: 36px; font-weight: 800; margin-bottom: 8px; }
+  h2 { font-size: 24px; font-weight: 700; margin-top: 56px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 18px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: var(--accent); }
+  h4 { font-size: 14px; font-weight: 600; margin-top: 20px; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  p { margin-bottom: 14px; font-size: 15px; }
+  ul, ol { margin: 12px 0 16px 20px; }
+  li { margin-bottom: 6px; font-size: 15px; }
+
+  code { background: var(--code-bg); border: 1px solid var(--border); padding: 2px 7px; border-radius: 4px; font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; font-size: 13px; color: var(--accent3); }
+
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; overflow-x: auto; margin: 16px 0 24px; position: relative; }
+  pre code { background: none; border: none; padding: 0; font-size: 13.5px; color: #c8d8f0; line-height: 1.8; }
+  .lang-label { position: absolute; top: 10px; right: 16px; font-size: 10px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+
+  .callout { border-radius: 10px; padding: 16px 20px; margin: 20px 0; border-left: 3px solid; }
+  .callout-info { background: rgba(79,142,247,0.08); border-color: var(--accent2); }
+  .callout-warn { background: rgba(245,158,11,0.08); border-color: var(--warn); }
+  .callout-tip { background: rgba(34,197,94,0.08); border-color: var(--success); }
+  .callout-purple { background: rgba(168,85,247,0.08); border-color: var(--accent); }
+  .callout strong { display: block; margin-bottom: 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .callout-info strong { color: var(--accent2); }
+  .callout-warn strong { color: var(--warn); }
+  .callout-tip strong { color: var(--success); }
+  .callout-purple strong { color: var(--accent); }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; }
+  th { text-align: left; padding: 10px 14px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); border-bottom: 1px solid var(--border); background: var(--surface); }
+  td { padding: 10px 14px; border-bottom: 1px solid rgba(42,51,71,0.5); font-size: 14px; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td code { font-size: 12px; }
+
+  /* Node diagram styles */
+  .node-diagram {
+    background: #0d0a1a;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 30px;
+    margin: 24px 0;
+    font-family: 'Cascadia Code', Consolas, monospace;
+    font-size: 13px;
+    overflow-x: auto;
+  }
+  .node-row { display: flex; align-items: center; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+  .node-box {
+    background: var(--node-bg);
+    border: 1px solid var(--node-border);
+    border-radius: 8px;
+    padding: 10px 16px;
+    min-width: 140px;
+    text-align: center;
+  }
+  .node-box.green { border-color: #16a34a; background: #0a1f12; }
+  .node-box.blue { border-color: #1d4ed8; background: #0a0f20; }
+  .node-box.amber { border-color: #b45309; background: #1a1000; }
+  .node-box .node-title { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+  .node-box .node-name { font-size: 13px; color: var(--text); font-weight: 600; }
+  .node-box .node-io { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .arrow { color: var(--text-muted); font-size: 18px; }
+
+  .node-card { background: var(--surface); border: 1px solid var(--node-border); border-radius: 10px; padding: 24px; margin-bottom: 20px; border-left: 3px solid var(--accent); }
+  .node-card h3 { margin-top: 0; color: var(--text); font-family: 'Cascadia Code', Consolas, monospace; font-size: 15px; }
+  .node-card .node-cat { font-size: 12px; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  .node-card p { color: var(--text-muted); font-size: 14px; }
+
+  .workflow-step { display: flex; gap: 16px; margin-bottom: 32px; }
+  .ws-num { min-width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), #4f8ef7); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; margin-top: 4px; }
+  .ws-body h3 { margin-top: 0; color: var(--text); }
+
+  .badge { display: inline-block; padding: 2px 9px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge-in { background: rgba(34,197,94,0.15); color: #22c55e; }
+  .badge-out { background: rgba(168,85,247,0.15); color: #a855f7; }
+  .badge-opt { background: rgba(245,158,11,0.12); color: #f59e0b; }
+
+  footer { border-top: 1px solid var(--border); padding: 24px 40px; text-align: center; color: var(--text-muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">🎨 ComfyUI Workflow Guide</div>
+  <div class="header-sub">SUPERIOR StereoGram / DepthForge v0.5.0 — 12 Custom Nodes + 10 Swirls Nodes</div>
+</header>
+
+<nav>
+  <a href="index.html">Home</a>
+  <a href="installation.html">Installation</a>
+  <a href="cli-workflow.html">CLI</a>
+  <a href="comfyui-workflow.html" class="active">ComfyUI</a>
+  <a href="nuke-workflow.html">Nuke</a>
+  <a href="samples.html">Samples</a>
+  <a href="reference.html">Reference</a>
+</nav>
+
+<div class="layout">
+  <aside>
+    <h4>Overview</h4>
+    <a href="#overview">Node Categories</a>
+    <a href="#install">Installation</a>
+    <a href="#types">Data Types</a>
+    <h4>Node Reference</h4>
+    <a href="#df-depth-prep">DF_DepthPrep</a>
+    <a href="#df-pattern-gen">DF_PatternGen</a>
+    <a href="#df-pattern-library">DF_PatternLibrary</a>
+    <a href="#df-stereogram">DF_Stereogram</a>
+    <a href="#df-anaglyph">DF_AnaglyphOut</a>
+    <a href="#df-stereo-pair">DF_StereoPair</a>
+    <a href="#df-hidden">DF_HiddenImage</a>
+    <a href="#df-safety">DF_SafetyLimiter</a>
+    <a href="#df-qc">DF_QCOverlay</a>
+    <a href="#df-video">DF_VideoSequence</a>
+    <a href="#df-qr">DF_QRStereogram</a>
+    <a href="#df-videocontrolnet">DF_VideoControlNet</a>
+    <h4>Swirls Nodes</h4>
+    <a href="#swirls">10 Optical Illusions</a>
+    <h4>Workflows</h4>
+    <a href="#wf-basic">Basic SIRDS</a>
+    <a href="#wf-anaglyph">Anaglyph Pipeline</a>
+    <a href="#wf-hidden">Hidden Image</a>
+    <a href="#wf-video">Video Sequence</a>
+    <a href="#wf-sdxl">SDXL Depth → Stereo</a>
+  </aside>
+
+  <main>
+    <h1>ComfyUI Workflow Guide</h1>
+    <p>DepthForge adds 22 nodes to ComfyUI — 12 stereogram synthesis nodes under the <strong>DepthForge</strong> category and 10 optical illusion generators under the <strong>Swirls</strong> category.</p>
+
+    <div class="callout callout-purple">
+      <strong>Depth Map Convention</strong>
+      All DepthForge nodes expect depth maps where <strong>white = near (close to camera)</strong> and <strong>black = far (background)</strong>. This is the standard ComfyUI depth output convention from most depth estimation models.
+    </div>
+
+    <!-- ─── INSTALL ─── -->
+    <h2 id="install">Installation in ComfyUI</h2>
+
+    <p>See the full <a href="installation.html#comfyui-setup" style="color: var(--accent3);">Installation Guide — ComfyUI section</a> for detailed steps. Quick summary:</p>
+
+    <ol>
+      <li>Junction-link or copy the repo into <code>ComfyUI/custom_nodes/DepthForge/</code></li>
+      <li>Install <code>numpy</code> and <code>pillow</code> in ComfyUI's embedded Python</li>
+      <li>Launch ComfyUI — look for <code>DepthForge: loaded 12 nodes</code> in console</li>
+    </ol>
+
+    <p>The nodes appear in the node browser under the <strong>DepthForge</strong> and <strong>Swirls</strong> categories. Right-click the canvas → Add Node → DepthForge.</p>
+
+    <!-- ─── DATA TYPES ─── -->
+    <h2 id="types">Custom Data Types</h2>
+    <p>DepthForge defines several ComfyUI data types that flow between nodes:</p>
+
+    <table>
+      <thead><tr><th>Type</th><th>Description</th><th>Format</th></tr></thead>
+      <tbody>
+        <tr><td><code>IMAGE</code></td><td>Standard ComfyUI image tensor</td><td>float32 (B,H,W,C) — automatically converted</td></tr>
+        <tr><td><code>DEPTH_MAP</code></td><td>Greyscale depth as image tensor</td><td>float32 (B,H,W,1) or (B,H,W,3)</td></tr>
+        <tr><td><code>STEREO_PARAMS</code></td><td>StereoParams configuration bundle</td><td>Python dataclass passed between nodes</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-info">
+      <strong>Tensor Conversion</strong>
+      DepthForge internally converts between ComfyUI's (B,H,W,C) float32 tensors and NumPy (H,W,C) arrays automatically. You do not need to add any conversion nodes — just connect IMAGE and DEPTH_MAP ports directly.
+    </div>
+
+    <!-- ─── NODES ─── -->
+    <h2 id="df-depth-prep">DF_DepthPrep — Depth Map Conditioning</h2>
+    <div class="node-card">
+      <div class="node-cat">DepthForge / Preprocessing</div>
+      <h3>DF_DepthPrep</h3>
+      <p>Conditions a raw depth map for stereogram synthesis — bilateral filtering, dilation, falloff curve, normalization, and optional region masking.</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Port</th><th>Type</th><th>Direction</th></tr></thead>
+      <tbody>
+        <tr><td><code>depth_image</code></td><td>IMAGE</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>bilateral_d</code></td><td>INT (3–15)</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>bilateral_sigma_space</code></td><td>FLOAT (1–100)</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>bilateral_sigma_color</code></td><td>FLOAT (1–100)</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>dilation_kernel</code></td><td>INT (0–15)</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>falloff_curve</code></td><td>ENUM</td><td><span class="badge badge-in">Input</span> — linear, gamma, s_curve, log, exp</td></tr>
+        <tr><td><code>invert_depth</code></td><td>BOOL</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>depth_map</code></td><td>DEPTH_MAP</td><td><span class="badge badge-out">Output</span></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="df-pattern-gen">DF_PatternGen — Procedural Pattern Generator</h2>
+    <div class="node-card">
+      <div class="node-cat">DepthForge / Pattern</div>
+      <h3>DF_PatternGen</h3>
+      <p>Generate a tileable pattern procedurally. 6 generators: random noise, Perlin, plasma, Voronoi, geometric grid (dots/hexes/checks/stripes), Mandelbrot.</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Port</th><th>Type</th><th>Direction</th></tr></thead>
+      <tbody>
+        <tr><td><code>pattern_type</code></td><td>ENUM</td><td><span class="badge badge-in">Input</span> — random_noise, perlin, plasma, voronoi, geometric_grid, mandelbrot</td></tr>
+        <tr><td><code>tile_size</code></td><td>INT (32–512)</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>color_mode</code></td><td>ENUM</td><td><span class="badge badge-in">Input</span> — greyscale, color, monochrome</td></tr>
+        <tr><td><code>seed</code></td><td>INT</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>pattern_tile</code></td><td>IMAGE</td><td><span class="badge badge-out">Output</span></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="df-pattern-library">DF_PatternLibrary — Named Pattern Browser</h2>
+    <div class="node-card">
+      <div class="node-cat">DepthForge / Pattern</div>
+      <h3>DF_PatternLibrary</h3>
+      <p>Select from the 31 curated named patterns in the built-in library — bubbles, circuit, foliage, plasma_burst, and more. Outputs a ready-to-use tileable IMAGE.</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Port</th><th>Type</th><th>Direction</th></tr></thead>
+      <tbody>
+        <tr><td><code>pattern_name</code></td><td>ENUM (31 options)</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>tile_size</code></td><td>INT</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>pattern_tile</code></td><td>IMAGE</td><td><span class="badge badge-out">Output</span></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="df-stereogram">DF_Stereogram — Core SIRDS Synthesis</h2>
+    <div class="node-card">
+      <div class="node-cat">DepthForge / Synthesis</div>
+      <h3>DF_Stereogram</h3>
+      <p>The main synthesis node. Takes a depth map (and optional pattern tile) and outputs the final stereogram image. Implements the Thimbleby-Inglis algorithm.</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Port</th><th>Type</th><th>Direction</th></tr></thead>
+      <tbody>
+        <tr><td><code>depth_map</code></td><td>DEPTH_MAP</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>pattern_tile</code></td><td>IMAGE</td><td><span class="badge badge-in">Input</span> <span class="badge badge-opt">optional</span> — if absent, uses SIRDS random dots</td></tr>
+        <tr><td><code>preset</code></td><td>ENUM</td><td><span class="badge badge-in">Input</span> — none, shallow, medium, deep, cinema, print, broadcast</td></tr>
+        <tr><td><code>depth_factor</code></td><td>FLOAT (−1 to 1)</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>max_parallax_fraction</code></td><td>FLOAT (0.01–0.1)</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>convergence</code></td><td>FLOAT (0–1)</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>oversample</code></td><td>INT (1–4)</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>seed</code></td><td>INT</td><td><span class="badge badge-in">Input</span></td></tr>
+        <tr><td><code>stereogram</code></td><td>IMAGE</td><td><span class="badge badge-out">Output</span></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="df-anaglyph">DF_AnaglyphOut — Anaglyph Generator</h2>
+    <div class="node-card">
+      <div class="node-cat">DepthForge / Synthesis</div>
+      <h3>DF_AnaglyphOut</h3>
+      <p>Takes a colour IMAGE and DEPTH_MAP, outputs a red/cyan anaglyph. 5 modes including Dubois-optimised for best colour fidelity.</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Port</th><th>Direction</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>source_image</code> (IMAGE)</td><td><span class="badge badge-in">Input</span></td><td>Colour source photo</td></tr>
+        <tr><td><code>depth_map</code> (DEPTH_MAP)</td><td><span class="badge badge-in">Input</span></td><td>Matched depth map</td></tr>
+        <tr><td><code>mode</code> (ENUM)</td><td><span class="badge badge-in">Input</span></td><td>true_anaglyph, grey_anaglyph, colour_anaglyph, half_colour, optimised</td></tr>
+        <tr><td><code>parallax_px</code> (INT)</td><td><span class="badge badge-in">Input</span></td><td>Eye separation in pixels (default 20)</td></tr>
+        <tr><td><code>anaglyph</code> (IMAGE)</td><td><span class="badge badge-out">Output</span></td><td></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="df-stereo-pair">DF_StereoPair — Left/Right Stereo Pair</h2>
+    <div class="node-card">
+      <div class="node-cat">DepthForge / Synthesis</div>
+      <h3>DF_StereoPair</h3>
+      <p>Generates left and right eye views from a source image + depth map. Output layouts: side-by-side, top/bottom, or separate L/R images.</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Port</th><th>Direction</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>source_image</code> (IMAGE)</td><td><span class="badge badge-in">Input</span></td><td></td></tr>
+        <tr><td><code>depth_map</code> (DEPTH_MAP)</td><td><span class="badge badge-in">Input</span></td><td></td></tr>
+        <tr><td><code>layout</code> (ENUM)</td><td><span class="badge badge-in">Input</span></td><td>side_by_side, top_bottom, separate</td></tr>
+        <tr><td><code>depth_factor</code> (FLOAT)</td><td><span class="badge badge-in">Input</span></td><td></td></tr>
+        <tr><td><code>background_fill</code> (ENUM)</td><td><span class="badge badge-in">Input</span></td><td>edge, black, mirror — occlusion gap fill</td></tr>
+        <tr><td><code>stereo_pair</code> (IMAGE)</td><td><span class="badge badge-out">Output</span></td><td>Combined L/R image</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="df-hidden">DF_HiddenImage — Hidden Shape/Text Encoding</h2>
+    <div class="node-card">
+      <div class="node-cat">DepthForge / Synthesis</div>
+      <h3>DF_HiddenImage</h3>
+      <p>Encodes a shape, text, or custom mask invisibly into random dot noise. The image looks like noise but reveals a 3D shape when fused.</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Port</th><th>Direction</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>shape</code> (ENUM)</td><td><span class="badge badge-in">Input</span></td><td>circle, star, heart, arrow, diamond, none</td></tr>
+        <tr><td><code>text</code> (STRING)</td><td><span class="badge badge-in">Input</span> <span class="badge badge-opt">optional</span></td><td>Text to encode (overrides shape)</td></tr>
+        <tr><td><code>mask_image</code> (IMAGE)</td><td><span class="badge badge-in">Input</span> <span class="badge badge-opt">optional</span></td><td>Custom B&W mask (white = shape)</td></tr>
+        <tr><td><code>fg_depth</code> (FLOAT)</td><td><span class="badge badge-in">Input</span></td><td>Depth of hidden shape (default 0.7)</td></tr>
+        <tr><td><code>bg_depth</code> (FLOAT)</td><td><span class="badge badge-in">Input</span></td><td>Depth of background (default 0.3)</td></tr>
+        <tr><td><code>hidden_image</code> (IMAGE)</td><td><span class="badge badge-out">Output</span></td><td></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="df-safety">DF_SafetyLimiter — Comfort & PSE Safety</h2>
+    <div class="node-card">
+      <div class="node-cat">DepthForge / Safety</div>
+      <h3>DF_SafetyLimiter</h3>
+      <p>Clamps depth parameters to safe limits. Runs ComfortAnalyzer (SMPTE ST 2098-1) and flash/PSE safety checks (WCAG 2.3, Harding PSE Test). Outputs a safety-limited DEPTH_MAP and a JSON report string.</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Port</th><th>Direction</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>depth_map</code> (DEPTH_MAP)</td><td><span class="badge badge-in">Input</span></td><td></td></tr>
+        <tr><td><code>profile</code> (ENUM)</td><td><span class="badge badge-in">Input</span></td><td>conservative, standard, relaxed, cinema</td></tr>
+        <tr><td><code>depth_map_safe</code> (DEPTH_MAP)</td><td><span class="badge badge-out">Output</span></td><td>Safety-clamped depth</td></tr>
+        <tr><td><code>report</code> (STRING)</td><td><span class="badge badge-out">Output</span></td><td>JSON comfort & PSE report</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="df-qc">DF_QCOverlay — Quality Control Visualization</h2>
+    <div class="node-card">
+      <div class="node-cat">DepthForge / QC</div>
+      <h3>DF_QCOverlay</h3>
+      <p>Generates QC overlay images: parallax heatmap, depth band preview, window violation map, comparison grid, depth histogram, safe zone indicator.</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Port</th><th>Direction</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>depth_map</code> (DEPTH_MAP)</td><td><span class="badge badge-in">Input</span></td><td></td></tr>
+        <tr><td><code>overlay_type</code> (ENUM)</td><td><span class="badge badge-in">Input</span></td><td>heatmap, depth_bands, window_violations, comparison_grid, histogram, safe_zone</td></tr>
+        <tr><td><code>source_image</code> (IMAGE)</td><td><span class="badge badge-in">Input</span> <span class="badge badge-opt">optional</span></td><td>Used by comparison_grid</td></tr>
+        <tr><td><code>overlay</code> (IMAGE)</td><td><span class="badge badge-out">Output</span></td><td></td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="df-video">DF_VideoSequence — Temporal Video Stereogram</h2>
+    <div class="node-card">
+      <div class="node-cat">DepthForge / Video</div>
+      <h3>DF_VideoSequence</h3>
+      <p>Applies temporal smoothing to video depth sequences for flicker-free stereogram output. Strategies: EMA, windowed average, flow-guided warping, adaptive. Integrates with ComfyUI video node pipelines.</p>
+    </div>
+
+    <table>
+      <thead><tr><th>Port</th><th>Direction</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>depth_sequence</code> (IMAGE)</td><td><span class="badge badge-in">Input</span></td><td>Batch of depth frames (B,H,W,C)</td></tr>
+        <tr><td><code>temporal_strategy</code> (ENUM)</td><td><span class="badge badge-in">Input</span></td><td>ema, windowed, flow_guided, adaptive</td></tr>
+        <tr><td><code>ema_alpha</code> (FLOAT)</td><td><span class="badge badge-in">Input</span></td><td>EMA smoothing weight (0.1–0.9)</td></tr>
+        <tr><td><code>window_size</code> (INT)</td><td><span class="badge badge-in">Input</span></td><td>Frames in sliding window</td></tr>
+        <tr><td><code>preset</code> (ENUM)</td><td><span class="badge badge-in">Input</span></td><td>Output synthesis preset</td></tr>
+        <tr><td><code>stereogram_sequence</code> (IMAGE)</td><td><span class="badge badge-out">Output</span></td><td>Temporally stable batch output</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ─── QR STEREOGRAM ─── -->
+    <h2 id="df-qr">DF_QRStereogram</h2>
+    <p>Generates a scannable QR code embedded inside a SIRDS stereogram. When viewed flat, the image reads as a valid QR code. When the viewer fuses the stereogram, hidden 3D depth emerges from the dot pattern. Requires <code>qrcode</code> and <code>pillow</code>.</p>
+
+    <table>
+      <thead><tr><th>Port</th><th>Direction</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>url_or_text</code> (STRING)</td><td><span class="badge badge-in">Input</span></td><td>Content to encode as QR code</td></tr>
+        <tr><td><code>depth_map</code> (DEPTH_MAP)</td><td><span class="badge badge-in">Input</span></td><td>Optional depth map to overlay into QR pattern</td></tr>
+        <tr><td><code>qr_error_correction</code> (ENUM)</td><td><span class="badge badge-in">Input</span></td><td>L, M, Q, H — higher = more redundancy, larger code</td></tr>
+        <tr><td><code>depth_factor</code> (FLOAT)</td><td><span class="badge badge-in">Input</span></td><td>Stereogram depth strength (default 0.3)</td></tr>
+        <tr><td><code>stereogram</code> (IMAGE)</td><td><span class="badge badge-out">Output</span></td><td>RGBA image that is both a valid QR code and a stereogram</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ─── VIDEO CONTROLNET ─── -->
+    <h2 id="df-videocontrolnet">DF_VideoControlNet</h2>
+    <p>Creates nested stereogram video sequences driven by a ControlNet conditioning signal. Supports wipe-reveal transitions — depth accumulates across frames as the wipe progresses, revealing the stereogram layer over the original. Useful for social media motion content and advertising.</p>
+
+    <table>
+      <thead><tr><th>Port</th><th>Direction</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><code>depth_sequence</code> (IMAGE)</td><td><span class="badge badge-in">Input</span></td><td>Batch of depth frames (B,H,W,C)</td></tr>
+        <tr><td><code>source_sequence</code> (IMAGE)</td><td><span class="badge badge-in">Input</span></td><td>Original RGB frames for wipe transition</td></tr>
+        <tr><td><code>wipe_direction</code> (ENUM)</td><td><span class="badge badge-in">Input</span></td><td>left_to_right, right_to_left, top_to_bottom, radial</td></tr>
+        <tr><td><code>wipe_frames</code> (INT)</td><td><span class="badge badge-in">Input</span></td><td>Duration of the reveal transition in frames</td></tr>
+        <tr><td><code>preset</code> (ENUM)</td><td><span class="badge badge-in">Input</span></td><td>Synthesis preset for the stereogram layer</td></tr>
+        <tr><td><code>video_sequence</code> (IMAGE)</td><td><span class="badge badge-out">Output</span></td><td>Composited wipe-reveal video batch</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ─── SWIRLS ─── -->
+    <h2 id="swirls">Swirls Node Pack — 10 Optical Illusions</h2>
+    <p>The Swirls pack adds 10 standalone optical illusion generators. These are independent of the stereogram pipeline and work as pure image generators.</p>
+
+    <div class="callout callout-warn">
+      <strong>PSE Warning</strong>
+      Several Swirls nodes generate high-contrast moving patterns. They include built-in photosensitive epilepsy warnings. Do not use in content for viewers with photosensitive conditions without review.
+    </div>
+
+    <table>
+      <thead><tr><th>Node</th><th>Illusion</th></tr></thead>
+      <tbody>
+        <tr><td><code>SW_FraserSpiral</code></td><td>Fraser spiral — appears to spiral inward but is actually concentric circles</td></tr>
+        <tr><td><code>SW_AddamsMotion</code></td><td>Addams motion aftereffect / "Waterfall illusion"</td></tr>
+        <tr><td><code>SW_KitaokaSpiral</code></td><td>Kitaoka rotating snakes — peripheral drift illusion</td></tr>
+        <tr><td><code>SW_PeripheralDrift</code></td><td>Peripheral drift — static image appears to move at edges of vision</td></tr>
+        <tr><td><code>SW_TiltIllusion</code></td><td>Tilt illusion — surrounding pattern distorts perceived orientation</td></tr>
+        <tr><td><code>SW_ConcentricCircles</code></td><td>Concentric circles with illusory rotation</td></tr>
+        <tr><td><code>SW_RotatingSpirals</code></td><td>Interleaved spirals that appear to rotate</td></tr>
+        <tr><td><code>SW_ZigzagPattern</code></td><td>Zigzag pattern with illusory motion and depth</td></tr>
+        <tr><td><code>SW_CheckerboardDrift</code></td><td>Modified checkerboard with peripheral motion illusion</td></tr>
+        <tr><td><code>SW_PinnaBrelstaff</code></td><td>Pinna-Brelstaff illusion — rings appear to rotate as you move toward screen</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ─── WORKFLOWS ─── -->
+    <h2 id="wf-basic">Workflow: Basic SIRDS</h2>
+    <p>The simplest workflow — depth map in, stereogram out.</p>
+
+    <div class="node-diagram">
+      <div class="node-row">
+        <div class="node-box green">
+          <div class="node-title">Source</div>
+          <div class="node-name">Load Image</div>
+          <div class="node-io">→ IMAGE</div>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node-box">
+          <div class="node-title">DepthForge</div>
+          <div class="node-name">DF_DepthPrep</div>
+          <div class="node-io">IMAGE → DEPTH_MAP</div>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node-box">
+          <div class="node-title">DepthForge</div>
+          <div class="node-name">DF_Stereogram</div>
+          <div class="node-io">DEPTH_MAP → IMAGE</div>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node-box blue">
+          <div class="node-title">Output</div>
+          <div class="node-name">Preview Image</div>
+          <div class="node-io">IMAGE</div>
+        </div>
+      </div>
+    </div>
+
+    <ol>
+      <li>Add <strong>Load Image</strong> node — load your depth map PNG</li>
+      <li>Add <strong>DF_DepthPrep</strong> — connect Image output to <code>depth_image</code>. Set bilateral_d=9, falloff=linear</li>
+      <li>Add <strong>DF_Stereogram</strong> — connect DF_DepthPrep's <code>depth_map</code> output. Set preset=medium</li>
+      <li>Add <strong>Preview Image</strong> or <strong>Save Image</strong> — connect DF_Stereogram's <code>stereogram</code> output</li>
+      <li>Queue Prompt (Ctrl+Enter)</li>
+    </ol>
+
+    <h2 id="wf-anaglyph">Workflow: Anaglyph with Photo Source</h2>
+
+    <div class="node-diagram">
+      <div class="node-row">
+        <div class="node-box green" style="min-width:100px">
+          <div class="node-title">Photo</div>
+          <div class="node-name">Load Image</div>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node-box amber" style="min-width:150px">
+          <div class="node-title">DepthForge</div>
+          <div class="node-name">DF_AnaglyphOut</div>
+          <div class="node-io">IMAGE + DEPTH_MAP → IMAGE</div>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node-box blue">
+          <div class="node-title">Output</div>
+          <div class="node-name">Save Image</div>
+        </div>
+      </div>
+      <div class="node-row" style="margin-top: 8px; padding-left: 116px;">
+        <div class="node-box green" style="min-width:100px">
+          <div class="node-title">Depth Map</div>
+          <div class="node-name">Load Image</div>
+        </div>
+        <span class="arrow">→</span>
+        <div class="node-box">
+          <div class="node-title">DepthForge</div>
+          <div class="node-name">DF_DepthPrep</div>
+        </div>
+        <span class="arrow">↗</span>
+      </div>
+    </div>
+
+    <ol>
+      <li>Add two <strong>Load Image</strong> nodes — one for your colour photo, one for the depth map</li>
+      <li>Add <strong>DF_DepthPrep</strong> — connect depth Load Image to it</li>
+      <li>Add <strong>DF_AnaglyphOut</strong> — connect colour photo to <code>source_image</code>, DF_DepthPrep to <code>depth_map</code></li>
+      <li>Set mode=<code>optimised</code> (Dubois — best colour) and parallax_px=20</li>
+      <li>Connect to <strong>Save Image</strong></li>
+    </ol>
+
+    <h2 id="wf-hidden">Workflow: Hidden Image Stereogram</h2>
+    <ol>
+      <li>Add <strong>DF_HiddenImage</strong> node</li>
+      <li>Set <code>shape</code> = star (or enter text in <code>text</code> field)</li>
+      <li>Set fg_depth=0.8, bg_depth=0.2 (high contrast = stronger hidden reveal)</li>
+      <li>Connect to <strong>Preview Image</strong></li>
+      <li>For a custom shape: add a <strong>Load Image</strong> with a black-and-white mask image, connect to <code>mask_image</code></li>
+    </ol>
+
+    <h2 id="wf-video">Workflow: Video Stereogram Sequence</h2>
+    <p>Combine with ComfyUI-VideoHelperSuite or similar for video depth sequences.</p>
+    <ol>
+      <li>Use a video-to-frames loader to get depth map frames as a batch IMAGE</li>
+      <li>Add <strong>DF_VideoSequence</strong> — connect the depth batch to <code>depth_sequence</code></li>
+      <li>Set temporal_strategy=<code>ema</code> and ema_alpha=0.3 (smoother) or 0.7 (more responsive)</li>
+      <li>Set preset=broadcast</li>
+      <li>Connect <code>stereogram_sequence</code> to a frames-to-video encoder node</li>
+    </ol>
+
+    <h2 id="wf-sdxl">Workflow: SDXL Generation → Depth → Stereogram</h2>
+    <p>Chain Stable Diffusion generation with DepthForge for AI-generated stereograms.</p>
+    <ol>
+      <li>Generate an image with any SDXL or SD1.5 sampler node</li>
+      <li>Add a depth estimation node (e.g. ControlNet Preprocessor — MiDaS Depth or ZoeDepth) — connect the generated image</li>
+      <li>Add <strong>DF_DepthPrep</strong> — connect the depth output</li>
+      <li>Add <strong>DF_SafetyLimiter</strong> (optional but recommended for AI depth) — profile=standard</li>
+      <li>Add <strong>DF_Stereogram</strong> — connect the safe depth map, set preset=deep or cinema</li>
+      <li>Preview or save the final stereogram</li>
+    </ol>
+
+    <div class="callout callout-tip">
+      <strong>Tip — Pattern + SDXL</strong>
+      For extra style, add DF_PatternLibrary and connect its output to DF_Stereogram's <code>pattern_tile</code> input. The stereogram will use your chosen pattern instead of random dots, encoded with the depth from your AI-generated image.
+    </div>
+
+  </main>
+</div>
+
+<footer>SUPERIOR StereoGram v0.5.0 — Superior Studios / BoxOf LLC</footer>
+</body>
+</html>

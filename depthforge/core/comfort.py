@@ -277,7 +277,10 @@ class ComfortReport:
 
     def print(self) -> None:
         """Print the summary to stdout."""
-        print(self.summary())
+        import sys
+        text = self.summary()
+        enc = getattr(sys.stdout, "encoding", None) or "ascii"
+        sys.stdout.write(text.encode(enc, errors="replace").decode(enc) + "\n")
 
 
 # ---------------------------------------------------------------------------

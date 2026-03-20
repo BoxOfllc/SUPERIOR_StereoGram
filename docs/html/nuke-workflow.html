@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nuke Workflow — SUPERIOR StereoGram</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161b24;
+    --surface2: #1e2535;
+    --border: #2a3347;
+    --accent: #f59e0b;
+    --accent2: #4f8ef7;
+    --accent3: #22d3ee;
+    --text: #e2e8f0;
+    --text-muted: #8899b0;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --code-bg: #0a0d12;
+    --nuke-bg: #1a1200;
+    --nuke-border: #b45309;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 28px 40px; }
+  .header-title { font-size: 20px; font-weight: 700; }
+  .header-sub { color: var(--text-muted); font-size: 14px; margin-top: 2px; }
+
+  nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 40px; display: flex; gap: 2px; }
+  nav a { color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 14px 16px; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  nav a:hover { color: var(--text); }
+  nav a.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .layout { display: flex; max-width: 1200px; margin: 0 auto; }
+
+  aside { width: 240px; min-width: 240px; padding: 40px 20px; border-right: 1px solid var(--border); position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  aside h4 { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; margin-top: 24px; }
+  aside h4:first-child { margin-top: 0; }
+  aside a { display: block; color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 5px 10px; border-radius: 6px; transition: all 0.15s; }
+  aside a:hover { color: var(--text); background: var(--surface2); }
+
+  main { flex: 1; padding: 50px 60px; max-width: 860px; }
+
+  h1 { font-size: 36px; font-weight: 800; margin-bottom: 8px; }
+  h2 { font-size: 24px; font-weight: 700; margin-top: 56px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 18px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: var(--accent); }
+  h4 { font-size: 14px; font-weight: 600; margin-top: 20px; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  p { margin-bottom: 14px; font-size: 15px; }
+  ul, ol { margin: 12px 0 16px 20px; }
+  li { margin-bottom: 6px; font-size: 15px; }
+
+  code { background: var(--code-bg); border: 1px solid var(--border); padding: 2px 7px; border-radius: 4px; font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; font-size: 13px; color: var(--accent3); }
+
+  pre { background: var(--code-bg); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; overflow-x: auto; margin: 16px 0 24px; position: relative; }
+  pre code { background: none; border: none; padding: 0; font-size: 13.5px; color: #c8d8f0; line-height: 1.8; }
+  .lang-label { position: absolute; top: 10px; right: 16px; font-size: 10px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+
+  .callout { border-radius: 10px; padding: 16px 20px; margin: 20px 0; border-left: 3px solid; }
+  .callout-info { background: rgba(79,142,247,0.08); border-color: var(--accent2); }
+  .callout-warn { background: rgba(245,158,11,0.08); border-color: var(--warn); }
+  .callout-tip { background: rgba(34,197,94,0.08); border-color: var(--success); }
+  .callout-amber { background: rgba(245,158,11,0.08); border-color: var(--accent); }
+  .callout strong { display: block; margin-bottom: 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .callout-info strong { color: var(--accent2); }
+  .callout-warn strong { color: var(--warn); }
+  .callout-tip strong { color: var(--success); }
+  .callout-amber strong { color: var(--accent); }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; }
+  th { text-align: left; padding: 10px 14px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); border-bottom: 1px solid var(--border); background: var(--surface); }
+  td { padding: 10px 14px; border-bottom: 1px solid rgba(42,51,71,0.5); font-size: 14px; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td code { font-size: 12px; }
+
+  /* Nuke-style node diagram */
+  .nuke-graph {
+    background: #080c10;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 30px;
+    margin: 24px 0;
+    font-family: 'Cascadia Code', Consolas, monospace;
+    font-size: 12px;
+  }
+  .ng-row { display: flex; align-items: flex-start; gap: 0; flex-direction: column; }
+  .ng-col { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
+  .ng-node {
+    background: var(--nuke-bg);
+    border: 1px solid var(--nuke-border);
+    border-radius: 6px;
+    padding: 8px 14px;
+    min-width: 160px;
+    color: var(--text);
+  }
+  .ng-node.read { border-color: #16a34a; background: #0a1f12; }
+  .ng-node.write { border-color: #1d4ed8; background: #0a0f20; }
+  .ng-node.transform { border-color: #6d28d9; background: #1a1040; }
+  .ng-node.merge { border-color: #be185d; background: #1a001a; }
+  .ng-node .label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 2px; }
+  .ng-node .name { font-weight: 700; color: var(--text); }
+  .ng-wire { width: 1px; height: 20px; background: var(--border); margin-left: 80px; }
+  .ng-arrow { color: var(--text-muted); margin: 0 8px; }
+
+  .knob-table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; }
+  .knob-table th { text-align: left; padding: 8px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); border-bottom: 1px solid var(--border); background: var(--surface); }
+  .knob-table td { padding: 8px 12px; border-bottom: 1px solid rgba(42,51,71,0.4); font-size: 13px; vertical-align: top; }
+  .knob-table td:first-child { font-family: 'Cascadia Code', Consolas, monospace; color: var(--accent3); font-size: 12px; }
+  .knob-table tr:last-child td { border-bottom: none; }
+
+  .menu-tree { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px 24px; margin: 16px 0; font-family: 'Cascadia Code', Consolas, monospace; font-size: 13px; }
+  .menu-tree .menu-item { padding: 4px 0; }
+  .menu-tree .menu-item.lvl1 { color: var(--accent); font-weight: 700; }
+  .menu-tree .menu-item.lvl2 { padding-left: 20px; color: var(--text); }
+  .menu-tree .menu-item.lvl3 { padding-left: 40px; color: var(--text-muted); }
+  .menu-tree .shortcut { float: right; color: var(--text-muted); font-size: 11px; }
+
+  .workflow-step { display: flex; gap: 16px; margin-bottom: 28px; }
+  .ws-num { min-width: 32px; height: 32px; background: linear-gradient(135deg, var(--accent), #ef4444); color: black; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; margin-top: 4px; }
+  .ws-body h3 { margin-top: 0; color: var(--text); }
+
+  footer { border-top: 1px solid var(--border); padding: 24px 40px; text-align: center; color: var(--text-muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-title">🎬 Nuke Workflow Guide</div>
+  <div class="header-sub">SUPERIOR StereoGram / DepthForge v0.5.0 — Python Gizmo + Toolbar</div>
+</header>
+
+<nav>
+  <a href="index.html">Home</a>
+  <a href="installation.html">Installation</a>
+  <a href="cli-workflow.html">CLI</a>
+  <a href="comfyui-workflow.html">ComfyUI</a>
+  <a href="nuke-workflow.html" class="active">Nuke</a>
+</nav>
+
+<div class="layout">
+  <aside>
+    <h4>Overview</h4>
+    <a href="#overview">Architecture</a>
+    <a href="#install">Installation</a>
+    <a href="#toolbar">Toolbar Menu</a>
+    <h4>Gizmo Reference</h4>
+    <a href="#modes">Output Modes</a>
+    <a href="#knobs-stereo">Stereo Params Tab</a>
+    <a href="#knobs-depth">Depth Prep Tab</a>
+    <a href="#knobs-pattern">Pattern Tab</a>
+    <a href="#knobs-qc">QC/Safety Tab</a>
+    <a href="#knobs-gpu">GPU &amp; AI Depth Tab</a>
+    <a href="#presets-tab">Presets</a>
+    <h4>Workflows</h4>
+    <a href="#wf-basic">Basic SIRDS</a>
+    <a href="#wf-anaglyph">Anaglyph Comp</a>
+    <a href="#wf-stereopair">Stereo Pair</a>
+    <a href="#wf-qc">QC Overlay Pass</a>
+    <a href="#wf-script">Python Scripting</a>
+    <h4>Tips</h4>
+    <a href="#tips">Nuke Tips</a>
+  </aside>
+
+  <main>
+    <h1>Nuke Workflow Guide</h1>
+    <p>DepthForge integrates into Nuke as a Python gizmo with a toolbar menu. The gizmo wraps the full DepthForge synthesis engine — all 6 output modes, all presets, full depth conditioning, and QC overlays — in a single node with tabbed controls.</p>
+
+    <h2 id="overview">Architecture</h2>
+    <p>The integration consists of two files:</p>
+    <ul>
+      <li><strong>gizmo.py</strong> — defines the DepthForge Python gizmo class with full knob layout (7 tabs, 50+ parameters)</li>
+      <li><strong>toolbar.py</strong> — registers the DepthForge menu in Nuke's toolbar with keyboard shortcuts and presets submenu</li>
+    </ul>
+
+    <div class="callout callout-amber">
+      <strong>Depth Map Convention</strong>
+      The DepthForge gizmo expects the depth input where <strong>white = near (close to camera)</strong> and <strong>black = far</strong>. This is the standard Nuke depth convention from ZDefocus and most depth-from-defocus workflows. Use the <strong>Invert Depth</strong> toggle on the gizmo if your depth map is inverted.
+    </div>
+
+    <h2 id="install">Installation</h2>
+    <p>See the full <a href="installation.html#nuke-setup" style="color: var(--accent3);">Installation Guide — Nuke section</a>. Quick summary:</p>
+
+    <h3>1. Add to init.py</h3>
+    <pre><code class="lang-python">import sys
+sys.path.insert(0, r"E:\SupStudiosWeb3\ProductionTools\SUPERIOR_StereoGram_v0.5")
+<span style="color:#5a6e8a"># macOS/Linux: sys.path.insert(0, "/path/to/SUPERIOR_StereoGram_v0.5")</span></code><span class="lang-label">~/.nuke/init.py</span></pre>
+
+    <h3>2. Register toolbar in menu.py</h3>
+    <pre><code class="lang-python">import depthforge.nuke.toolbar as df_toolbar
+df_toolbar.register()</code><span class="lang-label">~/.nuke/menu.py</span></pre>
+
+    <h3>3. Restart Nuke</h3>
+    <p>The DepthForge menu appears in the Nuke menu bar. If not, open the Script Editor and run <code>import depthforge</code> to check for import errors.</p>
+
+    <h2 id="toolbar">Toolbar Menu</h2>
+    <div class="menu-tree">
+      <div class="menu-item lvl1">DepthForge</div>
+      <div class="menu-item lvl2">Create Stereogram <span class="shortcut">Alt+Shift+S</span></div>
+      <div class="menu-item lvl2">── Presets ──</div>
+      <div class="menu-item lvl3">Apply: Shallow</div>
+      <div class="menu-item lvl3">Apply: Medium</div>
+      <div class="menu-item lvl3">Apply: Deep</div>
+      <div class="menu-item lvl3">Apply: Cinema</div>
+      <div class="menu-item lvl3">Apply: Print</div>
+      <div class="menu-item lvl3">Apply: Broadcast</div>
+      <div class="menu-item lvl2">── Help ──</div>
+      <div class="menu-item lvl2">About DepthForge</div>
+    </div>
+
+    <p>Keyboard shortcut <strong>Alt+Shift+S</strong> creates a DepthForge node at the cursor position in the node graph.</p>
+
+    <h2 id="modes">Output Modes</h2>
+    <p>The gizmo's <strong>Mode</strong> dropdown (in the Stereo Params tab) controls which output is produced:</p>
+
+    <table>
+      <thead><tr><th>Mode</th><th>Inputs Required</th><th>Output</th></tr></thead>
+      <tbody>
+        <tr><td><strong>SIRDS</strong></td><td>Depth map only</td><td>Random-dot stereogram (Magic Eye)</td></tr>
+        <tr><td><strong>Texture</strong></td><td>Depth map + Pattern input</td><td>Tiled-pattern stereogram</td></tr>
+        <tr><td><strong>Hidden Image</strong></td><td>Depth map + optional mask</td><td>Hidden shape/text in noise</td></tr>
+        <tr><td><strong>Anaglyph</strong></td><td>Source RGB + Depth map</td><td>Red/cyan anaglyph</td></tr>
+        <tr><td><strong>Stereo Pair</strong></td><td>Source RGB + Depth map</td><td>Left/right side-by-side</td></tr>
+        <tr><td><strong>QC Overlay</strong></td><td>Depth map</td><td>Parallax heatmap / violation overlay</td></tr>
+        <tr><td><strong>EstimateDepth</strong></td><td>Source RGB (no depth input needed)</td><td>AI depth estimation — outputs greyscale depth map for preview/routing</td></tr>
+        <tr><td><strong>EstimateDepth+SIRDS</strong></td><td>Source RGB (no depth input needed)</td><td>AI depth estimation + SIRDS synthesis in one node — full pipeline from photo to stereogram</td></tr>
+      </tbody>
+    </table>
+
+    <p>The gizmo has <strong>3 input connectors</strong>:</p>
+    <ul>
+      <li><code>depth</code> — depth map (always required)</li>
+      <li><code>source</code> — colour source image (required for Anaglyph / Stereo Pair modes)</li>
+      <li><code>pattern</code> — tileable pattern image (required for Texture mode)</li>
+    </ul>
+
+    <h2 id="knobs-stereo">Stereo Params Tab</h2>
+    <table class="knob-table">
+      <thead><tr><th>Knob</th><th>Type</th><th>Range</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>mode</td><td>Enumeration</td><td>—</td><td>Output mode: SIRDS, Texture, Hidden Image, Anaglyph, Stereo Pair, QC Overlay, EstimateDepth, EstimateDepth+SIRDS</td></tr>
+        <tr><td>depth_factor</td><td>Double</td><td>−1.0 to 1.0</td><td>Parallax depth strength. Positive = recedes, negative = pops forward.</td></tr>
+        <tr><td>max_parallax_fraction</td><td>Double</td><td>0.01 to 0.1</td><td>Maximum shift as fraction of image width. Default 0.033 (1/30 — ergonomic limit).</td></tr>
+        <tr><td>eye_separation_fraction</td><td>Double</td><td>0.04 to 0.08</td><td>Inter-ocular distance ÷ viewing distance. Default 0.06.</td></tr>
+        <tr><td>convergence</td><td>Double</td><td>0.0 to 1.0</td><td>Depth value at zero parallax (screen plane). 0.5 = mid-scene.</td></tr>
+        <tr><td>oversample</td><td>Int</td><td>1 to 4</td><td>Internal render scale. 2 = 2× resolution then Lanczos downsample. Slow but high quality.</td></tr>
+        <tr><td>seed</td><td>Int</td><td>0 to 99999</td><td>Random seed for reproducible SIRDS output. 0 = random every frame.</td></tr>
+        <tr><td>safe_mode</td><td>Boolean</td><td>—</td><td>Hard-clamp depth_factor to ±0.5 and parallax to 1/30.</td></tr>
+        <tr><td>invert_depth</td><td>Boolean</td><td>—</td><td>Flip near/far depth convention before synthesis.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="knobs-depth">Depth Prep Tab</h2>
+    <table class="knob-table">
+      <thead><tr><th>Knob</th><th>Type</th><th>Range</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>bilateral_filter</td><td>Boolean</td><td>—</td><td>Enable bilateral edge-preserving filter on depth map</td></tr>
+        <tr><td>bilateral_d</td><td>Int</td><td>3 to 15</td><td>Bilateral filter kernel diameter (odd numbers recommended)</td></tr>
+        <tr><td>bilateral_sigma_space</td><td>Double</td><td>1 to 100</td><td>Spatial sigma for bilateral filter</td></tr>
+        <tr><td>bilateral_sigma_color</td><td>Double</td><td>1 to 100</td><td>Color/intensity sigma for bilateral filter</td></tr>
+        <tr><td>dilation_kernel</td><td>Int</td><td>0 to 15</td><td>Morphological dilation kernel size. Fills small holes in depth map.</td></tr>
+        <tr><td>falloff_curve</td><td>Enumeration</td><td>—</td><td>Depth remapping curve: linear, gamma, s_curve, log, exp</td></tr>
+        <tr><td>clamp_min</td><td>Double</td><td>0.0 to 1.0</td><td>Clamp depth minimum before synthesis</td></tr>
+        <tr><td>clamp_max</td><td>Double</td><td>0.0 to 1.0</td><td>Clamp depth maximum before synthesis</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="knobs-pattern">Pattern / Anaglyph Tab</h2>
+    <table class="knob-table">
+      <thead><tr><th>Knob</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>tile_size</td><td>Int (32–512)</td><td>Tile size in pixels for SIRDS / Texture mode</td></tr>
+        <tr><td>pattern_name</td><td>Enumeration</td><td>Built-in pattern library name (for Texture mode without external input)</td></tr>
+        <tr><td>anaglyph_mode</td><td>Enumeration</td><td>Anaglyph algorithm: true_anaglyph, grey_anaglyph, colour_anaglyph, half_colour, optimised (Dubois)</td></tr>
+        <tr><td>parallax_px</td><td>Int (1–100)</td><td>Eye separation in pixels (Anaglyph / Stereo Pair modes)</td></tr>
+        <tr><td>stereo_layout</td><td>Enumeration</td><td>Stereo Pair output: side_by_side, top_bottom</td></tr>
+        <tr><td>background_fill</td><td>Enumeration</td><td>Occlusion gap fill: edge, black, mirror</td></tr>
+        <tr><td>hidden_shape</td><td>Enumeration</td><td>Hidden Image built-in shape: circle, star, heart, arrow, diamond</td></tr>
+        <tr><td>hidden_text</td><td>String</td><td>Text to encode as hidden image (overrides shape)</td></tr>
+        <tr><td>fg_depth</td><td>Double (0–1)</td><td>Foreground depth value for hidden shape</td></tr>
+        <tr><td>bg_depth</td><td>Double (0–1)</td><td>Background depth value for hidden image</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="knobs-qc">QC / Safety Tab</h2>
+    <table class="knob-table">
+      <thead><tr><th>Knob</th><th>Type</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>qc_overlay_type</td><td>Enumeration</td><td>heatmap, depth_bands, window_violations, histogram, safe_zone (in QC Overlay mode)</td></tr>
+        <tr><td>comfort_profile</td><td>Enumeration</td><td>conservative, standard, relaxed, cinema — controls safe limits</td></tr>
+        <tr><td>enable_safety_limiter</td><td>Boolean</td><td>Auto-clamp depth to profile limits before synthesis</td></tr>
+        <tr><td>show_violations</td><td>Boolean</td><td>Overlay window violation markers on output</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="knobs-gpu">GPU &amp; AI Depth Tab</h2>
+    <p>Controls GPU-accelerated synthesis and AI depth estimation. Requires PyTorch (installed separately into Nuke's Python — see <a href="installation.html#nuke-setup">Installation Guide</a>). Nuke 17+ ships with <code>torch.dll</code> and <code>torch_cuda.dll</code> already bundled.</p>
+
+    <table class="knob-table">
+      <thead><tr><th>Knob</th><th>Type</th><th>Default</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>df_use_gpu</td><td>Boolean</td><td>True</td><td>Enable GPU-accelerated SIRDS synthesis. Falls back to NumPy automatically if torch unavailable.</td></tr>
+        <tr><td>df_gpu_device</td><td>Enumeration</td><td>auto</td><td>Device selection: <code>auto</code> (CUDA &gt; MPS &gt; CPU), <code>cuda</code>, <code>mps</code> (Apple Silicon), <code>cpu</code>.</td></tr>
+        <tr><td>df_depth_model</td><td>Enumeration</td><td>midas</td><td>AI depth estimator: <code>midas</code> (MiDaS v3.1 DPT_Large, ~400 MB) or <code>zoedepth</code> (ZoeDepth N, ~700 MB). Weights auto-download on first use.</td></tr>
+        <tr><td>df_depth_invert_ai</td><td>Boolean</td><td>False</td><td>Invert the AI-estimated depth map. Use if the model outputs black=near convention.</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-info" style="background:rgba(79,142,247,0.08);border-left:3px solid #4f8ef7;padding:16px 20px;border-radius:6px;margin:16px 0;">
+      <strong>GPU Benchmark</strong>
+      PyTorch tensor synthesis (even on CPU-only torch) outperforms the NumPy serial loop significantly:
+      <table style="margin-top:10px;width:100%;border-collapse:collapse;font-size:13px;">
+        <thead><tr style="color:var(--text-muted)"><th style="text-align:left;padding:4px 8px;">Resolution</th><th style="text-align:right;padding:4px 8px;">NumPy</th><th style="text-align:right;padding:4px 8px;">CPU-Torch</th><th style="text-align:right;padding:4px 8px;">Speedup</th></tr></thead>
+        <tbody>
+          <tr><td style="padding:4px 8px;">1920×1080</td><td style="text-align:right;padding:4px 8px;">1174 ms</td><td style="text-align:right;padding:4px 8px;">20.7 ms</td><td style="text-align:right;padding:4px 8px;color:#22c55e;font-weight:700;">57×</td></tr>
+          <tr><td style="padding:4px 8px;">3840×2160</td><td style="text-align:right;padding:4px 8px;">4919 ms</td><td style="text-align:right;padding:4px 8px;">93.7 ms</td><td style="text-align:right;padding:4px 8px;color:#22c55e;font-weight:700;">53×</td></tr>
+        </tbody>
+      </table>
+      With Nuke 17's bundled CUDA torch, expect additional speedup from GPU memory bandwidth. Run <code>from depthforge.core.gpu_synthesizer import benchmark; print(benchmark())</code> in Nuke's Script Editor to measure your specific hardware.
+    </div>
+
+    <h2 id="presets-tab">Presets</h2>
+    <p>7 built-in presets accessible from the toolbar or from the <strong>Preset</strong> dropdown on the gizmo. Each preset sets depth_factor, max_parallax_fraction, convergence, and comfort_profile automatically:</p>
+
+    <table>
+      <thead><tr><th>Preset</th><th>depth_factor</th><th>max_parallax</th><th>Best For</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Shallow</strong></td><td>0.2</td><td>1/40</td><td>First-time viewers, elderly audiences, long viewing sessions</td></tr>
+        <tr><td><strong>Medium</strong></td><td>0.4</td><td>1/30</td><td>General purpose — ergonomic default</td></tr>
+        <tr><td><strong>Deep</strong></td><td>0.6</td><td>1/25</td><td>Experienced viewers, short sessions, bold 3D effect</td></tr>
+        <tr><td><strong>Cinema</strong></td><td>0.5</td><td>1/28</td><td>Large-screen projection, comfortable for cinema distances</td></tr>
+        <tr><td><strong>Print</strong></td><td>0.45</td><td>1/30</td><td>300 DPI print — arm's length viewing distance</td></tr>
+        <tr><td><strong>Broadcast</strong></td><td>0.35</td><td>1/35</td><td>TV/streaming — conservative for varied screen sizes</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ─── WORKFLOWS ─── -->
+    <h2 id="wf-basic">Workflow: Basic SIRDS from Depth Pass</h2>
+
+    <div class="nuke-graph">
+      <div class="ng-col">
+        <div class="ng-node read"><div class="label">Input</div><div class="name">Read (depth.exr)</div></div>
+      </div>
+      <div class="ng-wire"></div>
+      <div class="ng-col">
+        <div class="ng-node"><div class="label">DepthForge</div><div class="name">DepthForge1 [SIRDS]</div></div>
+      </div>
+      <div class="ng-wire"></div>
+      <div class="ng-col">
+        <div class="ng-node write"><div class="label">Output</div><div class="name">Write (stereogram.png)</div></div>
+      </div>
+    </div>
+
+    <div class="workflow-step">
+      <div class="ws-num">1</div>
+      <div class="ws-body">
+        <h3>Read your depth map</h3>
+        <p>Add a Read node (R) and load your depth map — EXR, TIFF, or PNG. White = near, black = far.</p>
+      </div>
+    </div>
+
+    <div class="workflow-step">
+      <div class="ws-num">2</div>
+      <div class="ws-body">
+        <h3>Create DepthForge node</h3>
+        <p>Press <strong>Alt+Shift+S</strong> or use <em>DepthForge → Create Stereogram</em>. Connect the Read node to the <code>depth</code> input.</p>
+      </div>
+    </div>
+
+    <div class="workflow-step">
+      <div class="ws-num">3</div>
+      <div class="ws-body">
+        <h3>Set parameters</h3>
+        <p>Open the gizmo properties. In the <strong>Stereo Params</strong> tab:</p>
+        <ul>
+          <li>Mode: SIRDS</li>
+          <li>Preset: Medium (or choose Cinema for stronger effect)</li>
+          <li>depth_factor: 0.4</li>
+        </ul>
+        <p>In the <strong>Depth Prep</strong> tab, enable bilateral_filter and set bilateral_d=9.</p>
+      </div>
+    </div>
+
+    <div class="workflow-step">
+      <div class="ws-num">4</div>
+      <div class="ws-body">
+        <h3>Preview and write</h3>
+        <p>Click the DepthForge node in the viewer. Connect a Write node to output. Render normally.</p>
+      </div>
+    </div>
+
+    <h2 id="wf-anaglyph">Workflow: Anaglyph Composite</h2>
+    <p>For anaglyph output you need both a colour source and a depth map connected to the gizmo.</p>
+
+    <div class="nuke-graph">
+      <div class="ng-col">
+        <div class="ng-node read" style="min-width:120px"><div class="label">Source</div><div class="name">Read (beauty.exr)</div></div>
+        <span class="ng-arrow" style="margin: 0 20px">→ source</span>
+        <div class="ng-node" style="min-width:180px"><div class="label">DepthForge</div><div class="name">DepthForge1 [Anaglyph]</div></div>
+        <span class="ng-arrow" style="margin: 0 20px">→</span>
+        <div class="ng-node write"><div class="label">Output</div><div class="name">Write</div></div>
+      </div>
+      <div style="height: 8px;"></div>
+      <div class="ng-col">
+        <div class="ng-node read" style="min-width:120px"><div class="label">Depth</div><div class="name">Read (depth.exr)</div></div>
+        <span class="ng-arrow" style="margin: 0 20px">→ depth</span>
+      </div>
+    </div>
+
+    <ol>
+      <li>Read your beauty/colour render and depth pass separately</li>
+      <li>Create a DepthForge node (Alt+Shift+S)</li>
+      <li>Connect beauty render → <code>source</code> input, depth map → <code>depth</code> input</li>
+      <li>Set Mode: <strong>Anaglyph</strong></li>
+      <li>In the Pattern/Anaglyph tab: anaglyph_mode = <strong>optimised</strong> (Dubois — best colour fidelity), parallax_px = 20</li>
+      <li>Preview in the Viewer and adjust parallax_px for desired 3D intensity</li>
+    </ol>
+
+    <div class="callout callout-tip">
+      <strong>Tip — Dubois Optimised</strong>
+      The <code>optimised</code> (Dubois) anaglyph mode uses perceptually weighted colour matrices designed for red/cyan glasses. It preserves the most colour while maintaining strong 3D. Use <code>grey_anaglyph</code> for maximum 3D depth at the cost of colour.
+    </div>
+
+    <h2 id="wf-stereopair">Workflow: Stereo Pair for VR / 3D Monitors</h2>
+    <ol>
+      <li>Connect beauty render → <code>source</code>, depth → <code>depth</code></li>
+      <li>Set Mode: <strong>Stereo Pair</strong></li>
+      <li>In Pattern tab: stereo_layout = <strong>side_by_side</strong> (or top_bottom for some VR formats)</li>
+      <li>Set depth_factor to your desired 3D strength</li>
+      <li>background_fill = <strong>edge</strong> (best for most content — fills occlusion gaps with edge pixels)</li>
+      <li>Write to a wide output format (2× width for side_by_side)</li>
+    </ol>
+
+    <div class="callout callout-info">
+      <strong>Output Resolution</strong>
+      Side-by-side stereo pair output is 2× the source width (left and right frames concatenated). Top-bottom output is 2× the source height. Plan your Write node format accordingly.
+    </div>
+
+    <h2 id="wf-qc">Workflow: QC Overlay Pass</h2>
+    <p>Use QC Overlay mode to visualize depth quality before committing to a final render. Wire this into a QC branch — do not use as the final output.</p>
+
+    <div class="nuke-graph">
+      <div class="ng-col">
+        <div class="ng-node read"><div class="label">Depth</div><div class="name">Read (depth.exr)</div></div>
+        <span class="ng-arrow" style="margin: 0 20px">→</span>
+        <div class="ng-node"><div class="label">DepthForge</div><div class="name">DepthForge_QC [QC Overlay]</div></div>
+        <span class="ng-arrow" style="margin: 0 20px">→</span>
+        <div class="ng-node write"><div class="label">QC</div><div class="name">Viewer</div></div>
+      </div>
+    </div>
+
+    <ol>
+      <li>Duplicate your DepthForge setup or add a new gizmo on the depth pass</li>
+      <li>Set Mode: <strong>QC Overlay</strong></li>
+      <li>In the QC/Safety tab, choose overlay_type:</li>
+    </ol>
+
+    <table>
+      <thead><tr><th>Overlay Type</th><th>What it shows</th></tr></thead>
+      <tbody>
+        <tr><td><strong>heatmap</strong></td><td>Parallax magnitude as a colour heatmap — red = maximum shift, blue = zero</td></tr>
+        <tr><td><strong>depth_bands</strong></td><td>Discrete depth layers coloured by band — verifies depth segmentation</td></tr>
+        <tr><td><strong>window_violations</strong></td><td>Highlights pixels where depth exceeds safe parallax limits</td></tr>
+        <tr><td><strong>histogram</strong></td><td>Depth value histogram — check distribution and clipping</td></tr>
+        <tr><td><strong>safe_zone</strong></td><td>Overlay showing the safe/unsafe zone boundary</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="wf-script">Python Scripting in Nuke</h2>
+    <p>You can drive DepthForge directly from Nuke's Python Script Editor for automation:</p>
+
+    <pre><code class="lang-python">import nuke
+import depthforge as df
+import numpy as np
+
+# Get the depth from a Nuke node and synthesize in Python
+node = nuke.toNode('Read1')
+arr = node.execute(0, 0, 1)  # frame 0
+
+# Or use the depthforge API directly
+from depthforge.core.synthesizer import StereoParams, synthesize
+from depthforge.core.depth_prep import DepthPrepParams, prep_depth
+import numpy as np
+
+# Load depth (from file)
+from depthforge.io.formats import read_depth
+depth = read_depth("depth.exr")  # float32 (H,W) in [0,1]
+
+# Condition and synthesize
+params = StereoParams(depth_factor=0.5, seed=42)
+prep = DepthPrepParams(bilateral_d=9)
+depth_conditioned = prep_depth(depth, prep)
+stereo = synthesize(depth_conditioned, params)  # (H,W,3) uint8
+
+# Save result
+from PIL import Image
+Image.fromarray(stereo).save("stereogram.png")</code><span class="lang-label">python</span></pre>
+
+    <h2 id="tips">Nuke-Specific Tips</h2>
+
+    <h3>Working with EXR depth passes</h3>
+    <p>Nuke renders depth as a 32-bit linear float in the <code>Z</code> channel. Before connecting to DepthForge:</p>
+    <ul>
+      <li>Use a <strong>Shuffle</strong> node to isolate the Z channel and route it to the RGBA input of DepthForge</li>
+      <li>Use a <strong>Grade</strong> node to normalize Z values to [0,1] — typical CG depth ranges from 0 to far clip distance</li>
+      <li>Enable <strong>Invert Depth</strong> on the gizmo if your Z pass uses camera-near=0 convention (DepthForge expects white=near)</li>
+    </ul>
+
+    <pre><code class="lang-tcl">set cut_paste_input [stack 0]
+version 14.0 v6
+Shuffle2 {
+ fromInput1 {{0 "rgba.red"} {0 "depth.Z"} {0 "depth.Z"} {0 "depth.Z"}}
+ name Shuffle_DepthToRGB
+}
+Grade {
+ # Normalize Z range to 0-1 — adjust these for your scene scale
+ blackpoint {10 10 10 10}
+ whitepoint {1000 1000 1000 1000}
+ reverse true
+ name Grade_NormalizeDepth
+}</code><span class="lang-label">Nuke script snippet</span></pre>
+
+    <h3>Animating depth_factor over time</h3>
+    <p>depth_factor can be keyframed to animate the 3D effect strength. In the gizmo, right-click <em>depth_factor</em> → Set Key, then animate:</p>
+    <pre><code class="lang-python"># In Nuke's Script Editor — animate depth_factor
+df_node = nuke.toNode('DepthForge1')
+df_node['depth_factor'].setAnimated()
+df_node['depth_factor'].setValueAt(0.0, 1)   # Frame 1: flat
+df_node['depth_factor'].setValueAt(0.6, 48)  # Frame 48: full depth</code><span class="lang-label">python</span></pre>
+
+    <h3>Batch rendering stereograms from a script</h3>
+    <pre><code class="lang-bash"># Run Nuke in terminal mode to render without GUI
+Nuke -x -t my_stereo_comp.nk</code><span class="lang-label">bash</span></pre>
+
+    <div class="callout callout-warn">
+      <strong>Performance Note</strong>
+      The DepthForge gizmo runs Python synthesis on every render. For large-resolution or high-frame-count renders, use the <strong>tiled_render</strong> path (set in gizmo or via Python API) which distributes work across threads. oversample=2 significantly increases render time but produces sharper output — use for final renders, not previews.
+    </div>
+
+  </main>
+</div>
+
+<footer>SUPERIOR StereoGram v0.5.0 — Superior Studios / BoxOf LLC</footer>
+</body>
+</html>

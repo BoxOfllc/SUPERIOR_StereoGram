@@ -74,8 +74,9 @@ class TestComfyUINodes(unittest.TestCase):
     def test_node_class_mappings_loaded(self):
         from depthforge.comfyui import NODE_CLASS_MAPPINGS, NODE_DISPLAY_NAME_MAPPINGS
 
-        self.assertEqual(len(NODE_CLASS_MAPPINGS), 10)
-        self.assertEqual(len(NODE_DISPLAY_NAME_MAPPINGS), 10)
+        # 12 DepthForge nodes + 10 Swirls nodes = 22 total
+        self.assertEqual(len(NODE_CLASS_MAPPINGS), 22)
+        self.assertEqual(len(NODE_DISPLAY_NAME_MAPPINGS), 22)
 
     def test_all_10_nodes_registered(self):
         from depthforge.comfyui import NODE_CLASS_MAPPINGS
@@ -98,7 +99,8 @@ class TestComfyUINodes(unittest.TestCase):
     def test_node_count_helper(self):
         from depthforge.comfyui import node_count
 
-        self.assertEqual(node_count(), 10)
+        # 12 DepthForge nodes + 10 Swirls nodes = 22 total
+        self.assertEqual(node_count(), 22)
 
     def test_install_outside_nuke_is_noop(self):
         """install() with no ComfyUI path should not raise."""
@@ -162,7 +164,10 @@ class TestComfyUINodes(unittest.TestCase):
         from depthforge.comfyui import NODE_CLASS_MAPPINGS
 
         for name, cls in NODE_CLASS_MAPPINGS.items():
-            self.assertEqual(cls.CATEGORY, "DepthForge", msg=f"{name} wrong CATEGORY")
+            self.assertTrue(
+                cls.CATEGORY.startswith("DepthForge"),
+                msg=f"{name} wrong CATEGORY: {cls.CATEGORY!r}",
+            )
 
     # ── DF_DepthPrep execute ──────────────────────────────────
 

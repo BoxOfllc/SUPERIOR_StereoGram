@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Installation Guide — SUPERIOR StereoGram</title>
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #161b24;
+    --surface2: #1e2535;
+    --border: #2a3347;
+    --accent: #4f8ef7;
+    --accent2: #a855f7;
+    --accent3: #22d3ee;
+    --text: #e2e8f0;
+    --text-muted: #8899b0;
+    --success: #22c55e;
+    --warn: #f59e0b;
+    --danger: #ef4444;
+    --code-bg: #0a0d12;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; line-height: 1.6; }
+
+  header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 28px 40px; display: flex; align-items: center; gap: 20px; }
+  .header-title { font-size: 20px; font-weight: 700; }
+  .header-sub { color: var(--text-muted); font-size: 14px; margin-top: 2px; }
+
+  nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 40px; display: flex; gap: 2px; }
+  nav a { color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 14px 16px; border-bottom: 2px solid transparent; transition: all 0.2s; }
+  nav a:hover { color: var(--text); }
+  nav a.active { color: var(--accent3); border-bottom-color: var(--accent3); }
+
+  .layout { display: flex; max-width: 1200px; margin: 0 auto; }
+
+  aside {
+    width: 240px; min-width: 240px;
+    padding: 40px 20px;
+    border-right: 1px solid var(--border);
+    position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  }
+  aside h4 { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; margin-top: 24px; }
+  aside h4:first-child { margin-top: 0; }
+  aside a { display: block; color: var(--text-muted); text-decoration: none; font-size: 13px; padding: 5px 10px; border-radius: 6px; transition: all 0.15s; }
+  aside a:hover { color: var(--text); background: var(--surface2); }
+  aside a.toc-active { color: var(--accent3); background: rgba(34,211,238,0.08); }
+
+  main { flex: 1; padding: 50px 60px; max-width: 860px; }
+
+  h1 { font-size: 36px; font-weight: 800; margin-bottom: 8px; }
+  h2 { font-size: 24px; font-weight: 700; margin-top: 56px; margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  h3 { font-size: 18px; font-weight: 600; margin-top: 32px; margin-bottom: 12px; color: var(--accent3); }
+  h4 { font-size: 14px; font-weight: 600; margin-top: 20px; margin-bottom: 8px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  p { margin-bottom: 14px; font-size: 15px; }
+  ul, ol { margin: 12px 0 16px 20px; }
+  li { margin-bottom: 6px; font-size: 15px; }
+
+  code { background: var(--code-bg); border: 1px solid var(--border); padding: 2px 7px; border-radius: 4px; font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace; font-size: 13px; color: var(--accent3); }
+
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 16px 0 24px;
+    position: relative;
+  }
+  pre code { background: none; border: none; padding: 0; font-size: 13.5px; color: #c8d8f0; line-height: 1.7; }
+  .lang-label { position: absolute; top: 10px; right: 16px; font-size: 10px; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; }
+
+  .callout { border-radius: 10px; padding: 16px 20px; margin: 20px 0; border-left: 3px solid; }
+  .callout-info { background: rgba(79,142,247,0.08); border-color: var(--accent); }
+  .callout-warn { background: rgba(245,158,11,0.08); border-color: var(--warn); }
+  .callout-danger { background: rgba(239,68,68,0.08); border-color: var(--danger); }
+  .callout-success { background: rgba(34,197,94,0.08); border-color: var(--success); }
+  .callout strong { display: block; margin-bottom: 6px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .callout-info strong { color: var(--accent); }
+  .callout-warn strong { color: var(--warn); }
+  .callout-danger strong { color: var(--danger); }
+  .callout-success strong { color: var(--success); }
+
+  table { width: 100%; border-collapse: collapse; margin: 16px 0 24px; }
+  th { text-align: left; padding: 10px 14px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); border-bottom: 1px solid var(--border); background: var(--surface); }
+  td { padding: 10px 14px; border-bottom: 1px solid rgba(42,51,71,0.5); font-size: 14px; }
+  tr:last-child td { border-bottom: none; }
+
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+  .badge-green { background: rgba(34,197,94,0.15); color: var(--success); }
+  .badge-blue { background: rgba(79,142,247,0.15); color: var(--accent); }
+  .badge-amber { background: rgba(245,158,11,0.15); color: var(--warn); }
+
+  .step { display: flex; gap: 16px; margin-bottom: 28px; }
+  .step-num { min-width: 32px; height: 32px; background: var(--accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; margin-top: 2px; }
+  .step-body h3 { margin-top: 0; }
+
+  footer { border-top: 1px solid var(--border); padding: 24px 40px; text-align: center; color: var(--text-muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="header-title">⚙️ Installation Guide</div>
+    <div class="header-sub">SUPERIOR StereoGram / DepthForge v0.5.0</div>
+  </div>
+</header>
+
+<nav>
+  <a href="index.html">Home</a>
+  <a href="installation.html" class="active">Installation</a>
+  <a href="cli-workflow.html">CLI</a>
+  <a href="comfyui-workflow.html">ComfyUI</a>
+  <a href="nuke-workflow.html">Nuke</a>
+  <a href="samples.html">Samples</a>
+  <a href="reference.html">Reference</a>
+</nav>
+
+<div class="layout">
+  <aside>
+    <h4>On this page</h4>
+    <a href="#requirements">Requirements</a>
+    <a href="#core-install">Core Install</a>
+    <a href="#optional-packages">Optional Packages</a>
+    <a href="#verify">Verify Install</a>
+    <h4>Integration Setup</h4>
+    <a href="#comfyui-setup">ComfyUI</a>
+    <a href="#nuke-setup">Nuke</a>
+    <a href="#ofx-setup">OFX Plugin (AE/Premiere/DaVinci)</a>
+    <a href="#web-setup">Web Preview Server</a>
+    <h4>Troubleshooting</h4>
+    <a href="#troubleshooting">Common Issues</a>
+  </aside>
+
+  <main>
+    <h1>Installation Guide</h1>
+    <p>This guide covers installing DepthForge for standalone Python/CLI use and setting up each integration surface (ComfyUI, Nuke, OFX hosts, web preview).</p>
+
+    <div class="callout callout-info">
+      <strong>Platform</strong>
+      Developed on Windows 11. All surfaces run on Windows, macOS, and Linux. The OFX plugin requires a CMake build step on non-Windows platforms.
+    </div>
+
+    <!-- ─── REQUIREMENTS ─── -->
+    <h2 id="requirements">Requirements</h2>
+
+    <table>
+      <thead><tr><th>Requirement</th><th>Version</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Python</strong></td><td>3.10 or 3.11</td><td>3.11 used in ComfyUI embedded env</td></tr>
+        <tr><td><strong>NumPy</strong></td><td>≥ 1.24</td><td>Core synthesis — always required</td></tr>
+        <tr><td><strong>Pillow</strong></td><td>≥ 10.0</td><td>Image I/O — always required</td></tr>
+        <tr><td><strong>Click</strong></td><td>≥ 8.0</td><td>CLI only</td></tr>
+        <tr><td><strong>Flask</strong></td><td>≥ 3.0</td><td>Web preview server only</td></tr>
+        <tr><td><strong>OpenCV (cv2)</strong></td><td>≥ 4.8</td><td>Optional — bilateral filter, optical flow</td></tr>
+        <tr><td><strong>SciPy</strong></td><td>≥ 1.11</td><td>Optional — Gaussian blur, inpainting</td></tr>
+        <tr><td><strong>PyTorch</strong></td><td>≥ 2.1</td><td>Optional — MiDaS/ZoeDepth AI depth</td></tr>
+        <tr><td><strong>OpenEXR + Imath</strong></td><td>≥ 3.2</td><td>Optional — 32-bit EXR I/O</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ─── CORE INSTALL ─── -->
+    <h2 id="core-install">Core Installation</h2>
+
+    <h3>Step 1 — Clone the repository</h3>
+    <pre><code class="lang-bash">git clone https://github.com/BoxOfllc/SUPERIOR_StereoGram.git
+cd SUPERIOR_StereoGram</code><span class="lang-label">bash</span></pre>
+
+    <h3>Step 2 — Create and activate a virtual environment</h3>
+    <pre><code class="lang-powershell"># Windows (PowerShell)
+python -m venv .venv
+.venv\Scripts\Activate.ps1</code><span class="lang-label">PowerShell</span></pre>
+    <pre><code class="lang-bash"># macOS / Linux
+python3 -m venv .venv
+source .venv/bin/activate</code><span class="lang-label">bash</span></pre>
+
+    <h3>Step 3 — Install the package</h3>
+    <pre><code class="lang-bash"># Minimal install (NumPy + Pillow only — pure Python, no optional deps)
+pip install -e .
+
+# CLI install (adds Click)
+pip install -e ".[cli]"
+
+# Full install (all optional dependencies)
+pip install -e ".[full]"</code><span class="lang-label">bash</span></pre>
+
+    <table>
+      <thead><tr><th>Install Extra</th><th>Packages Added</th><th>Use When</th></tr></thead>
+      <tbody>
+        <tr><td><code>.[cli]</code></td><td>click, rich</td><td>Command-line use</td></tr>
+        <tr><td><code>.[cv]</code></td><td>opencv-python</td><td>Better bilateral filter, optical flow</td></tr>
+        <tr><td><code>.[scipy]</code></td><td>scipy</td><td>Better Gaussian blur, inpainting</td></tr>
+        <tr><td><code>.[ai]</code></td><td>torch, torchvision, timm</td><td>MiDaS/ZoeDepth AI depth estimation</td></tr>
+        <tr><td><code>.[web]</code></td><td>flask, flask-cors</td><td>Local web preview server</td></tr>
+        <tr><td><code>.[full]</code></td><td>All of the above</td><td>Complete installation</td></tr>
+        <tr><td><code>.[dev]</code></td><td>+ pytest, ruff, black</td><td>Development / running tests</td></tr>
+      </tbody>
+    </table>
+
+    <!-- ─── OPTIONAL PACKAGES ─── -->
+    <h2 id="optional-packages">Optional Package Details</h2>
+
+    <div class="callout callout-info">
+      <strong>Important — Fallback Architecture</strong>
+      Every optional package has a pure NumPy/Pillow fallback. DepthForge works without any optional packages — they only improve quality or enable AI features. The fallbacks are production-tested.
+    </div>
+
+    <h3>OpenCV</h3>
+    <pre><code>pip install opencv-python</code></pre>
+    <p>Enables: hardware-accelerated bilateral filtering (depth conditioning), Farneback dense optical flow (video), edge detection for adaptive dot density.</p>
+
+    <h3>SciPy</h3>
+    <pre><code>pip install scipy</code></pre>
+    <p>Enables: Gaussian blur via <code>ndimage</code> (smoother depth prep), better inpainting with <code>interpolate</code>, faster distance transforms.</p>
+
+    <h3>PyTorch + AI Depth Models</h3>
+    <pre><code># CUDA GPU (recommended for speed)
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu121
+
+# CPU only
+pip install torch torchvision</code></pre>
+    <p>Enables: MiDaS v3.1 and ZoeDepth monocular depth estimation — turn any photo into a depth map automatically. Models (~400 MB each) download on first use to <code>~/.cache/torch/hub/</code>.</p>
+
+    <h3>OpenEXR</h3>
+    <pre><code># Windows (pre-built wheel)
+pip install openexr
+
+# macOS
+brew install openexr
+pip install openexr
+
+# Linux
+sudo apt install libopenexr-dev
+pip install openexr</code></pre>
+    <p>Enables: reading and writing 32-bit linear EXR depth maps. Falls back to 16-bit TIFF if unavailable.</p>
+
+    <!-- ─── VERIFY ─── -->
+    <h2 id="verify">Verify Installation</h2>
+    <pre><code class="lang-python">import depthforge as df
+
+print("DepthForge:", df.__version__)
+print("OpenCV:    ", df.HAS_CV2)
+print("SciPy:     ", df.HAS_SCIPY)
+print("PyTorch:   ", df.HAS_TORCH)
+print("OpenEXR:   ", df.HAS_OPENEXR)</code><span class="lang-label">python</span></pre>
+
+    <p>Or via CLI:</p>
+    <pre><code>python -m depthforge.cli.main presets</code></pre>
+    <p>This should list the 6 built-in presets (shallow, medium, deep, cinema, print, broadcast).</p>
+
+    <p>To run the full test suite:</p>
+    <pre><code class="lang-bash">python -m unittest depthforge.tests.test_phase1 \
+                   depthforge.tests.test_phase2 \
+                   depthforge.tests.test_phase3 \
+                   depthforge.tests.test_phase4 \
+                   depthforge.tests.test_phase5
+# Expected: Ran 396 tests — OK
+# Note: 2 Windows-only temp-file cleanup warnings in phase3/phase5 are known non-bugs</code><span class="lang-label">bash</span></pre>
+
+    <!-- ─── COMFYUI SETUP ─── -->
+    <h2 id="comfyui-setup">ComfyUI Integration Setup</h2>
+
+    <div class="callout callout-warn">
+      <strong>ComfyUI uses its own embedded Python</strong>
+      You must install DepthForge inside ComfyUI's Python environment, not your system venv.
+    </div>
+
+    <h3>Option A — Junction Link (Recommended for development)</h3>
+    <p>This symlinks the repo directly into ComfyUI's custom_nodes folder so any code changes are immediately reflected without reinstalling.</p>
+    <pre><code class="lang-powershell"># Windows — run as Administrator
+$src = "E:\SupStudiosWeb3\ProductionTools\SUPERIOR_StereoGram_v0.5"
+$dst = "E:\ComfyUI\ComfyUI_windows_portable_nvidia\ComfyUI\custom_nodes\DepthForge"
+New-Item -ItemType Junction -Path $dst -Value $src</code><span class="lang-label">PowerShell</span></pre>
+
+    <h3>Option B — Direct copy</h3>
+    <pre><code class="lang-bash">cp -r /path/to/SUPERIOR_StereoGram \
+      /path/to/ComfyUI/custom_nodes/DepthForge</code><span class="lang-label">bash</span></pre>
+
+    <h3>Install depthforge into ComfyUI's Python</h3>
+    <pre><code class="lang-powershell"># Windows portable — use the embedded python_embeded pip
+$comfyPy = "E:\ComfyUI\ComfyUI_windows_portable_nvidia\python_embeded\python.exe"
+& $comfyPy -m pip install numpy pillow</code><span class="lang-label">PowerShell</span></pre>
+
+    <p>After this, launch ComfyUI normally:</p>
+    <pre><code>E:\ComfyUI\ComfyUI_windows_portable_nvidia\run_nvidia_gpu.bat</code></pre>
+
+    <p>You should now see a <strong>DepthForge</strong> category in the ComfyUI node browser with 12 nodes, and a <strong>Swirls</strong> category with 10 optical illusion generators.</p>
+
+    <div class="callout callout-success">
+      <strong>Verify ComfyUI nodes loaded</strong>
+      In ComfyUI's console output, look for: <code>DepthForge: loaded 12 nodes</code> and <code>Swirls: loaded 10 nodes</code>. If you see import errors, ensure numpy/pillow are installed in ComfyUI's embedded Python.
+    </div>
+
+    <!-- ─── NUKE SETUP ─── -->
+    <h2 id="nuke-setup">Nuke Integration Setup</h2>
+
+    <p>DepthForge registers a Python gizmo and toolbar menu into Nuke via <code>menu.py</code>.</p>
+
+    <h3>Step 1 — Make depthforge importable from Nuke</h3>
+    <p>Add the repo root to Nuke's Python path. Edit (or create) your <code>~/.nuke/init.py</code>:</p>
+    <pre><code class="lang-python">import sys
+sys.path.insert(0, r"E:\SupStudiosWeb3\ProductionTools\SUPERIOR_StereoGram_v0.5")</code><span class="lang-label">python — ~/.nuke/init.py</span></pre>
+
+    <h3>Step 2 — Register the toolbar</h3>
+    <p>Add to your <code>~/.nuke/menu.py</code>:</p>
+    <pre><code class="lang-python">import depthforge.nuke.toolbar as df_toolbar
+df_toolbar.register()</code><span class="lang-label">python — ~/.nuke/menu.py</span></pre>
+
+    <p>This creates a <strong>DepthForge</strong> menu in the Nuke toolbar with:</p>
+    <ul>
+      <li>Create Stereogram node (Alt+Shift+S)</li>
+      <li>Presets submenu (Shallow / Medium / Deep / Cinema / Print / Broadcast)</li>
+      <li>About DepthForge</li>
+    </ul>
+
+    <h3>Step 3 — Verify</h3>
+    <p>Launch Nuke. From the menu: <strong>DepthForge → Create Stereogram</strong>. A DepthForge gizmo node should appear in your node graph.</p>
+
+    <!-- ─── OFX SETUP ─── -->
+    <h2 id="ofx-setup">OFX Plugin (After Effects / Premiere / DaVinci)</h2>
+
+    <div class="callout callout-warn">
+      <strong>Build step required</strong>
+      The OFX plugin is a C++ binary that must be compiled. Python (depthforge) must also be importable from the host's environment.
+    </div>
+
+    <h3>Prerequisites</h3>
+    <ul>
+      <li>CMake ≥ 3.16</li>
+      <li>C++17 compiler (MSVC 2019+ on Windows, Xcode on macOS, GCC on Linux)</li>
+      <li>DepthForge installed in the system Python (not a venv) so the OFX host can find it</li>
+    </ul>
+
+    <h3>Build</h3>
+    <pre><code class="lang-bash">cd depthforge/ofx
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --config Release</code><span class="lang-label">bash</span></pre>
+
+    <h3>Install the bundle</h3>
+    <pre><code class="lang-bash"># The build outputs: DepthForge.ofx.bundle/
+
+# Windows — copy to OFX plugin directory
+xcopy /E DepthForge.ofx.bundle "C:\Program Files\Common Files\OFX\Plugins\" /I
+
+# macOS
+cp -r DepthForge.ofx.bundle /Library/OFX/Plugins/
+
+# Linux
+cp -r DepthForge.ofx.bundle /usr/OFX/Plugins/</code><span class="lang-label">bash</span></pre>
+
+    <p>Restart After Effects / Premiere / DaVinci Resolve. The <strong>DepthForge Stereogram</strong> effect will appear in the Effects panel under <em>DepthForge</em>.</p>
+
+    <!-- ─── WEB SETUP ─── -->
+    <h2 id="web-setup">Web Preview Server</h2>
+    <pre><code class="lang-bash">pip install -e ".[web]"
+python -m depthforge.web.app
+# Open http://localhost:5000 in your browser</code><span class="lang-label">bash</span></pre>
+
+    <p>The web server provides a single-page UI with all synthesis controls. Output is returned as a base64 PNG. SSE (server-sent events) streams progress for long renders.</p>
+
+    <!-- ─── TROUBLESHOOTING ─── -->
+    <h2 id="troubleshooting">Troubleshooting</h2>
+
+    <table>
+      <thead><tr><th>Issue</th><th>Fix</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>ModuleNotFoundError: depthforge</code> in ComfyUI</td>
+          <td>Install numpy/pillow in ComfyUI's <em>embedded</em> Python, not your system Python. Use <code>python_embeded\python.exe -m pip install ...</code></td>
+        </tr>
+        <tr>
+          <td>DepthForge nodes don't appear in ComfyUI browser</td>
+          <td>Check ComfyUI console for import errors. Ensure the junction/symlink points to the correct folder and the folder contains <code>__init__.py</code>.</td>
+        </tr>
+        <tr>
+          <td><code>setuptools.backends.legacy</code> error on Python 3.10</td>
+          <td>Fixed in <code>pyproject.toml</code> — ensure it uses <code>setuptools.build_meta</code>, not <code>setuptools.backends.legacy</code>.</td>
+        </tr>
+        <tr>
+          <td>2 temp-file cleanup errors in test_phase3 / test_phase5</td>
+          <td>Windows OS quirk — not a code bug. All 396 tests pass; Windows sometimes can't delete temp files before the test completes checking them.</td>
+        </tr>
+        <tr>
+          <td>MiDaS/ZoeDepth model download hangs</td>
+          <td>Models are ~400 MB each. First-time download goes to <code>~/.cache/torch/hub/</code>. Ensure network access and ~1 GB disk space.</td>
+        </tr>
+        <tr>
+          <td>OFX plugin can't find Python</td>
+          <td>The OFX bridge calls <code>python</code> via subprocess. Ensure <code>python</code> is on the system PATH and <code>import depthforge</code> succeeds from a plain terminal (not inside a venv).</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </main>
+</div>
+
+<footer>SUPERIOR StereoGram v0.5.0 — Superior Studios / BoxOf LLC</footer>
+</body>
+</html>
